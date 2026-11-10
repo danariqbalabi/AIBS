@@ -1,14 +1,26 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, Response
+from fastapi import APIRouter, Depends, Header, Query, Response
 from sqlalchemy.orm import Session
 
 from app.core.auth import User, get_user
 from app.core.database import get_db
-from app.schemas.domain import DraftCreate, DraftPatch
+from app.schemas.domain import CommitDraft, DraftCreate, DraftPatch
 from app.services import drafts
+from app.services.records import commit
 
 router = APIRouter(prefix="/api/v1/drafts", tags=["drafts"])
+
+
+@router.post("/{draft_id}/commit")
+def commit_draft(
+    draft_id: UUID,
+    payload: CommitDraft,
+    idempotency_key: str = Header(min_length=1, max_length=100, pattern=r"^[A-Za-z0-9_-]+$"),
+    user: User = Depends(get_user),
+    db: Session = Depends(get_db),
+):
+    return commit(db, user.id, draft_id, payload, idempotency_key)
 
 
 @router.post("", status_code=201)
