@@ -5,6 +5,8 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
+from app.api.v1.auth import router as auth_router
+from app.core.auth import JWTVerifier
 from app.core.config import Settings, get_settings
 from app.core.database import make_engine
 from app.core.errors import ApiError, install_error_handlers
@@ -23,6 +25,9 @@ def create_app(settings: Settings | None = None, *, engine=None) -> FastAPI:
     app = FastAPI(title="AIBS API", version="0.1.0", lifespan=lifespan)
     app.state.settings = settings
     app.state.engine = database_engine
+    app.state.jwt_verifier = JWTVerifier(str(settings.supabase_url))
+    app.state.demo_attempts = {}
+    app.include_router(auth_router)
     install_error_handlers(app)
     app.add_middleware(
         CORSMiddleware,
