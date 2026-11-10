@@ -786,6 +786,19 @@
     },
     "additionalProperties": false,
     "properties": {
+      "story": {
+        "anyOf": [
+          {
+            "maxLength": 10000,
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Story"
+      },
       "foods": {
         "items": {
           "$ref": "#/$defs/FoodCard"
@@ -819,6 +832,19 @@
       "DraftContent": {
         "additionalProperties": false,
         "properties": {
+          "story": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Story"
+          },
           "foods": {
             "items": {
               "$ref": "#/$defs/FoodCard"
@@ -1168,6 +1194,19 @@
       "DraftContent": {
         "additionalProperties": false,
         "properties": {
+          "story": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Story"
+          },
           "foods": {
             "items": {
               "$ref": "#/$defs/FoodCard"

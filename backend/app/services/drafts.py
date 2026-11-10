@@ -1,3 +1,5 @@
+from datetime import UTC
+
 from sqlalchemy import select
 
 from app.core.errors import ApiError
@@ -16,7 +18,9 @@ def view(row):
         "content": row.content,
         "profile_version": row.profile_version,
         "media_id": row.media_id,
-        "created_at": row.created_at,
+        "created_at": row.created_at.replace(tzinfo=UTC)
+        if row.created_at.tzinfo is None
+        else row.created_at,
     }
 
 

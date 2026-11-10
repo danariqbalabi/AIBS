@@ -14,6 +14,9 @@ class Settings(BaseSettings):
     cors_origins: list[str] = []
     supabase_service_role_key: SecretStr | None = None
     storage_bucket: str = Field(default="aibs-food-photos", pattern=r"^[a-z0-9-]+$")
+    gemini_api_key: SecretStr | None = None
+    gemini_model: str | None = Field(default=None, pattern=r"^[A-Za-z0-9_.-]+$")
+    ai_daily_limit: int = Field(default=20, ge=1, le=100)
 
     @field_validator("database_url")
     @classmethod
