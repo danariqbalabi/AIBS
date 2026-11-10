@@ -1,0 +1,18 @@
+{
+  "fixture_only": true,
+  "source": "journal",
+  "intent": "journal",
+  "analysis_status": "needs_confirmation",
+  "persistence_status": "draft",
+  "reference_date": "2026-11-10",
+  "timezone": "Asia/Jakarta",
+  "input": "Siang makan ayam kecap, sore kembung, tapi nggak mual.",
+  "foods": [
+    {"name": "Ayam kecap", "consumed": true, "time": {"date": "2026-11-10", "period": "afternoon_meal", "precision": "approximate", "confirmed": false}}
+  ],
+  "symptoms": [
+    {"code": "bloating", "present": true, "severity": null, "time": {"date": "2026-11-10", "period": "late_afternoon", "precision": "approximate", "confirmed": false}},
+    {"code": "nausea", "present": false, "severity": null, "time": {"date": "2026-11-10", "period": "late_afternoon", "precision": "approximate", "confirmed": false}}
+  ],
+  "expected_invariants": ["Mual yang disangkal tidak dihitung sebagai keluhan", "Tidak mengubah siang/sore menjadi jam presisi", "Food dan symptom disimpan terpisah setelah review"]
+}
