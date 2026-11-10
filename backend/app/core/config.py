@@ -12,6 +12,8 @@ class Settings(BaseSettings):
     database_url: SecretStr = Field(min_length=1)
     supabase_url: AnyHttpUrl
     cors_origins: list[str] = []
+    supabase_service_role_key: SecretStr | None = None
+    storage_bucket: str = Field(default="aibs-food-photos", pattern=r"^[a-z0-9-]+$")
 
     @field_validator("database_url")
     @classmethod
