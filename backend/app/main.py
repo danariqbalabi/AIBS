@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
 from app.api.v1.auth import router as auth_router
+from app.api.v1.profiles import router as profile_router
 from app.core.auth import JWTVerifier
 from app.core.config import Settings, get_settings
 from app.core.database import make_engine
@@ -28,6 +29,7 @@ def create_app(settings: Settings | None = None, *, engine=None) -> FastAPI:
     app.state.jwt_verifier = JWTVerifier(str(settings.supabase_url))
     app.state.demo_attempts = {}
     app.include_router(auth_router)
+    app.include_router(profile_router)
     install_error_handlers(app)
     app.add_middleware(
         CORSMiddleware,

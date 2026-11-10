@@ -5,6 +5,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, text
 
+from app.core.auth import User, get_user
 from app.core.config import Settings
 from app.core.database import make_engine
 from app.main import create_app
@@ -51,6 +52,17 @@ def db_engine(settings, tmp_path):
         with admin.begin() as connection:
             connection.execute(text(f'DROP SCHEMA "{schema}" CASCADE'))
         admin.dispose()
+
+
+@pytest.fixture
+def account(settings, db_engine):
+    app = create_app(settings, engine=db_engine)
+    context = {"user": User(uuid4())}
+    app.dependency_overrides[get_user] = lambda: context["user"]
+    with TestClient(app) as client:
+        client.post("/api/v1/me/profile")
+        client.put("/api/v1/me/consents", json={"basic": True, "ai": False})
+        yield client, context
 
 
 @pytest.fixture
