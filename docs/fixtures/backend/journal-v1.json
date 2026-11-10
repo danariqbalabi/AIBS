@@ -1,0 +1,14 @@
+{
+  "foods": [{
+    "name": "Ayam kecap",
+    "consumed": true,
+    "time": {"date": "2026-11-10", "period": "midday", "precision": "approximate", "confirmed": false},
+    "ingredients": [],
+    "ingredients_complete": false
+  }],
+  "symptoms": [
+    {"code": "bloating", "present": true, "time": {"date": "2026-11-10", "period": "late_afternoon", "precision": "approximate", "confirmed": false}},
+    {"code": "nausea", "present": false, "severity": null, "time": {"date": "2026-11-10", "period": "late_afternoon", "precision": "approximate", "confirmed": false}}
+  ],
+  "questions": ["Jam makan dan mulai kembungnya sudah sesuai?"]
+}
