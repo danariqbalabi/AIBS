@@ -19,7 +19,7 @@ INGREDIENTS = {
     "garlic": ("Bawang putih", []),
     "onion": ("Bawang bombay", []),
     "shrimp": ("Udang", []),
-    "peanut": ("Kacang tanah", ["kacang"]),
+    "peanut": ("Kacang tanah", []),
     "tofu": ("Tahu", []),
     "carrot": ("Wortel", []),
     "coconut": ("Santan", []),

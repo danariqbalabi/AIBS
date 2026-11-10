@@ -35,6 +35,8 @@ def sanitize(data):
     except (
         UnidentifiedImageError,
         OSError,
+        ValueError,
+        SyntaxError,
         Image.DecompressionBombError,
         Image.DecompressionBombWarning,
     ) as exc:

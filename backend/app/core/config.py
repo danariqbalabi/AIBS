@@ -1,7 +1,7 @@
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import AnyHttpUrl, Field, SecretStr, field_validator
+from pydantic import AnyHttpUrl, Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -17,6 +17,20 @@ class Settings(BaseSettings):
     gemini_api_key: SecretStr | None = None
     gemini_model: str | None = Field(default=None, pattern=r"^[A-Za-z0-9_.-]+$")
     ai_daily_limit: int = Field(default=20, ge=1, le=100)
+
+    @field_validator("supabase_service_role_key", "gemini_api_key", "gemini_model", mode="before")
+    @classmethod
+    def empty_optional_config(cls, value):
+        return None if value == "" else value
+
+    @model_validator(mode="after")
+    def production_uses_postgres_and_https(self):
+        if self.app_env == "production":
+            if not self.database_url.get_secret_value().startswith("postgresql+psycopg://"):
+                raise ValueError("Production requires PostgreSQL")
+            if self.supabase_url.scheme != "https":
+                raise ValueError("Production requires HTTPS Supabase URL")
+        return self
 
     @field_validator("database_url")
     @classmethod

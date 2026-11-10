@@ -34,7 +34,7 @@ class SupabaseStorage:
                 raise ApiError(
                     503, "private_bucket_required", "Konfigurasi foto privat belum siap."
                 )
-        except ValueError as exc:
+        except (ValueError, TypeError, AttributeError) as exc:
             raise ApiError(503, "storage_unavailable", "Penyimpanan foto belum siap.") from exc
 
     def upload(self, path, data):

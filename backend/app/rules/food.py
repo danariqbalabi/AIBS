@@ -8,6 +8,14 @@ RULES_VERSION = "food_constraints_demo_v1"
 def check(profile, ingredients, complete, access, known_ids, *, directive_supported=False):
     diet = DietProfile.model_validate(profile.diet)
     reasons, missing = [], []
+    profile_ids = {
+        *diet.allergies,
+        *diet.avoided_ingredients,
+        *diet.tolerances,
+        *(limit.ingredient_id for limit in diet.portion_limits),
+    }
+    if any(str(key) not in known_ids for key in profile_ids):
+        missing.append("Profil memiliki bahan yang belum dikenal katalog.")
     if not complete:
         missing.append("Komposisi makanan belum lengkap.")
     totals = {}
