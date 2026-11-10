@@ -1,5 +1,7 @@
 # AIBS
 
+Panduan kerja backend Danar: [pemetaan kebutuhan dan gap desain](docs/backend-requirements.md), [rancangan alur/API/data](docs/backend-design.md), dan [roadmap pengerjaan serta commit bertahap](docs/backend-workflow.md). Dokumen ini merupakan rencana implementasi, bukan klaim backend sudah berjalan.
+
 Pendamping pemilihan menu dan pencatatan makanan serta gejala untuk orang dewasa dengan Irritable Bowel Syndrome (IBS).
 
 **LOGICODIX 2026 · Kategori Mobile (Android) · Subtema Inclusive Health & Well-being**
@@ -32,7 +34,7 @@ Pendamping pemilihan menu dan pencatatan makanan serta gejala untuk orang dewasa
 | Ketua tim | [ISI: nama lengkap ketua] |
 | Kategori | Mobile, target Android |
 | Subtema | Inclusive Health & Well-being |
-| Repository publik | [ISI: URL GitHub] |
+| Repository GitHub | https://github.com/danariqbalabi/AIBS (visibilitas publik perlu diverifikasi sebelum submission) |
 | APK/distribusi Android | [ISI: tautan unduhan yang dapat diakses juri] |
 | Video demo | [ISI: URL YouTube Public/Unlisted, durasi 3–5 menit] |
 | Versi release | [ISI: versi/tag release] |
