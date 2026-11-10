@@ -4,7 +4,7 @@ from typing import Annotated, Literal
 from uuid import UUID
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validator, model_validator
 
 Answer = Literal["yes", "no", "unknown"]
 AgeBand = Literal["under_18", "18_29", "30_39", "40_49", "50_plus"]
@@ -223,6 +223,34 @@ class SymptomEventPatch(Contract):
     kind: Literal["symptom"]
     version: int = Field(ge=1)
     payload: SymptomCard
+
+
+class PlanInput(Contract):
+    menu_id: UUID
+    scheduled_at: AwareDatetime
+
+
+class PlanPatch(Contract):
+    version: int = Field(ge=1)
+    scheduled_at: AwareDatetime
+
+
+class ShoppingInput(Contract):
+    ingredient_id: UUID | None = None
+    name: str = Field(min_length=1, max_length=100)
+    quantity: PositiveQuantity
+    unit: str = Field(min_length=1, max_length=30)
+
+
+class ShoppingPatch(Contract):
+    version: int = Field(ge=1)
+    quantity: PositiveQuantity
+    checked: bool
+
+
+class ShoppingFromMenu(Contract):
+    menu_id: UUID
+    servings: PositiveQuantity = Decimal(1)
 
 
 class ErrorResponse(Contract):
