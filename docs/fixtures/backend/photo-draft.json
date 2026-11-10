@@ -1,0 +1,18 @@
+{
+  "fixture_only": true,
+  "source": "photo",
+  "intent": "before_meal",
+  "analysis_status": "needs_confirmation",
+  "persistence_status": "draft",
+  "food_candidates": ["Nasi + ayam goreng", "Nasi + ayam bakar"],
+  "ingredients": [
+    {"ingredient_id": null, "display_name": "Nasi putih", "quantity": null, "unit": "porsi", "certainty": "candidate"},
+    {"ingredient_id": null, "display_name": "Ayam", "quantity": null, "unit": null, "certainty": "candidate"},
+    {"ingredient_id": null, "display_name": "Saus coklat", "quantity": null, "unit": null, "certainty": "unknown"}
+  ],
+  "missing_information": [
+    {"field": "ingredients[2]", "question": "Saus ini apa?"},
+    {"field": "ingredients[0].quantity", "question": "Berapa porsi nasinya?"}
+  ],
+  "expected_invariants": ["Tidak membuat food event", "Tidak menganggap saus bebas alergen", "Review tidak memanggil AI lagi"]
+}
