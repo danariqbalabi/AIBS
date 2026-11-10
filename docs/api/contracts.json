@@ -3084,6 +3084,161 @@
     "title": "SymptomEventPatch",
     "type": "object"
   },
+  "PlanInput": {
+    "additionalProperties": false,
+    "properties": {
+      "menu_id": {
+        "format": "uuid",
+        "title": "Menu Id",
+        "type": "string"
+      },
+      "scheduled_at": {
+        "format": "date-time",
+        "title": "Scheduled At",
+        "type": "string"
+      }
+    },
+    "required": [
+      "menu_id",
+      "scheduled_at"
+    ],
+    "title": "PlanInput",
+    "type": "object"
+  },
+  "PlanPatch": {
+    "additionalProperties": false,
+    "properties": {
+      "version": {
+        "minimum": 1,
+        "title": "Version",
+        "type": "integer"
+      },
+      "scheduled_at": {
+        "format": "date-time",
+        "title": "Scheduled At",
+        "type": "string"
+      }
+    },
+    "required": [
+      "version",
+      "scheduled_at"
+    ],
+    "title": "PlanPatch",
+    "type": "object"
+  },
+  "ShoppingInput": {
+    "additionalProperties": false,
+    "properties": {
+      "ingredient_id": {
+        "anyOf": [
+          {
+            "format": "uuid",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Ingredient Id"
+      },
+      "name": {
+        "maxLength": 100,
+        "minLength": 1,
+        "title": "Name",
+        "type": "string"
+      },
+      "quantity": {
+        "anyOf": [
+          {
+            "exclusiveMinimum": 0.0,
+            "maximum": 10000.0,
+            "type": "number"
+          },
+          {
+            "type": "string"
+          }
+        ],
+        "title": "Quantity"
+      },
+      "unit": {
+        "maxLength": 30,
+        "minLength": 1,
+        "title": "Unit",
+        "type": "string"
+      }
+    },
+    "required": [
+      "name",
+      "quantity",
+      "unit"
+    ],
+    "title": "ShoppingInput",
+    "type": "object"
+  },
+  "ShoppingPatch": {
+    "additionalProperties": false,
+    "properties": {
+      "version": {
+        "minimum": 1,
+        "title": "Version",
+        "type": "integer"
+      },
+      "quantity": {
+        "anyOf": [
+          {
+            "exclusiveMinimum": 0.0,
+            "maximum": 10000.0,
+            "type": "number"
+          },
+          {
+            "type": "string"
+          }
+        ],
+        "title": "Quantity"
+      },
+      "checked": {
+        "title": "Checked",
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "version",
+      "quantity",
+      "checked"
+    ],
+    "title": "ShoppingPatch",
+    "type": "object"
+  },
+  "ShoppingFromMenu": {
+    "additionalProperties": false,
+    "properties": {
+      "menu_id": {
+        "format": "uuid",
+        "title": "Menu Id",
+        "type": "string"
+      },
+      "servings": {
+        "anyOf": [
+          {
+            "exclusiveMinimum": 0.0,
+            "maximum": 10000.0,
+            "type": "number"
+          },
+          {
+            "type": "string"
+          }
+        ],
+        "default": "1",
+        "title": "Servings"
+      }
+    },
+    "required": [
+      "menu_id"
+    ],
+    "title": "ShoppingFromMenu",
+    "type": "object"
+  },
   "ErrorResponse": {
     "$defs": {
       "ErrorDetail": {
