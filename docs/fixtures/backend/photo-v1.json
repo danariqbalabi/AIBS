@@ -1,0 +1,15 @@
+{
+  "foods": [{
+    "name": "Nasi + ayam",
+    "consumed": false,
+    "time": null,
+    "ingredients": [
+      {"display_name": "Nasi putih", "certainty": "candidate"},
+      {"display_name": "Ayam", "certainty": "candidate"},
+      {"display_name": "Saus coklat", "certainty": "unknown"}
+    ],
+    "ingredients_complete": false
+  }],
+  "symptoms": [],
+  "questions": ["Saus ini apa?", "Berapa porsi nasinya?"]
+}
