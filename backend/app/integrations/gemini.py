@@ -5,6 +5,7 @@ import httpx
 from pydantic import ValidationError
 
 from app.core.errors import ApiError
+from app.integrations.gemini_schema import draft_generation_schema
 from app.schemas.domain import DraftContent
 
 PROMPT_VERSION = "reviewed_draft_v1"
@@ -54,7 +55,7 @@ class Gemini:
             "contents": [{"role": "user", "parts": parts}],
             "generationConfig": {
                 "responseMimeType": "application/json",
-                "responseJsonSchema": DraftContent.model_json_schema(),
+                "responseJsonSchema": draft_generation_schema(),
                 "temperature": 0,
                 "maxOutputTokens": 8192,
             },
