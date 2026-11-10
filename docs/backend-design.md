@@ -1,6 +1,6 @@
 # Rancangan alur, data, dan API backend
 
-**Status: usulan kontrak v0, belum diimplementasikan.** Baca [pemetaan sumber/gap](backend-requirements.md) sebelum memakai schema. Satu kontrak ini dipakai Kwien dan Miguel; OpenAPI yang dihasilkan implementasi nanti menjadi kontrak executable.
+**Status: baseline rancangan v0 sebelum implementasi.** Source/schema sekarang tersedia; [status aktual](backend-progress.md) dan [OpenAPI](api/openapi.json) menjadi acuan implementasi. Baca [pemetaan sumber/gap](backend-requirements.md); keputusan di bawah masih usulan jika berbeda dari source. Review FE/AI tetap diperlukan.
 
 ## Arsitektur dan batas layanan
 
