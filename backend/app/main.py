@@ -13,6 +13,7 @@ from app.api.v1.history import router as history_router
 from app.api.v1.media import router as media_router
 from app.api.v1.planning import router as planning_router
 from app.api.v1.profiles import router as profile_router
+from app.api.v1.summaries import router as summary_router
 from app.core.auth import JWTVerifier
 from app.core.config import Settings, get_settings
 from app.core.database import make_engine
@@ -46,6 +47,7 @@ def create_app(settings: Settings | None = None, *, engine=None) -> FastAPI:
     app.include_router(planning_router)
     app.include_router(media_router)
     app.include_router(analysis_router)
+    app.include_router(summary_router)
     install_error_handlers(app)
     app.add_middleware(
         CORSMiddleware,
