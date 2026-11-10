@@ -6,8 +6,20 @@ from app.core.database import get_db
 from app.models.entities import Consent
 from app.schemas.domain import AssessmentPatch, ConsentInput, ProfilePatch
 from app.services import profiles
+from app.services.assessment import access_for, evaluate_and_save
 
 router = APIRouter(prefix="/api/v1/me", tags=["profile"])
+
+
+@router.get("/access")
+def get_access(user: User = Depends(get_user), db: Session = Depends(get_db)):
+    profiles.require_basic(db, user.id)
+    return access_for(db, user.id)
+
+
+@router.post("/assessment/evaluate")
+def evaluate_assessment(user: User = Depends(get_user), db: Session = Depends(get_db)):
+    return evaluate_and_save(db, user.id)
 
 
 @router.post("/profile")
