@@ -1,12 +1,14 @@
 import time
 from datetime import UTC, datetime
 
+from pydantic import ValidationError
 from sqlalchemy import func, select
 
 from app.core.errors import ApiError
 from app.integrations.gemini import PROMPT_VERSION
 from app.models.entities import AiRun, Draft, Ingredient, Media, Profile
 from app.repositories.owned import owned
+from app.schemas.domain import DraftContent
 from app.services.drafts import view
 from app.services.profiles import require_basic
 from app.services.records import payload_hash
@@ -42,7 +44,13 @@ def normalize(db, content, payload, feature):
         content.story = None
     else:
         content.story = payload.text
-    return content
+    content.questions = content.questions[:100]
+    try:
+        return DraftContent.model_validate(content.model_dump(mode="json"))
+    except ValidationError as exc:
+        raise ApiError(
+            502, "ai_invalid_output", "Hasil AI belum bisa direview. Isi manual dulu."
+        ) from exc
 
 
 def run(db, owner, payload, feature, settings, provider, storage):
