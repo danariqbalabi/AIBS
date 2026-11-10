@@ -7,6 +7,7 @@ from sqlalchemy import text
 
 from app.api.v1.auth import router as auth_router
 from app.api.v1.catalog import router as catalog_router
+from app.api.v1.drafts import router as draft_router
 from app.api.v1.profiles import router as profile_router
 from app.core.auth import JWTVerifier
 from app.core.config import Settings, get_settings
@@ -32,6 +33,7 @@ def create_app(settings: Settings | None = None, *, engine=None) -> FastAPI:
     app.include_router(auth_router)
     app.include_router(profile_router)
     app.include_router(catalog_router)
+    app.include_router(draft_router)
     install_error_handlers(app)
     app.add_middleware(
         CORSMiddleware,
