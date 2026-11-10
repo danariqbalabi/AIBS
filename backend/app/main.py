@@ -5,6 +5,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
+from app.api.v1.analysis import router as analysis_router
 from app.api.v1.auth import router as auth_router
 from app.api.v1.catalog import router as catalog_router
 from app.api.v1.drafts import router as draft_router
@@ -16,6 +17,7 @@ from app.core.auth import JWTVerifier
 from app.core.config import Settings, get_settings
 from app.core.database import make_engine
 from app.core.errors import ApiError, install_error_handlers
+from app.integrations.gemini import Gemini
 from app.integrations.storage import SupabaseStorage
 
 
@@ -35,6 +37,7 @@ def create_app(settings: Settings | None = None, *, engine=None) -> FastAPI:
     app.state.jwt_verifier = JWTVerifier(str(settings.supabase_url))
     app.state.demo_attempts = {}
     app.state.storage = SupabaseStorage(settings)
+    app.state.gemini = Gemini(settings)
     app.include_router(auth_router)
     app.include_router(profile_router)
     app.include_router(catalog_router)
@@ -42,6 +45,7 @@ def create_app(settings: Settings | None = None, *, engine=None) -> FastAPI:
     app.include_router(history_router)
     app.include_router(planning_router)
     app.include_router(media_router)
+    app.include_router(analysis_router)
     install_error_handlers(app)
     app.add_middleware(
         CORSMiddleware,

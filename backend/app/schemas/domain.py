@@ -80,6 +80,7 @@ class SymptomCard(Contract):
 
 
 class DraftContent(Contract):
+    story: str | None = Field(default=None, max_length=10000)
     foods: list[FoodCard] = Field(default_factory=list, max_length=20)
     symptoms: list[SymptomCard] = Field(default_factory=list, max_length=50)
     questions: list[str] = Field(default_factory=list, max_length=100)
