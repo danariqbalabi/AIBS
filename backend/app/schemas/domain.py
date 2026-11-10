@@ -213,6 +213,18 @@ class ErrorDetail(Contract):
     retryable: bool = False
 
 
+class FoodEventPatch(Contract):
+    kind: Literal["food"]
+    version: int = Field(ge=1)
+    payload: FoodCard
+
+
+class SymptomEventPatch(Contract):
+    kind: Literal["symptom"]
+    version: int = Field(ge=1)
+    payload: SymptomCard
+
+
 class ErrorResponse(Contract):
     error: ErrorDetail
     request_id: str
