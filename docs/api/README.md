@@ -1,5 +1,7 @@
 # Kontrak backend v1
 
+[openapi.json](openapi.json) dihasilkan dari aplikasi dengan `uv run python -m app.export_openapi`, tanpa membaca secret atau menghubungi provider. Swagger `/docs` tersedia pada server terkonfigurasi. Request memakai schema typed; beberapa response/agregasi masih dictionary di OpenAPI, sehingga contoh dan tes integrasi juga perlu ditinjau saat handoff FE.
+
 `contracts.json` dihasilkan dari `backend/app/schemas/domain.py` dengan `uv run python -m app.export_contracts` (dari `backend/`). Fixture `photo-v1.json` dan `journal-v1.json` di `docs/fixtures/backend/` merupakan `DraftContent` valid untuk editor. File `*-draft.json` sebelumnya adalah ilustrasi analisis, bukan payload endpoint.
 
 Kontrak ini baseline implementasi untuk review FE/AI, belum menyatakan persetujuan rekan tim. Bahan dengan ID belum dikenal tetap meminta konfirmasi. `present=false` adalah negasi dan tidak boleh diberi severity. Waktu perkiraan memakai `period` tanpa jam buatan; waktu pasti wajib offset timezone. `confirmed` pada waktu berarti telah ditinjau user, terpisah dari apakah presisinya exact/approximate.
