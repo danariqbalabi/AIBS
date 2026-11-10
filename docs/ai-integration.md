@@ -1,5 +1,9 @@
 # Integrasi AI untuk review draft
 
+Smoke provider nyata dengan `gemini-3.5-flash-lite` berhasil setelah schema generation diproyeksikan ke subset yang diterima Gemini. Schema API Pydantic lengkap sebelumnya menghasilkan HTTP 400; adapter sekarang inline reference lokal dan tidak mengirim default, format UUID, exclusive bound atau batas panjang/jumlah sebagai hint provider. Output tetap divalidasi dengan Pydantic lengkap, termasuk quantity positif, batas jumlah kartu dan waktu. [Referensi GenerationConfig](https://ai.google.dev/api/generate-content).
+
+Contoh sintetis “Siang makan ayam kecap, sore kembung, tapi nggak mual dan nggak muntah” menghasilkan satu makanan, kembung hadir, mual/muntah disangkal, dan JSON lolos validasi. Ini bukti satu smoke adapter/provider, bukan evaluasi semantik menyeluruh atau bukti API end-to-end Supabase/Flutter. API key tetap di `.env` yang tidak terlacak.
+
 Adapter Gemini REST mengirim structured output JSON Schema `DraftContent` melalui backend saja. Pilih ID model tersedia dan isi `GEMINI_MODEL` serta `GEMINI_API_KEY` pada environment lokal/server. Nama model dalam PRD tidak diperlakukan sebagai ID yang pasti tersedia. Tidak ada training model atau AI pada aturan/menu/dashboard.
 
 Analisis hanya pada `POST /api/v1/analysis/photo` dan `/analysis/journal`, dengan `request_id` UUID unik per tindakan eksplisit. Body foto memakai media ID privat, intent dan reference_date; body jurnal memakai text dan reference_date. Timezone dari profil server. Response berisi `analysis_status=needs_confirmation` dan draft yang belum tersimpan sebagai event.
@@ -12,4 +16,4 @@ Output AI divalidasi dan dinormalisasi dengan katalog: UUID dari model tidak dip
 
 Draft jurnal menyimpan `story` milik user untuk melanjutkan/review, tanpa menuliskannya ke log. `ai_runs` hanya metadata fitur/model/prompt, hash request, status, token usage dan latency, tanpa isi jurnal/foto atau secret. Setelah user mengedit draft, simpan memakai endpoint commit yang sama dengan manual; review/edit/simpan tidak memanggil AI.
 
-Hasil invalid -> 502; timeout/unavailable -> 503; kuota -> 429; AI nonaktif -> 403. FE tetap membuka editor manual dan mempertahankan input. Panggilan nyata, biaya/token nyata, evaluasi “nggak mual/nggak muntah”, serta pemilihan model masih pending sampai key/model tersedia.
+Hasil invalid -> 502; timeout/unavailable -> 503; kuota -> 429; AI nonaktif -> 403. FE tetap membuka editor manual dan mempertahankan input. Satu smoke adapter jurnal nyata sudah lulus pada `gemini-3.5-flash-lite`: 297 input tokens, 617 output tokens, sekitar 7 detik pada panggilan tersebut. Angka ini bukan benchmark/estimasi biaya seluruh aplikasi. Evaluasi menyeluruh Miguel, foto makanan nyata dan pengujian endpoint terautentikasi dengan Supabase/Flutter masih pending.
