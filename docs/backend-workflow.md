@@ -1,6 +1,6 @@
 # Alur kerja Danar dan rencana commit backend
 
-**Mulai dari kontrak + profil/menu, tuntaskan catat manual, lalu integrasikan AI.** Jangan menunggu AI untuk membuat penyimpanan. Rencana dibuat 10 November 2026 WIB berdasarkan [kebutuhan](backend-requirements.md) dan [rancangan API/data](backend-design.md). Backend belum diimplementasikan; daftar commit fitur di bawah adalah rencana, bukan riwayat kerja yang sudah selesai.
+**Mulai dari kontrak + profil/menu, tuntaskan catat manual, lalu integrasikan AI.** Rencana awal dibuat 10 November 2026 WIB berdasarkan [kebutuhan](backend-requirements.md) dan [rancangan API/data](backend-design.md). Daftar di bawah adalah baseline rencana; implementasi/branch/PR serta batas verifikasi aktual ada di [status backend](backend-progress.md).
 
 ## Cara menjalankan pekerjaan sehari-hari
 

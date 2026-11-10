@@ -1,0 +1,3335 @@
+{
+  "EventTime": {
+    "additionalProperties": false,
+    "properties": {
+      "date": {
+        "format": "date",
+        "title": "Date",
+        "type": "string"
+      },
+      "occurred_at": {
+        "anyOf": [
+          {
+            "format": "date-time",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Occurred At"
+      },
+      "period": {
+        "anyOf": [
+          {
+            "enum": [
+              "morning",
+              "midday",
+              "late_afternoon",
+              "evening",
+              "night"
+            ],
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Period"
+      },
+      "precision": {
+        "enum": [
+          "exact",
+          "approximate"
+        ],
+        "title": "Precision",
+        "type": "string"
+      },
+      "confirmed": {
+        "default": false,
+        "title": "Confirmed",
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "date",
+      "precision"
+    ],
+    "title": "EventTime",
+    "type": "object"
+  },
+  "IngredientInput": {
+    "additionalProperties": false,
+    "properties": {
+      "ingredient_id": {
+        "anyOf": [
+          {
+            "format": "uuid",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Ingredient Id"
+      },
+      "display_name": {
+        "maxLength": 100,
+        "minLength": 1,
+        "title": "Display Name",
+        "type": "string"
+      },
+      "quantity": {
+        "anyOf": [
+          {
+            "exclusiveMinimum": 0.0,
+            "maximum": 10000.0,
+            "type": "number"
+          },
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Quantity"
+      },
+      "unit": {
+        "anyOf": [
+          {
+            "maxLength": 30,
+            "minLength": 1,
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Unit"
+      },
+      "certainty": {
+        "default": "unknown",
+        "enum": [
+          "candidate",
+          "confirmed",
+          "unknown"
+        ],
+        "title": "Certainty",
+        "type": "string"
+      }
+    },
+    "required": [
+      "display_name"
+    ],
+    "title": "IngredientInput",
+    "type": "object"
+  },
+  "FoodCard": {
+    "$defs": {
+      "EventTime": {
+        "additionalProperties": false,
+        "properties": {
+          "date": {
+            "format": "date",
+            "title": "Date",
+            "type": "string"
+          },
+          "occurred_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Occurred At"
+          },
+          "period": {
+            "anyOf": [
+              {
+                "enum": [
+                  "morning",
+                  "midday",
+                  "late_afternoon",
+                  "evening",
+                  "night"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Period"
+          },
+          "precision": {
+            "enum": [
+              "exact",
+              "approximate"
+            ],
+            "title": "Precision",
+            "type": "string"
+          },
+          "confirmed": {
+            "default": false,
+            "title": "Confirmed",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "date",
+          "precision"
+        ],
+        "title": "EventTime",
+        "type": "object"
+      },
+      "IngredientInput": {
+        "additionalProperties": false,
+        "properties": {
+          "ingredient_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Ingredient Id"
+          },
+          "display_name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Display Name",
+            "type": "string"
+          },
+          "quantity": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "maximum": 10000.0,
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Quantity"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "maxLength": 30,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Unit"
+          },
+          "certainty": {
+            "default": "unknown",
+            "enum": [
+              "candidate",
+              "confirmed",
+              "unknown"
+            ],
+            "title": "Certainty",
+            "type": "string"
+          }
+        },
+        "required": [
+          "display_name"
+        ],
+        "title": "IngredientInput",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "properties": {
+      "name": {
+        "maxLength": 160,
+        "minLength": 1,
+        "title": "Name",
+        "type": "string"
+      },
+      "consumed": {
+        "default": false,
+        "title": "Consumed",
+        "type": "boolean"
+      },
+      "time": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/EventTime"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "ingredients": {
+        "items": {
+          "$ref": "#/$defs/IngredientInput"
+        },
+        "maxItems": 100,
+        "title": "Ingredients",
+        "type": "array"
+      },
+      "ingredients_complete": {
+        "default": false,
+        "title": "Ingredients Complete",
+        "type": "boolean"
+      },
+      "notes": {
+        "anyOf": [
+          {
+            "maxLength": 2000,
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Notes"
+      }
+    },
+    "required": [
+      "name"
+    ],
+    "title": "FoodCard",
+    "type": "object"
+  },
+  "SymptomCard": {
+    "$defs": {
+      "EventTime": {
+        "additionalProperties": false,
+        "properties": {
+          "date": {
+            "format": "date",
+            "title": "Date",
+            "type": "string"
+          },
+          "occurred_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Occurred At"
+          },
+          "period": {
+            "anyOf": [
+              {
+                "enum": [
+                  "morning",
+                  "midday",
+                  "late_afternoon",
+                  "evening",
+                  "night"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Period"
+          },
+          "precision": {
+            "enum": [
+              "exact",
+              "approximate"
+            ],
+            "title": "Precision",
+            "type": "string"
+          },
+          "confirmed": {
+            "default": false,
+            "title": "Confirmed",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "date",
+          "precision"
+        ],
+        "title": "EventTime",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "properties": {
+      "code": {
+        "enum": [
+          "pain",
+          "bloating",
+          "nausea",
+          "vomiting",
+          "diarrhea",
+          "constipation",
+          "bowel"
+        ],
+        "title": "Code",
+        "type": "string"
+      },
+      "present": {
+        "title": "Present",
+        "type": "boolean"
+      },
+      "severity": {
+        "anyOf": [
+          {
+            "maximum": 5,
+            "minimum": 1,
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Severity"
+      },
+      "time": {
+        "$ref": "#/$defs/EventTime"
+      },
+      "bristol_type": {
+        "anyOf": [
+          {
+            "maximum": 7,
+            "minimum": 1,
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Bristol Type"
+      },
+      "stress": {
+        "anyOf": [
+          {
+            "enum": [
+              "low",
+              "medium",
+              "high",
+              "unknown"
+            ],
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Stress"
+      },
+      "notes": {
+        "anyOf": [
+          {
+            "maxLength": 2000,
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Notes"
+      },
+      "linked_food_index": {
+        "anyOf": [
+          {
+            "minimum": 0,
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Linked Food Index"
+      }
+    },
+    "required": [
+      "code",
+      "present",
+      "time"
+    ],
+    "title": "SymptomCard",
+    "type": "object"
+  },
+  "DraftContent": {
+    "$defs": {
+      "EventTime": {
+        "additionalProperties": false,
+        "properties": {
+          "date": {
+            "format": "date",
+            "title": "Date",
+            "type": "string"
+          },
+          "occurred_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Occurred At"
+          },
+          "period": {
+            "anyOf": [
+              {
+                "enum": [
+                  "morning",
+                  "midday",
+                  "late_afternoon",
+                  "evening",
+                  "night"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Period"
+          },
+          "precision": {
+            "enum": [
+              "exact",
+              "approximate"
+            ],
+            "title": "Precision",
+            "type": "string"
+          },
+          "confirmed": {
+            "default": false,
+            "title": "Confirmed",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "date",
+          "precision"
+        ],
+        "title": "EventTime",
+        "type": "object"
+      },
+      "FoodCard": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "consumed": {
+            "default": false,
+            "title": "Consumed",
+            "type": "boolean"
+          },
+          "time": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/EventTime"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "ingredients": {
+            "items": {
+              "$ref": "#/$defs/IngredientInput"
+            },
+            "maxItems": 100,
+            "title": "Ingredients",
+            "type": "array"
+          },
+          "ingredients_complete": {
+            "default": false,
+            "title": "Ingredients Complete",
+            "type": "boolean"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Notes"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "FoodCard",
+        "type": "object"
+      },
+      "IngredientInput": {
+        "additionalProperties": false,
+        "properties": {
+          "ingredient_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Ingredient Id"
+          },
+          "display_name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Display Name",
+            "type": "string"
+          },
+          "quantity": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "maximum": 10000.0,
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Quantity"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "maxLength": 30,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Unit"
+          },
+          "certainty": {
+            "default": "unknown",
+            "enum": [
+              "candidate",
+              "confirmed",
+              "unknown"
+            ],
+            "title": "Certainty",
+            "type": "string"
+          }
+        },
+        "required": [
+          "display_name"
+        ],
+        "title": "IngredientInput",
+        "type": "object"
+      },
+      "SymptomCard": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "enum": [
+              "pain",
+              "bloating",
+              "nausea",
+              "vomiting",
+              "diarrhea",
+              "constipation",
+              "bowel"
+            ],
+            "title": "Code",
+            "type": "string"
+          },
+          "present": {
+            "title": "Present",
+            "type": "boolean"
+          },
+          "severity": {
+            "anyOf": [
+              {
+                "maximum": 5,
+                "minimum": 1,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Severity"
+          },
+          "time": {
+            "$ref": "#/$defs/EventTime"
+          },
+          "bristol_type": {
+            "anyOf": [
+              {
+                "maximum": 7,
+                "minimum": 1,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Bristol Type"
+          },
+          "stress": {
+            "anyOf": [
+              {
+                "enum": [
+                  "low",
+                  "medium",
+                  "high",
+                  "unknown"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Stress"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Notes"
+          },
+          "linked_food_index": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Linked Food Index"
+          }
+        },
+        "required": [
+          "code",
+          "present",
+          "time"
+        ],
+        "title": "SymptomCard",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "properties": {
+      "story": {
+        "anyOf": [
+          {
+            "maxLength": 10000,
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Story"
+      },
+      "foods": {
+        "items": {
+          "$ref": "#/$defs/FoodCard"
+        },
+        "maxItems": 20,
+        "title": "Foods",
+        "type": "array"
+      },
+      "symptoms": {
+        "items": {
+          "$ref": "#/$defs/SymptomCard"
+        },
+        "maxItems": 50,
+        "title": "Symptoms",
+        "type": "array"
+      },
+      "questions": {
+        "items": {
+          "type": "string"
+        },
+        "maxItems": 100,
+        "title": "Questions",
+        "type": "array"
+      }
+    },
+    "title": "DraftContent",
+    "type": "object"
+  },
+  "DraftCreate": {
+    "$defs": {
+      "DraftContent": {
+        "additionalProperties": false,
+        "properties": {
+          "story": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Story"
+          },
+          "foods": {
+            "items": {
+              "$ref": "#/$defs/FoodCard"
+            },
+            "maxItems": 20,
+            "title": "Foods",
+            "type": "array"
+          },
+          "symptoms": {
+            "items": {
+              "$ref": "#/$defs/SymptomCard"
+            },
+            "maxItems": 50,
+            "title": "Symptoms",
+            "type": "array"
+          },
+          "questions": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 100,
+            "title": "Questions",
+            "type": "array"
+          }
+        },
+        "title": "DraftContent",
+        "type": "object"
+      },
+      "EventTime": {
+        "additionalProperties": false,
+        "properties": {
+          "date": {
+            "format": "date",
+            "title": "Date",
+            "type": "string"
+          },
+          "occurred_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Occurred At"
+          },
+          "period": {
+            "anyOf": [
+              {
+                "enum": [
+                  "morning",
+                  "midday",
+                  "late_afternoon",
+                  "evening",
+                  "night"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Period"
+          },
+          "precision": {
+            "enum": [
+              "exact",
+              "approximate"
+            ],
+            "title": "Precision",
+            "type": "string"
+          },
+          "confirmed": {
+            "default": false,
+            "title": "Confirmed",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "date",
+          "precision"
+        ],
+        "title": "EventTime",
+        "type": "object"
+      },
+      "FoodCard": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "consumed": {
+            "default": false,
+            "title": "Consumed",
+            "type": "boolean"
+          },
+          "time": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/EventTime"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "ingredients": {
+            "items": {
+              "$ref": "#/$defs/IngredientInput"
+            },
+            "maxItems": 100,
+            "title": "Ingredients",
+            "type": "array"
+          },
+          "ingredients_complete": {
+            "default": false,
+            "title": "Ingredients Complete",
+            "type": "boolean"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Notes"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "FoodCard",
+        "type": "object"
+      },
+      "IngredientInput": {
+        "additionalProperties": false,
+        "properties": {
+          "ingredient_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Ingredient Id"
+          },
+          "display_name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Display Name",
+            "type": "string"
+          },
+          "quantity": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "maximum": 10000.0,
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Quantity"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "maxLength": 30,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Unit"
+          },
+          "certainty": {
+            "default": "unknown",
+            "enum": [
+              "candidate",
+              "confirmed",
+              "unknown"
+            ],
+            "title": "Certainty",
+            "type": "string"
+          }
+        },
+        "required": [
+          "display_name"
+        ],
+        "title": "IngredientInput",
+        "type": "object"
+      },
+      "SymptomCard": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "enum": [
+              "pain",
+              "bloating",
+              "nausea",
+              "vomiting",
+              "diarrhea",
+              "constipation",
+              "bowel"
+            ],
+            "title": "Code",
+            "type": "string"
+          },
+          "present": {
+            "title": "Present",
+            "type": "boolean"
+          },
+          "severity": {
+            "anyOf": [
+              {
+                "maximum": 5,
+                "minimum": 1,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Severity"
+          },
+          "time": {
+            "$ref": "#/$defs/EventTime"
+          },
+          "bristol_type": {
+            "anyOf": [
+              {
+                "maximum": 7,
+                "minimum": 1,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Bristol Type"
+          },
+          "stress": {
+            "anyOf": [
+              {
+                "enum": [
+                  "low",
+                  "medium",
+                  "high",
+                  "unknown"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Stress"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Notes"
+          },
+          "linked_food_index": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Linked Food Index"
+          }
+        },
+        "required": [
+          "code",
+          "present",
+          "time"
+        ],
+        "title": "SymptomCard",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "properties": {
+      "intent": {
+        "enum": [
+          "before_meal",
+          "consumed",
+          "journal"
+        ],
+        "title": "Intent",
+        "type": "string"
+      },
+      "content": {
+        "$ref": "#/$defs/DraftContent"
+      }
+    },
+    "required": [
+      "intent",
+      "content"
+    ],
+    "title": "DraftCreate",
+    "type": "object"
+  },
+  "DraftPatch": {
+    "$defs": {
+      "DraftContent": {
+        "additionalProperties": false,
+        "properties": {
+          "story": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Story"
+          },
+          "foods": {
+            "items": {
+              "$ref": "#/$defs/FoodCard"
+            },
+            "maxItems": 20,
+            "title": "Foods",
+            "type": "array"
+          },
+          "symptoms": {
+            "items": {
+              "$ref": "#/$defs/SymptomCard"
+            },
+            "maxItems": 50,
+            "title": "Symptoms",
+            "type": "array"
+          },
+          "questions": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 100,
+            "title": "Questions",
+            "type": "array"
+          }
+        },
+        "title": "DraftContent",
+        "type": "object"
+      },
+      "EventTime": {
+        "additionalProperties": false,
+        "properties": {
+          "date": {
+            "format": "date",
+            "title": "Date",
+            "type": "string"
+          },
+          "occurred_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Occurred At"
+          },
+          "period": {
+            "anyOf": [
+              {
+                "enum": [
+                  "morning",
+                  "midday",
+                  "late_afternoon",
+                  "evening",
+                  "night"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Period"
+          },
+          "precision": {
+            "enum": [
+              "exact",
+              "approximate"
+            ],
+            "title": "Precision",
+            "type": "string"
+          },
+          "confirmed": {
+            "default": false,
+            "title": "Confirmed",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "date",
+          "precision"
+        ],
+        "title": "EventTime",
+        "type": "object"
+      },
+      "FoodCard": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "consumed": {
+            "default": false,
+            "title": "Consumed",
+            "type": "boolean"
+          },
+          "time": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/EventTime"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "ingredients": {
+            "items": {
+              "$ref": "#/$defs/IngredientInput"
+            },
+            "maxItems": 100,
+            "title": "Ingredients",
+            "type": "array"
+          },
+          "ingredients_complete": {
+            "default": false,
+            "title": "Ingredients Complete",
+            "type": "boolean"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Notes"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "FoodCard",
+        "type": "object"
+      },
+      "IngredientInput": {
+        "additionalProperties": false,
+        "properties": {
+          "ingredient_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Ingredient Id"
+          },
+          "display_name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Display Name",
+            "type": "string"
+          },
+          "quantity": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "maximum": 10000.0,
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Quantity"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "maxLength": 30,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Unit"
+          },
+          "certainty": {
+            "default": "unknown",
+            "enum": [
+              "candidate",
+              "confirmed",
+              "unknown"
+            ],
+            "title": "Certainty",
+            "type": "string"
+          }
+        },
+        "required": [
+          "display_name"
+        ],
+        "title": "IngredientInput",
+        "type": "object"
+      },
+      "SymptomCard": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "enum": [
+              "pain",
+              "bloating",
+              "nausea",
+              "vomiting",
+              "diarrhea",
+              "constipation",
+              "bowel"
+            ],
+            "title": "Code",
+            "type": "string"
+          },
+          "present": {
+            "title": "Present",
+            "type": "boolean"
+          },
+          "severity": {
+            "anyOf": [
+              {
+                "maximum": 5,
+                "minimum": 1,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Severity"
+          },
+          "time": {
+            "$ref": "#/$defs/EventTime"
+          },
+          "bristol_type": {
+            "anyOf": [
+              {
+                "maximum": 7,
+                "minimum": 1,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Bristol Type"
+          },
+          "stress": {
+            "anyOf": [
+              {
+                "enum": [
+                  "low",
+                  "medium",
+                  "high",
+                  "unknown"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Stress"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Notes"
+          },
+          "linked_food_index": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Linked Food Index"
+          }
+        },
+        "required": [
+          "code",
+          "present",
+          "time"
+        ],
+        "title": "SymptomCard",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "properties": {
+      "version": {
+        "minimum": 1,
+        "title": "Version",
+        "type": "integer"
+      },
+      "intent": {
+        "enum": [
+          "before_meal",
+          "consumed",
+          "journal"
+        ],
+        "title": "Intent",
+        "type": "string"
+      },
+      "content": {
+        "$ref": "#/$defs/DraftContent"
+      }
+    },
+    "required": [
+      "version",
+      "intent",
+      "content"
+    ],
+    "title": "DraftPatch",
+    "type": "object"
+  },
+  "CommitDraft": {
+    "additionalProperties": false,
+    "properties": {
+      "version": {
+        "minimum": 1,
+        "title": "Version",
+        "type": "integer"
+      },
+      "confirmed": {
+        "const": true,
+        "title": "Confirmed",
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "version",
+      "confirmed"
+    ],
+    "title": "CommitDraft",
+    "type": "object"
+  },
+  "PortionLimit": {
+    "additionalProperties": false,
+    "properties": {
+      "ingredient_id": {
+        "format": "uuid",
+        "title": "Ingredient Id",
+        "type": "string"
+      },
+      "quantity": {
+        "anyOf": [
+          {
+            "exclusiveMinimum": 0.0,
+            "maximum": 10000.0,
+            "type": "number"
+          },
+          {
+            "type": "string"
+          }
+        ],
+        "title": "Quantity"
+      },
+      "unit": {
+        "maxLength": 30,
+        "minLength": 1,
+        "title": "Unit",
+        "type": "string"
+      }
+    },
+    "required": [
+      "ingredient_id",
+      "quantity",
+      "unit"
+    ],
+    "title": "PortionLimit",
+    "type": "object"
+  },
+  "DietProfile": {
+    "$defs": {
+      "PortionLimit": {
+        "additionalProperties": false,
+        "properties": {
+          "ingredient_id": {
+            "format": "uuid",
+            "title": "Ingredient Id",
+            "type": "string"
+          },
+          "quantity": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "maximum": 10000.0,
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Quantity"
+          },
+          "unit": {
+            "maxLength": 30,
+            "minLength": 1,
+            "title": "Unit",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ingredient_id",
+          "quantity",
+          "unit"
+        ],
+        "title": "PortionLimit",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "properties": {
+      "directive": {
+        "default": "none",
+        "enum": [
+          "low_fodmap",
+          "low_fat",
+          "high_fiber",
+          "other",
+          "none"
+        ],
+        "title": "Directive",
+        "type": "string"
+      },
+      "phase": {
+        "default": "unknown",
+        "enum": [
+          "elimination",
+          "reintroduction",
+          "personalization",
+          "unknown"
+        ],
+        "title": "Phase",
+        "type": "string"
+      },
+      "allergies": {
+        "items": {
+          "format": "uuid",
+          "type": "string"
+        },
+        "maxItems": 100,
+        "title": "Allergies",
+        "type": "array"
+      },
+      "avoided_ingredients": {
+        "items": {
+          "format": "uuid",
+          "type": "string"
+        },
+        "maxItems": 100,
+        "title": "Avoided Ingredients",
+        "type": "array"
+      },
+      "portion_limits": {
+        "items": {
+          "$ref": "#/$defs/PortionLimit"
+        },
+        "maxItems": 100,
+        "title": "Portion Limits",
+        "type": "array"
+      },
+      "tolerances": {
+        "items": {
+          "format": "uuid",
+          "type": "string"
+        },
+        "maxItems": 100,
+        "title": "Tolerances",
+        "type": "array"
+      },
+      "budget_rupiah": {
+        "anyOf": [
+          {
+            "exclusiveMinimum": 0,
+            "maximum": 10000000,
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Budget Rupiah"
+      },
+      "spicy": {
+        "anyOf": [
+          {
+            "enum": [
+              "none",
+              "little",
+              "medium",
+              "hot"
+            ],
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Spicy"
+      },
+      "preferences": {
+        "items": {
+          "type": "string"
+        },
+        "maxItems": 30,
+        "title": "Preferences",
+        "type": "array"
+      }
+    },
+    "title": "DietProfile",
+    "type": "object"
+  },
+  "ProfilePatch": {
+    "$defs": {
+      "DietProfile": {
+        "additionalProperties": false,
+        "properties": {
+          "directive": {
+            "default": "none",
+            "enum": [
+              "low_fodmap",
+              "low_fat",
+              "high_fiber",
+              "other",
+              "none"
+            ],
+            "title": "Directive",
+            "type": "string"
+          },
+          "phase": {
+            "default": "unknown",
+            "enum": [
+              "elimination",
+              "reintroduction",
+              "personalization",
+              "unknown"
+            ],
+            "title": "Phase",
+            "type": "string"
+          },
+          "allergies": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 100,
+            "title": "Allergies",
+            "type": "array"
+          },
+          "avoided_ingredients": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 100,
+            "title": "Avoided Ingredients",
+            "type": "array"
+          },
+          "portion_limits": {
+            "items": {
+              "$ref": "#/$defs/PortionLimit"
+            },
+            "maxItems": 100,
+            "title": "Portion Limits",
+            "type": "array"
+          },
+          "tolerances": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 100,
+            "title": "Tolerances",
+            "type": "array"
+          },
+          "budget_rupiah": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0,
+                "maximum": 10000000,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Budget Rupiah"
+          },
+          "spicy": {
+            "anyOf": [
+              {
+                "enum": [
+                  "none",
+                  "little",
+                  "medium",
+                  "hot"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Spicy"
+          },
+          "preferences": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 30,
+            "title": "Preferences",
+            "type": "array"
+          }
+        },
+        "title": "DietProfile",
+        "type": "object"
+      },
+      "PortionLimit": {
+        "additionalProperties": false,
+        "properties": {
+          "ingredient_id": {
+            "format": "uuid",
+            "title": "Ingredient Id",
+            "type": "string"
+          },
+          "quantity": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "maximum": 10000.0,
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Quantity"
+          },
+          "unit": {
+            "maxLength": 30,
+            "minLength": 1,
+            "title": "Unit",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ingredient_id",
+          "quantity",
+          "unit"
+        ],
+        "title": "PortionLimit",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "properties": {
+      "version": {
+        "minimum": 1,
+        "title": "Version",
+        "type": "integer"
+      },
+      "display_name": {
+        "anyOf": [
+          {
+            "maxLength": 80,
+            "minLength": 1,
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Display Name"
+      },
+      "age_band": {
+        "anyOf": [
+          {
+            "enum": [
+              "under_18",
+              "18_29",
+              "30_39",
+              "40_49",
+              "50_plus"
+            ],
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Age Band"
+      },
+      "diagnosis_reported": {
+        "anyOf": [
+          {
+            "enum": [
+              "yes",
+              "no",
+              "unknown"
+            ],
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Diagnosis Reported"
+      },
+      "clinician_guidance": {
+        "anyOf": [
+          {
+            "enum": [
+              "yes",
+              "no",
+              "unknown"
+            ],
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Clinician Guidance"
+      },
+      "timezone": {
+        "anyOf": [
+          {
+            "maxLength": 60,
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Timezone"
+      },
+      "diet": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/DietProfile"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      }
+    },
+    "required": [
+      "version"
+    ],
+    "title": "ProfilePatch",
+    "type": "object"
+  },
+  "ConsentInput": {
+    "additionalProperties": false,
+    "properties": {
+      "basic": {
+        "title": "Basic",
+        "type": "boolean"
+      },
+      "ai": {
+        "title": "Ai",
+        "type": "boolean"
+      },
+      "policy_version": {
+        "const": "demo-v1",
+        "default": "demo-v1",
+        "title": "Policy Version",
+        "type": "string"
+      }
+    },
+    "required": [
+      "basic",
+      "ai"
+    ],
+    "title": "ConsentInput",
+    "type": "object"
+  },
+  "AssessmentAnswers": {
+    "additionalProperties": false,
+    "properties": {
+      "severe_active": {
+        "anyOf": [
+          {
+            "enum": [
+              "yes",
+              "no",
+              "unknown"
+            ],
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Severe Active"
+      },
+      "bleeding": {
+        "anyOf": [
+          {
+            "enum": [
+              "yes",
+              "no",
+              "unknown"
+            ],
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Bleeding"
+      },
+      "bleeding_active": {
+        "anyOf": [
+          {
+            "enum": [
+              "yes",
+              "no",
+              "unknown"
+            ],
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Bleeding Active"
+      },
+      "weight_loss": {
+        "anyOf": [
+          {
+            "enum": [
+              "yes",
+              "no",
+              "unknown"
+            ],
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Weight Loss"
+      },
+      "anemia": {
+        "anyOf": [
+          {
+            "enum": [
+              "yes",
+              "no",
+              "unknown"
+            ],
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Anemia"
+      },
+      "family_history": {
+        "anyOf": [
+          {
+            "enum": [
+              "yes",
+              "no",
+              "unknown"
+            ],
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Family History"
+      },
+      "q1": {
+        "anyOf": [
+          {
+            "enum": [
+              "yes",
+              "no",
+              "unknown"
+            ],
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Q1"
+      },
+      "q2_days": {
+        "anyOf": [
+          {
+            "maximum": 31,
+            "minimum": 0,
+            "type": "integer"
+          },
+          {
+            "const": "unknown",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Q2 Days"
+      },
+      "q2_band": {
+        "anyOf": [
+          {
+            "enum": [
+              "under_1",
+              "1_2",
+              "3_4",
+              "5_plus",
+              "unknown"
+            ],
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Q2 Band"
+      },
+      "q3_months": {
+        "anyOf": [
+          {
+            "maximum": 1200,
+            "minimum": 0,
+            "type": "integer"
+          },
+          {
+            "const": "unknown",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Q3 Months"
+      },
+      "q4": {
+        "anyOf": [
+          {
+            "enum": [
+              "yes",
+              "no",
+              "unknown"
+            ],
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Q4"
+      },
+      "q5": {
+        "anyOf": [
+          {
+            "enum": [
+              "yes",
+              "no",
+              "unknown"
+            ],
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Q5"
+      },
+      "q6": {
+        "anyOf": [
+          {
+            "enum": [
+              "yes",
+              "no",
+              "unknown"
+            ],
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Q6"
+      }
+    },
+    "title": "AssessmentAnswers",
+    "type": "object"
+  },
+  "AssessmentPatch": {
+    "$defs": {
+      "AssessmentAnswers": {
+        "additionalProperties": false,
+        "properties": {
+          "severe_active": {
+            "anyOf": [
+              {
+                "enum": [
+                  "yes",
+                  "no",
+                  "unknown"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Severe Active"
+          },
+          "bleeding": {
+            "anyOf": [
+              {
+                "enum": [
+                  "yes",
+                  "no",
+                  "unknown"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Bleeding"
+          },
+          "bleeding_active": {
+            "anyOf": [
+              {
+                "enum": [
+                  "yes",
+                  "no",
+                  "unknown"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Bleeding Active"
+          },
+          "weight_loss": {
+            "anyOf": [
+              {
+                "enum": [
+                  "yes",
+                  "no",
+                  "unknown"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Weight Loss"
+          },
+          "anemia": {
+            "anyOf": [
+              {
+                "enum": [
+                  "yes",
+                  "no",
+                  "unknown"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Anemia"
+          },
+          "family_history": {
+            "anyOf": [
+              {
+                "enum": [
+                  "yes",
+                  "no",
+                  "unknown"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Family History"
+          },
+          "q1": {
+            "anyOf": [
+              {
+                "enum": [
+                  "yes",
+                  "no",
+                  "unknown"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Q1"
+          },
+          "q2_days": {
+            "anyOf": [
+              {
+                "maximum": 31,
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "const": "unknown",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Q2 Days"
+          },
+          "q2_band": {
+            "anyOf": [
+              {
+                "enum": [
+                  "under_1",
+                  "1_2",
+                  "3_4",
+                  "5_plus",
+                  "unknown"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Q2 Band"
+          },
+          "q3_months": {
+            "anyOf": [
+              {
+                "maximum": 1200,
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "const": "unknown",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Q3 Months"
+          },
+          "q4": {
+            "anyOf": [
+              {
+                "enum": [
+                  "yes",
+                  "no",
+                  "unknown"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Q4"
+          },
+          "q5": {
+            "anyOf": [
+              {
+                "enum": [
+                  "yes",
+                  "no",
+                  "unknown"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Q5"
+          },
+          "q6": {
+            "anyOf": [
+              {
+                "enum": [
+                  "yes",
+                  "no",
+                  "unknown"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Q6"
+          }
+        },
+        "title": "AssessmentAnswers",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "properties": {
+      "version": {
+        "minimum": 1,
+        "title": "Version",
+        "type": "integer"
+      },
+      "answers": {
+        "$ref": "#/$defs/AssessmentAnswers"
+      }
+    },
+    "required": [
+      "version",
+      "answers"
+    ],
+    "title": "AssessmentPatch",
+    "type": "object"
+  },
+  "FoodCheckInput": {
+    "$defs": {
+      "IngredientInput": {
+        "additionalProperties": false,
+        "properties": {
+          "ingredient_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Ingredient Id"
+          },
+          "display_name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Display Name",
+            "type": "string"
+          },
+          "quantity": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "maximum": 10000.0,
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Quantity"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "maxLength": 30,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Unit"
+          },
+          "certainty": {
+            "default": "unknown",
+            "enum": [
+              "candidate",
+              "confirmed",
+              "unknown"
+            ],
+            "title": "Certainty",
+            "type": "string"
+          }
+        },
+        "required": [
+          "display_name"
+        ],
+        "title": "IngredientInput",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "properties": {
+      "profile_version": {
+        "minimum": 1,
+        "title": "Profile Version",
+        "type": "integer"
+      },
+      "ingredients": {
+        "items": {
+          "$ref": "#/$defs/IngredientInput"
+        },
+        "maxItems": 100,
+        "title": "Ingredients",
+        "type": "array"
+      },
+      "ingredients_complete": {
+        "default": false,
+        "title": "Ingredients Complete",
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "profile_version",
+      "ingredients"
+    ],
+    "title": "FoodCheckInput",
+    "type": "object"
+  },
+  "PhotoAnalysisInput": {
+    "additionalProperties": false,
+    "properties": {
+      "request_id": {
+        "format": "uuid",
+        "title": "Request Id",
+        "type": "string"
+      },
+      "media_id": {
+        "format": "uuid",
+        "title": "Media Id",
+        "type": "string"
+      },
+      "intent": {
+        "enum": [
+          "before_meal",
+          "consumed"
+        ],
+        "title": "Intent",
+        "type": "string"
+      },
+      "reference_date": {
+        "format": "date",
+        "title": "Reference Date",
+        "type": "string"
+      }
+    },
+    "required": [
+      "request_id",
+      "media_id",
+      "intent",
+      "reference_date"
+    ],
+    "title": "PhotoAnalysisInput",
+    "type": "object"
+  },
+  "JournalAnalysisInput": {
+    "additionalProperties": false,
+    "properties": {
+      "request_id": {
+        "format": "uuid",
+        "title": "Request Id",
+        "type": "string"
+      },
+      "text": {
+        "maxLength": 10000,
+        "minLength": 1,
+        "title": "Text",
+        "type": "string"
+      },
+      "reference_date": {
+        "format": "date",
+        "title": "Reference Date",
+        "type": "string"
+      }
+    },
+    "required": [
+      "request_id",
+      "text",
+      "reference_date"
+    ],
+    "title": "JournalAnalysisInput",
+    "type": "object"
+  },
+  "ErrorDetail": {
+    "additionalProperties": false,
+    "properties": {
+      "code": {
+        "title": "Code",
+        "type": "string"
+      },
+      "message": {
+        "title": "Message",
+        "type": "string"
+      },
+      "fields": {
+        "items": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "title": "Fields",
+        "type": "array"
+      },
+      "retryable": {
+        "default": false,
+        "title": "Retryable",
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "code",
+      "message"
+    ],
+    "title": "ErrorDetail",
+    "type": "object"
+  },
+  "FoodEventPatch": {
+    "$defs": {
+      "EventTime": {
+        "additionalProperties": false,
+        "properties": {
+          "date": {
+            "format": "date",
+            "title": "Date",
+            "type": "string"
+          },
+          "occurred_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Occurred At"
+          },
+          "period": {
+            "anyOf": [
+              {
+                "enum": [
+                  "morning",
+                  "midday",
+                  "late_afternoon",
+                  "evening",
+                  "night"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Period"
+          },
+          "precision": {
+            "enum": [
+              "exact",
+              "approximate"
+            ],
+            "title": "Precision",
+            "type": "string"
+          },
+          "confirmed": {
+            "default": false,
+            "title": "Confirmed",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "date",
+          "precision"
+        ],
+        "title": "EventTime",
+        "type": "object"
+      },
+      "FoodCard": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "consumed": {
+            "default": false,
+            "title": "Consumed",
+            "type": "boolean"
+          },
+          "time": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/EventTime"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "ingredients": {
+            "items": {
+              "$ref": "#/$defs/IngredientInput"
+            },
+            "maxItems": 100,
+            "title": "Ingredients",
+            "type": "array"
+          },
+          "ingredients_complete": {
+            "default": false,
+            "title": "Ingredients Complete",
+            "type": "boolean"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Notes"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "FoodCard",
+        "type": "object"
+      },
+      "IngredientInput": {
+        "additionalProperties": false,
+        "properties": {
+          "ingredient_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Ingredient Id"
+          },
+          "display_name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Display Name",
+            "type": "string"
+          },
+          "quantity": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "maximum": 10000.0,
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Quantity"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "maxLength": 30,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Unit"
+          },
+          "certainty": {
+            "default": "unknown",
+            "enum": [
+              "candidate",
+              "confirmed",
+              "unknown"
+            ],
+            "title": "Certainty",
+            "type": "string"
+          }
+        },
+        "required": [
+          "display_name"
+        ],
+        "title": "IngredientInput",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "properties": {
+      "kind": {
+        "const": "food",
+        "title": "Kind",
+        "type": "string"
+      },
+      "version": {
+        "minimum": 1,
+        "title": "Version",
+        "type": "integer"
+      },
+      "payload": {
+        "$ref": "#/$defs/FoodCard"
+      }
+    },
+    "required": [
+      "kind",
+      "version",
+      "payload"
+    ],
+    "title": "FoodEventPatch",
+    "type": "object"
+  },
+  "SymptomEventPatch": {
+    "$defs": {
+      "EventTime": {
+        "additionalProperties": false,
+        "properties": {
+          "date": {
+            "format": "date",
+            "title": "Date",
+            "type": "string"
+          },
+          "occurred_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Occurred At"
+          },
+          "period": {
+            "anyOf": [
+              {
+                "enum": [
+                  "morning",
+                  "midday",
+                  "late_afternoon",
+                  "evening",
+                  "night"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Period"
+          },
+          "precision": {
+            "enum": [
+              "exact",
+              "approximate"
+            ],
+            "title": "Precision",
+            "type": "string"
+          },
+          "confirmed": {
+            "default": false,
+            "title": "Confirmed",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "date",
+          "precision"
+        ],
+        "title": "EventTime",
+        "type": "object"
+      },
+      "SymptomCard": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "enum": [
+              "pain",
+              "bloating",
+              "nausea",
+              "vomiting",
+              "diarrhea",
+              "constipation",
+              "bowel"
+            ],
+            "title": "Code",
+            "type": "string"
+          },
+          "present": {
+            "title": "Present",
+            "type": "boolean"
+          },
+          "severity": {
+            "anyOf": [
+              {
+                "maximum": 5,
+                "minimum": 1,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Severity"
+          },
+          "time": {
+            "$ref": "#/$defs/EventTime"
+          },
+          "bristol_type": {
+            "anyOf": [
+              {
+                "maximum": 7,
+                "minimum": 1,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Bristol Type"
+          },
+          "stress": {
+            "anyOf": [
+              {
+                "enum": [
+                  "low",
+                  "medium",
+                  "high",
+                  "unknown"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Stress"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Notes"
+          },
+          "linked_food_index": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Linked Food Index"
+          }
+        },
+        "required": [
+          "code",
+          "present",
+          "time"
+        ],
+        "title": "SymptomCard",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "properties": {
+      "kind": {
+        "const": "symptom",
+        "title": "Kind",
+        "type": "string"
+      },
+      "version": {
+        "minimum": 1,
+        "title": "Version",
+        "type": "integer"
+      },
+      "payload": {
+        "$ref": "#/$defs/SymptomCard"
+      }
+    },
+    "required": [
+      "kind",
+      "version",
+      "payload"
+    ],
+    "title": "SymptomEventPatch",
+    "type": "object"
+  },
+  "PlanInput": {
+    "additionalProperties": false,
+    "properties": {
+      "menu_id": {
+        "format": "uuid",
+        "title": "Menu Id",
+        "type": "string"
+      },
+      "scheduled_at": {
+        "format": "date-time",
+        "title": "Scheduled At",
+        "type": "string"
+      }
+    },
+    "required": [
+      "menu_id",
+      "scheduled_at"
+    ],
+    "title": "PlanInput",
+    "type": "object"
+  },
+  "PlanPatch": {
+    "additionalProperties": false,
+    "properties": {
+      "version": {
+        "minimum": 1,
+        "title": "Version",
+        "type": "integer"
+      },
+      "scheduled_at": {
+        "format": "date-time",
+        "title": "Scheduled At",
+        "type": "string"
+      }
+    },
+    "required": [
+      "version",
+      "scheduled_at"
+    ],
+    "title": "PlanPatch",
+    "type": "object"
+  },
+  "ShoppingInput": {
+    "additionalProperties": false,
+    "properties": {
+      "ingredient_id": {
+        "anyOf": [
+          {
+            "format": "uuid",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Ingredient Id"
+      },
+      "name": {
+        "maxLength": 100,
+        "minLength": 1,
+        "title": "Name",
+        "type": "string"
+      },
+      "quantity": {
+        "anyOf": [
+          {
+            "exclusiveMinimum": 0.0,
+            "maximum": 10000.0,
+            "type": "number"
+          },
+          {
+            "type": "string"
+          }
+        ],
+        "title": "Quantity"
+      },
+      "unit": {
+        "maxLength": 30,
+        "minLength": 1,
+        "title": "Unit",
+        "type": "string"
+      }
+    },
+    "required": [
+      "name",
+      "quantity",
+      "unit"
+    ],
+    "title": "ShoppingInput",
+    "type": "object"
+  },
+  "ShoppingPatch": {
+    "additionalProperties": false,
+    "properties": {
+      "version": {
+        "minimum": 1,
+        "title": "Version",
+        "type": "integer"
+      },
+      "quantity": {
+        "anyOf": [
+          {
+            "exclusiveMinimum": 0.0,
+            "maximum": 10000.0,
+            "type": "number"
+          },
+          {
+            "type": "string"
+          }
+        ],
+        "title": "Quantity"
+      },
+      "checked": {
+        "title": "Checked",
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "version",
+      "quantity",
+      "checked"
+    ],
+    "title": "ShoppingPatch",
+    "type": "object"
+  },
+  "ShoppingFromMenu": {
+    "additionalProperties": false,
+    "properties": {
+      "menu_id": {
+        "format": "uuid",
+        "title": "Menu Id",
+        "type": "string"
+      },
+      "servings": {
+        "anyOf": [
+          {
+            "exclusiveMinimum": 0.0,
+            "maximum": 10000.0,
+            "type": "number"
+          },
+          {
+            "type": "string"
+          }
+        ],
+        "default": "1",
+        "title": "Servings"
+      }
+    },
+    "required": [
+      "menu_id"
+    ],
+    "title": "ShoppingFromMenu",
+    "type": "object"
+  },
+  "ErrorResponse": {
+    "$defs": {
+      "ErrorDetail": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "fields": {
+            "items": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "title": "Fields",
+            "type": "array"
+          },
+          "retryable": {
+            "default": false,
+            "title": "Retryable",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "ErrorDetail",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "properties": {
+      "error": {
+        "$ref": "#/$defs/ErrorDetail"
+      },
+      "request_id": {
+        "title": "Request Id",
+        "type": "string"
+      }
+    },
+    "required": [
+      "error",
+      "request_id"
+    ],
+    "title": "ErrorResponse",
+    "type": "object"
+  }
+}
