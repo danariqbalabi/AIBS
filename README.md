@@ -113,11 +113,15 @@ backend/
   .env.example
   pyproject.toml
   uv.lock
+frontend/
+  lib/           # aplikasi Flutter dan layar onboarding AIBS
+  assets/maskot/ # ilustrasi koala AIBS
+  test/          # widget tests
 docs/            # kontrak, fixture, desain, workflow dan verifikasi
 .github/workflows/backend.yml
 ```
 
-`mobile/` belum ada pada branch ini. Flutter/Dart dan Figma berasal dari PRD/handoff, belum merupakan build Android di repo.
+Frontend Flutter tersedia di `frontend/`. Alur onboarding dan sistem desain dasar sudah diimplementasikan; layar lain dan integrasi API dikerjakan bertahap.
 
 ## Instalasi dan menjalankan
 
@@ -141,7 +145,17 @@ uv run uvicorn app.main:create_app --factory --reload --host 0.0.0.0 --port 8000
 
 `/health` memeriksa proses; `/ready` DB; `/docs` dan `/openapi.json` menjelaskan endpoint tersedia. Environment/base URL emulator ada di [backend README](backend/README.md). Manual tidak membutuhkan key AI tetapi akun tetap membutuhkan token Auth valid.
 
-Foto memerlukan service-role key server dan bucket privat: [panduan media](docs/media.md). AI memerlukan key/model tersedia: [panduan AI](docs/ai-integration.md). Semua secret di `.env` yang diabaikan Git; env example hanya nama/default non-rahasia. Build Flutter/APK belum dapat dijalankan karena source mobile belum tersedia.
+Foto memerlukan service-role key server dan bucket privat: [panduan media](docs/media.md). AI memerlukan key/model tersedia: [panduan AI](docs/ai-integration.md). Semua secret di `.env` yang diabaikan Git; env example hanya nama/default non-rahasia.
+
+Untuk menjalankan frontend:
+
+```powershell
+Set-Location frontend
+flutter pub get
+flutter run
+```
+
+Verifikasi UI dengan `flutter analyze` dan `flutter test` dari folder `frontend`. Onboarding saat ini menyimpan pilihan hanya selama sesi aplikasi; autentikasi dan penyimpanan profil belum dihubungkan ke backend.
 
 ## Demo dan verifikasi
 
@@ -157,7 +171,7 @@ uv run pytest
 
 Tahap 15 lokal: **71 passed, 2 skipped**. [CI tahap pengujian](https://github.com/danariqbalabi/AIBS/actions/runs/42751323377) lulus dengan PostgreSQL disposable dan matrix Python 3.12/3.13; dua tes PostgreSQL-only yang skip lokal dijalankan di CI. Mencakup rollback setelah insert, concurrency, ownership, consent, quota, input invalid, waktu/negasi dan perubahan dashboard.
 
-Smoke provider nyata, kualitas model, login Flutter, APK, deployment publik dan video belum dibuktikan. Pemeriksaan clone bersih dan langkah rilis ada di [panduan release](docs/backend-release.md).
+Smoke provider nyata, kualitas model, autentikasi Flutter, APK, deployment publik dan video belum dibuktikan. Pemeriksaan clone bersih dan langkah rilis ada di [panduan release](docs/backend-release.md).
 
 ## AI, sumber, atribusi dan batasan
 
@@ -177,7 +191,7 @@ Teknologi pihak ketiga: [FastAPI](https://fastapi.tiangolo.com/), [Pydantic](htt
 - [x] Repo publik dan hak push/PR diverifikasi saat pengerjaan.
 - [ ] Review/merge PR berurutan tanpa menulis ulang riwayat yang dipublikasikan.
 - [ ] Isi konfigurasi server; smoke Supabase DB/Auth/Storage dan Gemini nyata.
-- [ ] Lengkapi/integrasikan Flutter, APK dan akses demo juri.
+- [ ] Lengkapi layar Flutter, integrasi backend, APK dan akses demo juri.
 - [ ] Kurasi data/copy, evaluasi AI, kebijakan retensi/pemrosesan data final.
 - [ ] Smoke dari commit final, deploy HTTPS dan jaga kuota selama penilaian.
 - [ ] Video aplikasi berjalan 3–5 menit; URL dan hash APK/backend konsisten.
