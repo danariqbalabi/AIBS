@@ -81,5 +81,43 @@ void main() {
     await tester.tap(find.byTooltip('Tambah'));
     await tester.pumpAndSettle();
     expect(find.text('Timun · 1 porsi'), findsOneWidget);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Foto makanan'));
+    await tester.pumpAndSettle();
+    expect(find.text('Catat makanan'), findsOneWidget);
+    await tester.tap(find.text('Ambil foto'));
+    await tester.pumpAndSettle();
+    expect(find.text('Cek hasil foto'), findsOneWidget);
+    await tester.tap(find.text('Cek makanan'));
+    await tester.pumpAndSettle();
+    expect(find.text('Belum bisa dinilai'), findsOneWidget);
+    await tester.tap(find.text('Simpan catatan'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Jurnal'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ceritakan harimu'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byType(TextField).last,
+      'Perut terasa kurang nyaman setelah makan siang.',
+    );
+    await tester.tap(find.text('Lanjut'));
+    await tester.pumpAndSettle();
+    expect(find.text('Cek hasil rapikan'), findsOneWidget);
+    await tester.tap(find.text('Simpan').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Catat gejala'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Kembung'));
+    await tester.tap(find.text('Simpan catatan'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Lihat ringkasan'));
+    await tester.pumpAndSettle();
+    expect(find.text('Belum ada pola yang cukup'), findsOneWidget);
   });
 }

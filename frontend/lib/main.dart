@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'pages/home_profile_pages.dart';
 import 'pages/menu_flow.dart';
 import 'pages/onboarding_flow.dart';
+import 'pages/record_pages.dart';
 import 'theme/aibs_theme.dart';
 
 void main() {
@@ -68,6 +69,8 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
             onOpenCamera: () => setState(() => _selectedIndex = 2),
           ),
           1 => const MenuHomePage(),
+          2 => const CameraFlowPage(),
+          3 => const JournalPage(),
           4 => const ProfilePage(),
           _ => Center(
             child: Text(

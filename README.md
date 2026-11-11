@@ -114,14 +114,14 @@ backend/
   pyproject.toml
   uv.lock
 frontend/
-  lib/           # aplikasi Flutter dan layar onboarding AIBS
+  lib/           # aplikasi Flutter dan layar utama AIBS
   assets/maskot/ # ilustrasi koala AIBS
   test/          # widget tests
 docs/            # kontrak, fixture, desain, workflow dan verifikasi
 .github/workflows/backend.yml
 ```
 
-Frontend Flutter tersedia di `frontend/`. Alur onboarding dan sistem desain dasar sudah diimplementasikan; layar lain dan integrasi API dikerjakan bertahap.
+Frontend Flutter tersedia di `frontend/` sebagai prototipe interaktif: onboarding, Hari Ini/Profil, Menu, cek makanan, dan Jurnal. Integrasi API, autentikasi, kamera perangkat, serta penyimpanan persisten masih dikerjakan.
 
 ## Instalasi dan menjalankan
 
@@ -155,7 +155,7 @@ flutter pub get
 flutter run
 ```
 
-Verifikasi UI dengan `flutter analyze` dan `flutter test` dari folder `frontend`. Onboarding saat ini menyimpan pilihan hanya selama sesi aplikasi; autentikasi dan penyimpanan profil belum dihubungkan ke backend.
+Verifikasi UI dengan `flutter analyze` dan `flutter test` dari folder `frontend`. Data frontend masih contoh/in-memory; autentikasi, kamera perangkat, dan penyimpanan belum dihubungkan ke backend.
 
 ## Demo dan verifikasi
 
