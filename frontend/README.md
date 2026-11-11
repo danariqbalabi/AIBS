@@ -1,8 +1,9 @@
 # AIBS Flutter frontend
 
-Flutter app for the AIBS mobile experience. The current slice covers welcome,
-account form UI, IBS profile setup, allergy/preferences capture, and profile
-review. Form state is in-memory and is not yet connected to the backend.
+Flutter app prototype for the AIBS mobile experience. It includes onboarding,
+home/profile, menu and shopping checklist, food-check flow, and symptom journal
+screens. Data is sample/in-memory only; authentication, device camera, and
+backend persistence are not connected yet.
 
 ## Run
 
