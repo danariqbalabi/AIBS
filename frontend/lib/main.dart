@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'pages/home_profile_pages.dart';
+import 'pages/menu_flow.dart';
 import 'pages/onboarding_flow.dart';
 import 'theme/aibs_theme.dart';
 
@@ -66,6 +67,7 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
           0 => TodayPage(
             onOpenCamera: () => setState(() => _selectedIndex = 2),
           ),
+          1 => const MenuHomePage(),
           4 => const ProfilePage(),
           _ => Center(
             child: Text(
