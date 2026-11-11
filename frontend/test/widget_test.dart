@@ -54,5 +54,32 @@ void main() {
     await tester.tap(find.text('Simpan perubahan'));
     await tester.pumpAndSettle();
     expect(find.text('Perubahan tersimpan untuk sesi ini'), findsOneWidget);
+
+    await tester.tap(find.text('Menu').last);
+    await tester.pumpAndSettle();
+    expect(find.text('Sesuai arahanmu'), findsOneWidget);
+    expect(find.text('Nasi ayam bakar kecap'), findsOneWidget);
+
+    await tester.tap(find.text('Masak'));
+    await tester.pumpAndSettle();
+    expect(find.text('Tumis tahu wortel'), findsOneWidget);
+    expect(find.text('Nasi ayam bakar kecap'), findsNothing);
+
+    await tester.tap(find.text('Semua'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Nasi ayam bakar kecap'));
+    await tester.pumpAndSettle();
+    expect(find.text('Detail menu'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Masukkan ke checklist belanja'),
+      250,
+    );
+    await tester.tap(find.text('Masukkan ke checklist belanja'));
+    await tester.pumpAndSettle();
+    expect(find.text('Checklist belanja'), findsOneWidget);
+    await tester.enterText(find.byType(TextField), 'Timun');
+    await tester.tap(find.byTooltip('Tambah'));
+    await tester.pumpAndSettle();
+    expect(find.text('Timun · 1 porsi'), findsOneWidget);
   });
 }
