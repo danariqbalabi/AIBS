@@ -40,5 +40,19 @@ void main() {
     await tester.tap(find.text('Simpan profil'));
     await tester.pumpAndSettle();
     expect(find.text('Hai, Nadia!'), findsOneWidget);
+
+    await tester.tap(find.text('Profil'));
+    await tester.pumpAndSettle();
+    expect(find.text('Nadia'), findsOneWidget);
+
+    await tester.tap(find.text('Arahan makan'));
+    await tester.pumpAndSettle();
+    expect(find.text('Ubah arahan diet'), findsOneWidget);
+    await tester.tap(find.text('Lanjut'));
+    await tester.pumpAndSettle();
+    expect(find.text('Konfirmasi perubahan'), findsOneWidget);
+    await tester.tap(find.text('Simpan perubahan'));
+    await tester.pumpAndSettle();
+    expect(find.text('Perubahan tersimpan untuk sesi ini'), findsOneWidget);
   });
 }

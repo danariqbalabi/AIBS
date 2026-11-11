@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
+import 'pages/home_profile_pages.dart';
 import 'pages/onboarding_flow.dart';
 import 'theme/aibs_theme.dart';
-import 'widgets/aibs_widgets.dart';
 
 void main() {
   runApp(const AibsApp());
@@ -60,17 +60,20 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
 
   @override
   Widget build(BuildContext context) {
-    final title = _titles[_selectedIndex];
     return Scaffold(
       body: SafeArea(
-        child: _selectedIndex == 0
-            ? _buildToday(context)
-            : Center(
-                child: Text(
-                  title,
-                  style: Theme.of(context).textTheme.headlineSmall,
-                ),
-              ),
+        child: switch (_selectedIndex) {
+          0 => TodayPage(
+            onOpenCamera: () => setState(() => _selectedIndex = 2),
+          ),
+          4 => const ProfilePage(),
+          _ => Center(
+            child: Text(
+              _titles[_selectedIndex],
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+          ),
+        },
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
@@ -84,39 +87,6 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
             ),
         ],
       ),
-    );
-  }
-
-  Widget _buildToday(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.all(24),
-      children: [
-        Text('Hari Ini', style: Theme.of(context).textTheme.headlineMedium),
-        const SizedBox(height: 24),
-        const AibsCard(
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Hai, Nadia!'),
-                    SizedBox(height: 8),
-                    Text('Mau catat apa hari ini?'),
-                  ],
-                ),
-              ),
-              AibsMascot(expression: 'senang', size: 92),
-            ],
-          ),
-        ),
-        const SizedBox(height: 24),
-        AibsPrimaryButton(
-          label: 'Catat makanan',
-          icon: Icons.camera_alt_outlined,
-          onPressed: () => setState(() => _selectedIndex = 2),
-        ),
-      ],
     );
   }
 }
