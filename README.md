@@ -12,6 +12,7 @@ Pendamping pemilihan menu dan pencatatan makanan/gejala untuk orang dewasa denga
 - [Roadmap commit](docs/backend-workflow.md)
 - [Rancangan awal](docs/backend-design.md) dan [pemetaan sumber/gap desain](docs/backend-requirements.md)
 - [Release dan pemeriksaan yang masih pending](docs/backend-release.md)
+- [Flutter frontend](frontend/README.md) · [Design handoff](frontend/docs/design/DESIGN.md)
 
 ## Identitas tim dan akses penilaian
 

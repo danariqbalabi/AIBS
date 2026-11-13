@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../shared/widgets/step_progress.dart';
 import '../theme/aibs_theme.dart';
 import '../widgets/aibs_widgets.dart';
 
@@ -231,7 +232,7 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
           ),
           if (progress != null) ...[
             const SizedBox(width: 8),
-            Expanded(child: _ProgressIndicator(step: progress)),
+            Expanded(child: StepProgress(step: progress, total: 5)),
           ] else
             const Spacer(),
         ],
@@ -725,32 +726,6 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
     if (ingredient.isEmpty) return;
     setState(() => _avoidedIngredients.add(ingredient));
     _ingredientController.clear();
-  }
-}
-
-class _ProgressIndicator extends StatelessWidget {
-  const _ProgressIndicator({required this.step});
-
-  final int step;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        for (var index = 1; index <= 5; index++) ...[
-          Expanded(
-            child: Container(
-              height: 6,
-              decoration: BoxDecoration(
-                color: index <= step ? AibsColors.primary : AibsColors.line,
-                borderRadius: BorderRadius.circular(99),
-              ),
-            ),
-          ),
-          if (index < 5) const SizedBox(width: 6),
-        ],
-      ],
-    );
   }
 }
 

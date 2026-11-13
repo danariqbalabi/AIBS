@@ -1,0 +1,49 @@
+/* AIBS design tokens */
+@import url("https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800&display=swap");
+
+:root {
+  /* Brand */
+  --primary: #2F6FED;
+  --primary-strong: #1F55C8;
+  --sky: #78AAFF;
+  --primary-soft: #E8F0FE;
+
+  /* Surface & text */
+  --surface: #F5F8FF;
+  --card: #FFFFFF;
+  --ink: #14233F;
+  --ink-muted: #5B6A85;
+  --line: #E1E8F4;
+
+  /* Status hasil cek */
+  --ok: #22A06B;      --ok-ink: #11774A;   --ok-soft: #E3F6EC;
+  --warn: #F5A524;    --warn-ink: #8A5300; --warn-soft: #FFF3DC;
+  --bad: #E5534B;     --bad-ink: #B02B24;  --bad-soft: #FDE8E6;
+  --unknown: #9AA5B8; --unknown-soft: #EEF1F6;
+
+  /* Maskot */
+  --koala-fur: #9AA6BA;
+  --koala-blush: #F5A3BB;
+
+  /* Gradasi */
+  --gradient-primary: linear-gradient(135deg, #3B7BF5 0%, #1F55C8 100%);
+
+  /* Tipografi */
+  --font-sans: "Nunito", "Segoe UI", system-ui, sans-serif;
+  --text-display: 800 32px/38px var(--font-sans);
+  --text-title: 800 24px/30px var(--font-sans);
+  --text-heading: 800 18px/24px var(--font-sans);
+  --text-body: 600 15px/22px var(--font-sans);
+  --text-label: 700 13px/18px var(--font-sans);
+  --text-caption: 600 12px/16px var(--font-sans);
+
+  /* Spacing */
+  --space-1: 4px; --space-2: 8px; --space-3: 12px;
+  --space-4: 16px; --space-6: 24px; --space-8: 32px;
+
+  /* Radius */
+  --radius-sm: 12px; --radius-md: 20px; --radius-lg: 28px; --radius-pill: 999px;
+
+  /* Shadow */
+  --shadow-card: 0 8px 24px rgba(47, 111, 237, 0.10);
+}

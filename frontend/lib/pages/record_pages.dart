@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../shared/widgets/status_badge.dart';
 import '../theme/aibs_theme.dart';
 import '../widgets/aibs_widgets.dart';
 
@@ -188,16 +189,15 @@ class _CameraFlowPageState extends State<CameraFlowPage> {
       children: [
         Text('Hasil cek', style: Theme.of(context).textTheme.headlineMedium),
         const SizedBox(height: 20),
-        const AibsCard(
+        AibsCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Belum bisa dinilai',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
-              ),
-              SizedBox(height: 8),
-              Text(
+              StatusBadge(CheckStatus.unknown),
+              const SizedBox(height: 12),
+              const Text('Belum bisa dinilai'),
+              const SizedBox(height: 8),
+              const Text(
                 'Sausnya belum jelas. Kamu bisa cek lagi setelah mengisi bahannya.',
               ),
             ],
