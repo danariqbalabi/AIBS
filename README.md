@@ -116,7 +116,8 @@ backend/
   uv.lock
 frontend/
   lib/           # aplikasi Flutter dan layar utama AIBS
-  assets/maskot/ # ilustrasi koala AIBS
+  assets/        # aset brand, ikon, dan ilustrasi handoff
+  docs/design/   # handoff desain Flutter yang aktif
   test/          # widget tests
 docs/            # kontrak, fixture, desain, workflow dan verifikasi
 .github/workflows/backend.yml
