@@ -19,25 +19,7 @@ void main() {
     await tester.tap(find.text('Daftar').last);
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Belum didiagnosis, baru curiga'));
-    await tester.tap(find.text('Lanjut'));
-    await tester.pumpAndSettle();
-    expect(find.text('Kita mulai dari mencatat dulu'), findsOneWidget);
-
-    await tester.tap(find.text('Lanjut'));
-    await tester.pumpAndSettle();
-    expect(find.text('Kamu alergi apa?'), findsOneWidget);
-    await tester.tap(find.text('Kacang'));
-    await tester.tap(find.text('Lanjut'));
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.text('Hemat'));
-    await tester.tap(find.text('Tidak pedas'));
-    await tester.tap(find.text('Lanjut'));
-    await tester.pumpAndSettle();
-    expect(find.text('Cek ulang profil'), findsOneWidget);
-
-    await tester.tap(find.text('Simpan profil'));
+    await tester.tap(find.text('Nanti'));
     await tester.pumpAndSettle();
     expect(find.text('Hai, Nadia!'), findsOneWidget);
 

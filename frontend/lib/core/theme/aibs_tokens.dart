@@ -114,6 +114,12 @@ abstract final class AibsSize {
   static const cameraButton = 60.0;
   static const cameraLift = 34.0; // how far the camera button sticks up
   static const cameraRing = 6.0;
+  static const koalaHelp = 170.0;
+  static const koalaScope = 200.0;
+  static const koalaWelcome = 230.0;
+  static const verdictKoala = 150.0;
+  static const criterionDot = 26.0;
+  static const helpStepCircle = 28.0;
   static const navIcon = 22.0;
   static const menuSliderCard = 176.0;
   static const menuSliderImage = 104.0;

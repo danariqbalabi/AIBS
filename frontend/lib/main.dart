@@ -4,6 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'pages/home_profile_pages.dart';
 import 'pages/menu_flow.dart';
 import 'pages/onboarding_flow.dart';
+import 'pages/profile_setup_flow.dart';
 import 'pages/record_pages.dart';
 import 'theme/aibs_theme.dart';
 import 'widgets/aibs_tab_bar.dart';
@@ -21,6 +22,7 @@ class AibsApp extends StatefulWidget {
 
 class _AibsAppState extends State<AibsApp> {
   bool _onboardingComplete = false;
+  ProfileSetupAnswers? _profile;
 
   @override
   Widget build(BuildContext context) {
@@ -29,16 +31,21 @@ class _AibsAppState extends State<AibsApp> {
       debugShowCheckedModeBanner: false,
       theme: AibsTheme.light,
       home: _onboardingComplete
-          ? const AibsHomeShell()
+          ? AibsHomeShell(profile: _profile)
           : OnboardingFlow(
-              onComplete: () => setState(() => _onboardingComplete = true),
+              onComplete: (profile) => setState(() {
+                _profile = profile;
+                _onboardingComplete = true;
+              }),
             ),
     );
   }
 }
 
 class AibsHomeShell extends StatefulWidget {
-  const AibsHomeShell({super.key});
+  const AibsHomeShell({super.key, this.profile});
+
+  final ProfileSetupAnswers? profile;
 
   @override
   State<AibsHomeShell> createState() => _AibsHomeShellState();
@@ -52,10 +59,13 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
     return Scaffold(
       body: SafeArea(
         child: switch (_selectedIndex) {
-          0 => TodayPage(onOpenCamera: _showCameraIntent),
+          0 => TodayPage(
+            onOpenCamera: _showCameraIntent,
+            userName: widget.profile?.displayName,
+          ),
           1 => const MenuHomePage(),
           2 => const JournalPage(),
-          3 => const ProfilePage(),
+          3 => ProfilePage(profile: widget.profile),
           _ => const SizedBox.shrink(),
         },
       ),

@@ -15,6 +15,10 @@ widgets under `lib/shared/widgets/`, and SVG assets under `assets/`.
 The screens are still a prototype and should be updated screen by screen to
 match `docs/design/SCREENS.md`.
 
+The profile setup keeps answers in the app session. Screening results are
+provided through `ProfileSetupFlow.onAssess`; without a backend assessor, the
+app shows that no result is available instead of calculating a diagnosis.
+
 Nunito currently uses the existing `google_fonts` runtime loader. The handoff
 specifies bundled static weights (600/700/800), which should be added before
 offline or release use.

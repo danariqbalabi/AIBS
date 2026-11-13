@@ -1,15 +1,23 @@
 import 'package:flutter/material.dart';
 
+import 'profile_setup_flow.dart';
 import '../theme/aibs_theme.dart';
 import '../widgets/aibs_widgets.dart';
 
 class TodayPage extends StatelessWidget {
-  const TodayPage({required this.onOpenCamera, super.key});
+  const TodayPage({
+    required this.onOpenCamera,
+    super.key,
+    this.userName,
+  });
 
   final VoidCallback onOpenCamera;
+  final String? userName;
 
   @override
   Widget build(BuildContext context) {
+    final name = userName;
+    final greetingName = name == null || name.isEmpty ? 'Nadia' : name;
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
       children: [
@@ -23,7 +31,7 @@ class TodayPage extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Hai, Nadia!',
+                      'Hai, $greetingName!',
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                     const SizedBox(height: 8),
@@ -89,16 +97,51 @@ class TodayPage extends StatelessWidget {
 }
 
 class ProfilePage extends StatelessWidget {
-  const ProfilePage({super.key});
+  const ProfilePage({super.key, this.profile});
+
+  final ProfileSetupAnswers? profile;
 
   @override
   Widget build(BuildContext context) {
+    final profileData = profile;
+    final name = profileData?.displayName;
+    final displayName = name == null || name.isEmpty ? 'Nadia' : name;
+    final email = profileData?.email;
+    final diet = profileData?.dietType;
+    final dietPhase = profileData?.dietPhase;
+    final dietValue = diet == null
+        ? 'Belum diisi'
+        : diet == 'Low FODMAP' && dietPhase != null
+        ? '$diet · ${dietPhase.toLowerCase()}'
+        : diet;
+    final avoided = profileData?.avoidedIngredients;
+    final allergies = profileData == null
+        ? 'Udang'
+        : profileData.allergies.isEmpty
+        ? 'Nggak ada'
+        : profileData.allergies.join(' · ');
+    final budgetValue = profileData?.budget;
+    final budget = budgetValue == null
+        ? 'Maks Rp25.000 per makan'
+        : 'Maks $budgetValue per makan';
+    final spicyValue = profileData?.spicy;
+    final spicy = spicyValue == null
+        ? 'Sedikit pedas'
+        : switch (spicyValue) {
+            'Nggak pedas' => 'Nggak pedas',
+            'Sedikit' => 'Sedikit pedas',
+            'Sedang' => 'Sedang pedas',
+            'Pedas banget' => 'Pedas banget',
+            _ => spicyValue,
+          };
+    final preferences = profileData?.preferences;
+
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
       children: [
         Text('Profil', style: Theme.of(context).textTheme.headlineMedium),
         const SizedBox(height: 20),
-        const AibsCard(
+        AibsCard(
           child: Row(
             children: [
               CircleAvatar(
@@ -115,12 +158,12 @@ class ProfilePage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Nama panggilan',
+                    email == null || email.isEmpty ? 'Nama panggilan' : email,
                     style: TextStyle(color: AibsColors.inkMuted, fontSize: 12),
                   ),
                   SizedBox(height: 3),
                   Text(
-                    'Nadia',
+                    displayName,
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
                   ),
                 ],
@@ -131,22 +174,28 @@ class ProfilePage extends StatelessWidget {
         const SizedBox(height: 20),
         _ProfileSection(
           title: 'Arahan makan',
-          value: 'Low FODMAP · eliminasi',
-          detail: 'Bawang putih · Bawang bombay · Susu sapi',
+          value: dietValue,
+          detail: avoided == null || avoided.isEmpty
+              ? 'Belum ada bahan dihindari'
+              : avoided.join(' · '),
           onTap: () => _openEdit(context),
         ),
         const SizedBox(height: 12),
         _ProfileSection(
           title: 'Alergi',
-          value: 'Udang',
+          value: allergies,
           detail: 'Bisa kamu ubah kapan saja',
           onTap: () => _openEdit(context),
         ),
         const SizedBox(height: 12),
         _ProfileSection(
           title: 'Budget & preferensi',
-          value: 'Maks Rp25.000 per makan',
-          detail: 'Sedikit pedas',
+          value: budget,
+          detail: [
+            spicy,
+            if (preferences != null && preferences.isNotEmpty)
+              preferences.join(' · '),
+          ].join(' · '),
           onTap: () => _openEdit(context),
         ),
       ],
