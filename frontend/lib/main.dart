@@ -4,7 +4,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'pages/home_profile_pages.dart';
 import 'pages/menu_flow.dart';
 import 'pages/onboarding_flow.dart';
-import 'pages/record_pages.dart';
+import 'pages/photo_check_flow.dart';
+import 'pages/record_pages.dart' show JournalPage;
 import 'theme/aibs_theme.dart';
 import 'widgets/aibs_tab_bar.dart';
 
@@ -46,6 +47,7 @@ class AibsHomeShell extends StatefulWidget {
 
 class _AibsHomeShellState extends State<AibsHomeShell> {
   int _selectedIndex = 0;
+  final _sessionFoodRecords = <FoodCheckDraft>[];
 
   @override
   Widget build(BuildContext context) {
@@ -105,20 +107,29 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
                 subtitle: 'Sesuai arahanku nggak?',
                 icon: 'camera.svg',
                 highlighted: true,
-                onTap: () => _openCameraFlow(sheetContext),
+                onTap: () => _openCameraFlow(
+                  sheetContext,
+                  intent: FoodCheckIntent.checkBeforeMeal,
+                ),
               ),
               const SizedBox(height: AibsSpace.s10),
               _CameraIntentCard(
                 title: 'Sudah dimakan',
                 subtitle: 'Langsung catat',
                 icon: 'check.svg',
-                onTap: () => _openCameraFlow(sheetContext),
+                onTap: () => _openCameraFlow(
+                  sheetContext,
+                  intent: FoodCheckIntent.alreadyEaten,
+                ),
               ),
               Align(
                 alignment: Alignment.center,
                 child: TextButton(
-                  onPressed: () =>
-                      _openCameraFlow(sheetContext, manualEntry: true),
+                  onPressed: () => _openCameraFlow(
+                    sheetContext,
+                    intent: FoodCheckIntent.checkBeforeMeal,
+                    manualEntry: true,
+                  ),
                   child: const Text('Isi manual'),
                 ),
               ),
@@ -129,17 +140,41 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
     );
   }
 
-  void _openCameraFlow(BuildContext sheetContext, {bool manualEntry = false}) {
+  void _openCameraFlow(
+    BuildContext sheetContext, {
+    required FoodCheckIntent intent,
+    bool manualEntry = false,
+  }) {
     Navigator.pop(sheetContext);
     Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
         builder: (_) => Scaffold(
           body: SafeArea(
-            child: CameraFlowPage(initialManualEntry: manualEntry),
+            child: CameraFlowPage(
+              intent: intent,
+              initialManualEntry: manualEntry,
+              aiEnabled: false,
+              onSaveRecord: _saveFoodRecord,
+              onOpenMenu: () {
+                Navigator.of(context).pop();
+                setState(() => _selectedIndex = 1);
+              },
+              onAddSymptom: () {
+                Navigator.of(context).pop();
+                setState(() => _selectedIndex = 2);
+              },
+            ),
           ),
         ),
       ),
     );
+  }
+
+  void _saveFoodRecord(FoodCheckDraft draft) {
+    setState(() => _sessionFoodRecords.add(draft));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('${draft.name} tersimpan untuk sesi ini')));
   }
 }
 

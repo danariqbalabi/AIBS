@@ -94,23 +94,33 @@ void main() {
     expect(find.text('Nama makanan'), findsOneWidget);
     await tester.tap(find.byTooltip('Kembali'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Tutup'));
-    await tester.pumpAndSettle();
 
     await tester.tap(find.byTooltip('Foto makanan'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Cek sebelum makan'));
     await tester.pumpAndSettle();
-    expect(find.text('Catat makanan'), findsOneWidget);
+    expect(find.text('Foto dari atas, semua lauk kelihatan'), findsOneWidget);
     await tester.tap(find.text('Ambil foto'));
     await tester.pumpAndSettle();
-    expect(find.text('Cek hasil foto'), findsOneWidget);
-    await tester.drag(find.byType(ListView).last, const Offset(0, -250));
+    expect(find.text('Foto makanan'), findsOneWidget);
+    await tester.tap(find.text('Isi manual'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byType(TextField).first,
+      'Nasi ayam bakar kecap',
+    );
+    await tester.tap(find.text('Lanjut'));
+    await tester.pumpAndSettle();
+    expect(find.text('Saus ini kira-kira apa?'), findsOneWidget);
+    await tester.tap(find.text('? Nggak tahu'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Cek makanan'));
     await tester.pumpAndSettle();
     expect(find.text('Belum bisa dinilai'), findsOneWidget);
-    await tester.tap(find.text('Simpan catatan'));
+    await tester.tap(find.text('Tetap catat'));
+    await tester.pumpAndSettle();
+    expect(find.text('Tersimpan'), findsOneWidget);
+    await tester.tap(find.text('Selesai'));
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Jurnal'));

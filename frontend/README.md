@@ -5,6 +5,10 @@ home/profile, menu and shopping checklist, food-check flow, and symptom journal
 screens. Data is sample/in-memory only; authentication, device camera, and
 backend persistence are not connected yet.
 
+The food-check screens accept analyzer, checker, and save callbacks so device
+capture and backend responses can be wired without calling an AI provider
+directly. The sample app keeps AI disabled until that consent is available.
+
 ## Design source of truth
 
 Use [`AGENTS.md`](AGENTS.md) and [`docs/design/`](docs/design/) for all mobile
