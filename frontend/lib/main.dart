@@ -5,6 +5,7 @@ import 'pages/home_profile_pages.dart';
 import 'pages/menu_flow.dart';
 import 'pages/onboarding_flow.dart';
 import 'pages/record_pages.dart';
+import 'pages/today_page.dart';
 import 'theme/aibs_theme.dart';
 import 'widgets/aibs_tab_bar.dart';
 
@@ -20,25 +21,28 @@ class AibsApp extends StatefulWidget {
 }
 
 class _AibsAppState extends State<AibsApp> {
-  bool _onboardingComplete = false;
+  OnboardingProfile? _profile;
 
   @override
   Widget build(BuildContext context) {
+    final profile = _profile;
     return MaterialApp(
       title: 'AIBS',
       debugShowCheckedModeBanner: false,
       theme: AibsTheme.light,
-      home: _onboardingComplete
-          ? const AibsHomeShell()
+      home: profile != null
+          ? AibsHomeShell(profile: profile)
           : OnboardingFlow(
-              onComplete: () => setState(() => _onboardingComplete = true),
+              onComplete: (profile) => setState(() => _profile = profile),
             ),
     );
   }
 }
 
 class AibsHomeShell extends StatefulWidget {
-  const AibsHomeShell({super.key});
+  const AibsHomeShell({required this.profile, super.key});
+
+  final OnboardingProfile profile;
 
   @override
   State<AibsHomeShell> createState() => _AibsHomeShellState();
@@ -46,15 +50,33 @@ class AibsHomeShell extends StatefulWidget {
 
 class _AibsHomeShellState extends State<AibsHomeShell> {
   int _selectedIndex = 0;
+  final _todayRecords = <TodayLogEntry>[];
+  bool _showSymptomPrompt = false;
 
   @override
   Widget build(BuildContext context) {
+    final todayMode = !widget.profile.hasDietProfile
+        ? TodayMode.loggingOnly
+        : _todayRecords.isEmpty
+        ? TodayMode.empty
+        : TodayMode.profileComplete;
     return Scaffold(
       body: SafeArea(
         child: switch (_selectedIndex) {
-          0 => TodayPage(onOpenCamera: _showCameraIntent),
+          0 => TodayPage(
+            name: widget.profile.name,
+            mode: todayMode,
+            records: _todayRecords,
+            showSymptomPrompt: _showSymptomPrompt,
+            onOpenCamera: _showCameraIntent,
+            onOpenMenu: () => _selectTab(1),
+            onOpenJournal: () => _selectTab(2),
+            onOpenProfile: () => _selectTab(3),
+            onDismissSymptomPrompt: () =>
+                setState(() => _showSymptomPrompt = false),
+          ),
           1 => const MenuHomePage(),
-          2 => const JournalPage(),
+          2 => JournalPage(onRecordSaved: _recordJournalSaved),
           3 => const ProfilePage(),
           _ => const SizedBox.shrink(),
         },
@@ -135,11 +157,34 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
       MaterialPageRoute<void>(
         builder: (_) => Scaffold(
           body: SafeArea(
-            child: CameraFlowPage(initialManualEntry: manualEntry),
+            child: CameraFlowPage(
+              initialManualEntry: manualEntry,
+              onRecordSaved: _recordMealSaved,
+            ),
           ),
         ),
       ),
     );
+  }
+
+  void _selectTab(int index) {
+    setState(() => _selectedIndex = index);
+  }
+
+  void _recordMealSaved(String title) => _addTodayRecord(title, isMeal: true);
+
+  void _recordJournalSaved(String title) =>
+      _addTodayRecord(title, isMeal: false);
+
+  void _addTodayRecord(String title, {required bool isMeal}) {
+    final now = DateTime.now();
+    final time =
+        '${now.hour.toString().padLeft(2, '0')}.'
+        '${now.minute.toString().padLeft(2, '0')}';
+    setState(() {
+      _todayRecords.insert(0, TodayLogEntry(time: time, title: title));
+      _showSymptomPrompt = isMeal;
+    });
   }
 }
 
