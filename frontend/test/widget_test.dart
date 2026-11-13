@@ -86,7 +86,20 @@ void main() {
     await tester.pageBack();
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Foto makanan'));
+    await tester.tap(find.byTooltip('Foto makanan'));
+    await tester.pumpAndSettle();
+    expect(find.text('Foto buat apa?'), findsOneWidget);
+    await tester.tap(find.text('Isi manual'));
+    await tester.pumpAndSettle();
+    expect(find.text('Nama makanan'), findsOneWidget);
+    await tester.tap(find.byTooltip('Kembali'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Tutup'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Foto makanan'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Cek sebelum makan'));
     await tester.pumpAndSettle();
     expect(find.text('Catat makanan'), findsOneWidget);
     await tester.tap(find.text('Ambil foto'));

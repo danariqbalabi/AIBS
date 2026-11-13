@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import 'pages/home_profile_pages.dart';
 import 'pages/menu_flow.dart';
 import 'pages/onboarding_flow.dart';
 import 'pages/record_pages.dart';
 import 'theme/aibs_theme.dart';
+import 'widgets/aibs_tab_bar.dart';
 
 void main() {
   runApp(const AibsApp());
@@ -45,52 +47,173 @@ class AibsHomeShell extends StatefulWidget {
 class _AibsHomeShellState extends State<AibsHomeShell> {
   int _selectedIndex = 0;
 
-  static const _titles = [
-    'Hari Ini',
-    'Menu',
-    'Foto makanan',
-    'Jurnal',
-    'Profil',
-  ];
-  static const _icons = [
-    Icons.home_outlined,
-    Icons.restaurant_menu_outlined,
-    Icons.camera_alt_outlined,
-    Icons.menu_book_outlined,
-    Icons.person_outline,
-  ];
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
         child: switch (_selectedIndex) {
-          0 => TodayPage(
-            onOpenCamera: () => setState(() => _selectedIndex = 2),
-          ),
+          0 => TodayPage(onOpenCamera: _showCameraIntent),
           1 => const MenuHomePage(),
-          2 => const CameraFlowPage(),
-          3 => const JournalPage(),
-          4 => const ProfilePage(),
-          _ => Center(
-            child: Text(
-              _titles[_selectedIndex],
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
-          ),
+          2 => const JournalPage(),
+          3 => const ProfilePage(),
+          _ => const SizedBox.shrink(),
         },
       ),
-      bottomNavigationBar: NavigationBar(
+      bottomNavigationBar: AibsTabBar(
         selectedIndex: _selectedIndex,
-        onDestinationSelected: (index) =>
-            setState(() => _selectedIndex = index),
-        destinations: [
-          for (var index = 0; index < _titles.length; index++)
-            NavigationDestination(
-              icon: Icon(_icons[index]),
-              label: _titles[index],
+        onTabSelected: (index) => setState(() => _selectedIndex = index),
+        onCameraPressed: _showCameraIntent,
+      ),
+    );
+  }
+
+  void _showCameraIntent() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (sheetContext) => SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AibsSpace.s20,
+            AibsSpace.s8,
+            AibsSpace.s20,
+            AibsSpace.s24,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Foto buat apa?',
+                      style: Theme.of(context).textTheme.headlineSmall,
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: 'Tutup',
+                    onPressed: () => Navigator.pop(sheetContext),
+                    icon: const Icon(Icons.close),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AibsSpace.s12),
+              _CameraIntentCard(
+                title: 'Cek sebelum makan',
+                subtitle: 'Sesuai arahanku nggak?',
+                icon: 'camera.svg',
+                highlighted: true,
+                onTap: () => _openCameraFlow(sheetContext),
+              ),
+              const SizedBox(height: AibsSpace.s10),
+              _CameraIntentCard(
+                title: 'Sudah dimakan',
+                subtitle: 'Langsung catat',
+                icon: 'check.svg',
+                onTap: () => _openCameraFlow(sheetContext),
+              ),
+              Align(
+                alignment: Alignment.center,
+                child: TextButton(
+                  onPressed: () =>
+                      _openCameraFlow(sheetContext, manualEntry: true),
+                  child: const Text('Isi manual'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _openCameraFlow(BuildContext sheetContext, {bool manualEntry = false}) {
+    Navigator.pop(sheetContext);
+    Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (_) => Scaffold(
+          body: SafeArea(
+            child: CameraFlowPage(initialManualEntry: manualEntry),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CameraIntentCard extends StatelessWidget {
+  const _CameraIntentCard({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.onTap,
+    this.highlighted = false,
+  });
+
+  final String title;
+  final String subtitle;
+  final String icon;
+  final VoidCallback onTap;
+  final bool highlighted;
+
+  @override
+  Widget build(BuildContext context) {
+    final foreground = highlighted
+        ? AibsColors.onPrimary
+        : AibsColors.primaryStrong;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AibsRadius.lg),
+        child: Ink(
+          decoration: BoxDecoration(
+            color: highlighted ? null : AibsColors.card,
+            gradient: highlighted ? AibsGradients.brand : null,
+            borderRadius: BorderRadius.circular(AibsRadius.lg),
+            border: highlighted
+                ? null
+                : Border.all(color: AibsColors.line, width: 2),
+            boxShadow: highlighted ? AibsShadows.glow : null,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(AibsSpace.s16),
+            child: Row(
+              children: [
+                SvgPicture.asset(
+                  'assets/icons/$icon',
+                  width: 26,
+                  height: 26,
+                  colorFilter: ColorFilter.mode(foreground, BlendMode.srcIn),
+                ),
+                const SizedBox(width: AibsSpace.s12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: AibsType.bodyStrong.copyWith(
+                          color: highlighted ? AibsColors.onPrimary : null,
+                        ),
+                      ),
+                      Text(
+                        subtitle,
+                        style: AibsType.caption.copyWith(
+                          color: highlighted
+                              ? AibsColors.primaryTint
+                              : AibsColors.inkMuted,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-        ],
+          ),
+        ),
       ),
     );
   }

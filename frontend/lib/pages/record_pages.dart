@@ -5,7 +5,9 @@ import '../theme/aibs_theme.dart';
 import '../widgets/aibs_widgets.dart';
 
 class CameraFlowPage extends StatefulWidget {
-  const CameraFlowPage({super.key});
+  const CameraFlowPage({super.key, this.initialManualEntry = false});
+
+  final bool initialManualEntry;
 
   @override
   State<CameraFlowPage> createState() => _CameraFlowPageState();
@@ -13,9 +15,15 @@ class CameraFlowPage extends StatefulWidget {
 
 class _CameraFlowPageState extends State<CameraFlowPage> {
   bool _hasPreview = false;
-  bool _manualEntry = false;
+  late bool _manualEntry;
   bool _hasResult = false;
   final _foodController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _manualEntry = widget.initialManualEntry;
+  }
 
   @override
   void dispose() {
@@ -35,9 +43,20 @@ class _CameraFlowPageState extends State<CameraFlowPage> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
       children: [
-        Text(
-          'Catat makanan',
-          style: Theme.of(context).textTheme.headlineMedium,
+        Row(
+          children: [
+            IconButton(
+              tooltip: 'Tutup',
+              onPressed: () => Navigator.of(context).pop(),
+              icon: const Icon(Icons.close),
+            ),
+            Expanded(
+              child: Text(
+                'Catat makanan',
+                style: Theme.of(context).textTheme.headlineMedium,
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 24),
         Container(
@@ -212,15 +231,10 @@ class _CameraFlowPageState extends State<CameraFlowPage> {
         AibsPrimaryButton(
           label: 'Simpan catatan',
           onPressed: () {
-            setState(() {
-              _hasResult = false;
-              _hasPreview = false;
-              _manualEntry = false;
-              _foodController.clear();
-            });
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Catatan tersimpan untuk sesi ini')),
             );
+            Navigator.of(context).pop();
           },
         ),
         const SizedBox(height: 10),
