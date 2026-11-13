@@ -1,7 +1,15 @@
 import 'package:flutter/material.dart';
 
+import '../shared/widgets/status_badge.dart';
 import '../theme/aibs_theme.dart';
 import '../widgets/aibs_widgets.dart';
+
+CheckStatus _statusFromLabel(String status) => switch (status) {
+  'Sesuai' => CheckStatus.ok,
+  'Hati-hati' => CheckStatus.warn,
+  'Tidak sesuai' => CheckStatus.bad,
+  _ => CheckStatus.unknown,
+};
 
 class MenuHomePage extends StatefulWidget {
   const MenuHomePage({super.key});
@@ -101,10 +109,7 @@ class _MenuHomePageState extends State<MenuHomePage> {
         ),
         const SizedBox(height: 24),
         for (final status in ['Sesuai', 'Hati-hati', 'Tidak sesuai']) ...[
-          Text(
-            _statusHeading(status),
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
+          StatusGroupHeader(_statusFromLabel(status)),
           const SizedBox(height: 10),
           for (final item in filtered.where((item) => item.status == status))
             Padding(
@@ -119,12 +124,6 @@ class _MenuHomePageState extends State<MenuHomePage> {
       ],
     );
   }
-
-  String _statusHeading(String status) => switch (status) {
-    'Sesuai' => 'Sesuai arahanmu',
-    'Hati-hati' => 'Perlu hati-hati',
-    _ => 'Tidak sesuai arahan',
-  };
 
   void _open(BuildContext context, Widget page) {
     Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => page));
@@ -224,7 +223,7 @@ class _MenuDetailPage extends StatelessWidget {
           const SizedBox(height: 8),
           Text(item.description, style: Theme.of(context).textTheme.bodyLarge),
           const SizedBox(height: 12),
-          _MenuStatus(status: item.status),
+          StatusBadge(_statusFromLabel(item.status)),
           const SizedBox(height: 24),
           Text('Bahan', style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 8),
@@ -433,27 +432,13 @@ class _MenuStatus extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (symbol, ink, soft, label) = switch (status) {
-      'Sesuai' => ('✓', AibsColors.okInk, AibsColors.okSoft, 'Sesuai'),
-      'Hati-hati' => (
-        '!',
-        AibsColors.warnInk,
-        AibsColors.warnSoft,
-        'Perlu hati-hati',
-      ),
-      _ => ('×', AibsColors.badInk, AibsColors.badSoft, 'Tidak sesuai arahan'),
+    final checkStatus = switch (status) {
+      'Sesuai' => CheckStatus.ok,
+      'Hati-hati' => CheckStatus.warn,
+      'Tidak sesuai' => CheckStatus.bad,
+      _ => throw ArgumentError.value(status, 'status'),
     };
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: soft,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        '$symbol $label',
-        style: TextStyle(color: ink, fontWeight: FontWeight.w800),
-      ),
-    );
+    return StatusBadge(checkStatus);
   }
 }
 

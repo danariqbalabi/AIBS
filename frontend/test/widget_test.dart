@@ -92,6 +92,8 @@ void main() {
     await tester.tap(find.text('Ambil foto'));
     await tester.pumpAndSettle();
     expect(find.text('Cek hasil foto'), findsOneWidget);
+    await tester.drag(find.byType(ListView).last, const Offset(0, -250));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Cek makanan'));
     await tester.pumpAndSettle();
     expect(find.text('Belum bisa dinilai'), findsOneWidget);

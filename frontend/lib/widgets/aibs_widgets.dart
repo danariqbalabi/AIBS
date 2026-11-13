@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
+import '../core/theme/aibs_tokens.dart';
+import '../shared/widgets/koala.dart';
 import '../theme/aibs_theme.dart';
 
 class AibsCard extends StatelessWidget {
-  const AibsCard({required this.child, super.key, this.padding = 16});
+  const AibsCard({
+    required this.child,
+    super.key,
+    this.padding = AibsSpace.s16,
+  });
 
   final Widget child;
   final double padding;
@@ -15,14 +20,8 @@ class AibsCard extends StatelessWidget {
       padding: EdgeInsets.all(padding),
       decoration: BoxDecoration(
         color: AibsColors.card,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x19476FED),
-            blurRadius: 24,
-            offset: Offset(0, 8),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(AibsRadius.lg),
+        boxShadow: AibsShadows.card,
       ),
       child: child,
     );
@@ -45,39 +44,34 @@ class AibsPrimaryButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       width: double.infinity,
-      height: 54,
+      height: AibsSize.button,
       child: DecoratedBox(
         decoration: BoxDecoration(
           gradient: onPressed == null
-              ? const LinearGradient(
-                  colors: [AibsColors.unknown, AibsColors.unknown],
-                )
-              : const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [AibsColors.sky, AibsColors.primaryStrong],
-                ),
-          borderRadius: BorderRadius.circular(20),
+              ? const LinearGradient(colors: [AibsColors.line, AibsColors.line])
+              : AibsGradients.brand,
+          borderRadius: BorderRadius.circular(AibsRadius.lg),
+          boxShadow: onPressed == null ? null : AibsShadows.glow,
         ),
         child: Material(
           color: Colors.transparent,
           child: InkWell(
             onTap: onPressed,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(AibsRadius.lg),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 if (icon != null) ...[
-                  Icon(icon, color: Colors.white, size: 20),
-                  const SizedBox(width: 8),
+                  Icon(
+                    icon,
+                    color: AibsColors.onPrimary,
+                    size: AibsSize.navIcon,
+                  ),
+                  const SizedBox(width: AibsSpace.s8),
                 ],
                 Text(
                   label,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                  ),
+                  style: AibsType.button.copyWith(color: AibsColors.onPrimary),
                 ),
               ],
             ),
@@ -102,16 +96,16 @@ class AibsSecondaryButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       width: double.infinity,
-      height: 50,
+      height: AibsSize.button,
       child: OutlinedButton(
         onPressed: onPressed,
         style: OutlinedButton.styleFrom(
           foregroundColor: AibsColors.primaryStrong,
-          side: const BorderSide(color: AibsColors.line),
+          side: const BorderSide(color: AibsColors.line, width: 2),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(AibsRadius.lg),
           ),
-          textStyle: const TextStyle(fontWeight: FontWeight.w800),
+          textStyle: AibsType.button,
         ),
         child: Text(label),
       ),
@@ -127,19 +121,13 @@ class AibsMascot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SvgPicture.asset(
-      'assets/maskot/koala-$expression.svg',
-      width: size,
-      height: size,
-      semanticsLabel: 'Koala AIBS',
-      placeholderBuilder: (_) => SizedBox(
-        width: size,
-        height: size,
-        child: const Center(
-          child: Icon(Icons.pets, color: AibsColors.primary, size: 44),
-        ),
-      ),
-    );
+    final mood = switch (expression) {
+      'senang' => KoalaMood.senang,
+      'mikir' => KoalaMood.mikir,
+      'khawatir' => KoalaMood.khawatir,
+      _ => throw ArgumentError.value(expression, 'expression'),
+    };
+    return Koala(mood, size: size, semanticLabel: 'Koala AIBS');
   }
 }
 
@@ -161,33 +149,38 @@ class AibsChoiceChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: selected ? AibsColors.primary : AibsColors.card,
-      borderRadius: BorderRadius.circular(999),
+      borderRadius: BorderRadius.circular(AibsRadius.pill),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(AibsRadius.pill),
         child: Container(
-          constraints: const BoxConstraints(minHeight: 44),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          constraints: const BoxConstraints(minHeight: AibsSize.chip),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AibsSpace.s16,
+            vertical: AibsSpace.s10,
+          ),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(999),
+            borderRadius: BorderRadius.circular(AibsRadius.pill),
             border: Border.all(
               color: selected ? AibsColors.primary : AibsColors.line,
-              width: selected ? 1 : 1.4,
+              width: 2,
             ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (leading != null) ...[leading!, const SizedBox(width: 6)],
+              if (leading != null) ...[
+                leading!,
+                const SizedBox(width: AibsSpace.s6),
+              ],
               if (selected) ...[
-                const Icon(Icons.check, color: Colors.white, size: 16),
-                const SizedBox(width: 6),
+                const Icon(Icons.check, color: AibsColors.onPrimary, size: 16),
+                const SizedBox(width: AibsSpace.s6),
               ],
               Text(
                 label,
-                style: TextStyle(
-                  color: selected ? Colors.white : AibsColors.ink,
-                  fontWeight: FontWeight.w800,
+                style: AibsType.bodyStrong.copyWith(
+                  color: selected ? AibsColors.onPrimary : AibsColors.ink,
                 ),
               ),
             ],
