@@ -186,13 +186,14 @@ abstract final class AibsType {
   static TextStyle _t(
     double size,
     double line,
-    FontWeight w, [
+    FontWeight weight, [
     Color color = AibsColors.ink,
   ]) => TextStyle(
     fontFamily: family,
     fontSize: size,
     height: line / size,
-    fontWeight: w,
+    fontWeight: weight,
+    fontVariations: [FontVariation('wght', weight.value.toDouble())],
     color: color,
   );
 

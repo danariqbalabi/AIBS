@@ -15,9 +15,10 @@ widgets under `lib/shared/widgets/`, and SVG assets under `assets/`.
 The screens are still a prototype and should be updated screen by screen to
 match `docs/design/SCREENS.md`.
 
-Nunito currently uses the existing `google_fonts` runtime loader. The handoff
-specifies bundled static weights (600/700/800), which should be added before
-offline or release use.
+Nunito is bundled locally as a variable font and licensed under the SIL Open
+Font License in `assets/fonts/OFL.txt`. The theme maps its 600, 700, and 800
+styles to the variable font's `wght` axis, so rendering does not require a
+network connection.
 
 ## Run
 

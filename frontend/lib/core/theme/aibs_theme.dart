@@ -3,7 +3,6 @@
 // Use it in MaterialApp:  theme: AibsTheme.light,
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import 'aibs_tokens.dart';
 
@@ -59,7 +58,7 @@ abstract final class AibsTheme {
       useMaterial3: true,
       colorScheme: scheme,
       fontFamily: AibsType.family,
-      textTheme: GoogleFonts.nunitoTextTheme(text),
+      textTheme: text,
       scaffoldBackgroundColor: AibsColors.surface,
       splashFactory:
           NoSplash.splashFactory, // feedback = press scale, not ripples
