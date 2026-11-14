@@ -36,6 +36,15 @@ network connection.
 
 ## Run
 
+For an in-memory frontend preview without Supabase or the API:
+
+```powershell
+flutter run -d chrome --web-port 5173 --dart-define=AIBS_FRONTEND_PREVIEW=true
+```
+
+This preview mode is opt-in. It uses demo UI data and does not persist records.
+For connected login and backend flows, configure `config/local.json` as below.
+
 ```powershell
 Copy-Item config/example.json config/local.json
 # Isi API_BASE_URL, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY.

@@ -46,6 +46,7 @@ dependencies:
   cross_file: ^0.3.5+5
   pdf: ^3.13.1
   image: ^4.13.0
+  audioplayers: ^6.8.1
 
 dev_dependencies:
   flutter_test:
@@ -73,6 +74,7 @@ flutter:
     - assets/brand/
     - assets/icons/
     - assets/illustrations/
+    - assets/sounds/
     - assets/fonts/
 
   fonts:

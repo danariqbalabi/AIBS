@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import 'core/demo_data.dart';
+import 'core/sound/aibs_sound.dart';
+import 'core/sound/aibs_tap_sounds.dart';
 import 'data/app_services.dart';
 import 'data/records_repository.dart';
 import 'data/app_config.dart';
@@ -28,9 +30,16 @@ import 'data/export_file.dart';
 
 import 'dart:typed_data';
 
+const _frontendPreview = bool.fromEnvironment('AIBS_FRONTEND_PREVIEW');
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await PhotoPicker.recover();
+  await AibsSound.init();
+  if (_frontendPreview) {
+    runApp(const AibsApp());
+    return;
+  }
   final services = await AppServices.create(const AppConfig());
   final themePreferences = ThemePreferences();
   try {
@@ -251,7 +260,6 @@ class _AibsAppState extends State<AibsApp> {
       preferences: _themePreferences,
       child: MaterialApp(
         title: 'AIBS',
-        scaffoldMessengerKey: contextForMessages,
         navigatorKey: navigatorKey,
         debugShowCheckedModeBanner: false,
         theme: AibsTheme.light,
@@ -272,7 +280,10 @@ class _AibsAppState extends State<AibsApp> {
                     child: IngredientCatalogScope(
                       items: () =>
                           widget.services?.profiles.ingredients ?? const [],
-                      child: child ?? const SizedBox.shrink(),
+                      child: AibsTapSounds(
+                        messengerKey: contextForMessages,
+                        child: child ?? const SizedBox.shrink(),
+                      ),
                     ),
                   ),
                 ),

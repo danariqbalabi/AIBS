@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../core/sound/aibs_sound.dart';
+import '../core/sound/aibs_tap_sounds.dart';
 import '../core/theme/aibs_tokens.dart';
 import '../shared/widgets/koala.dart';
 import '../theme/aibs_theme.dart';
@@ -159,6 +161,10 @@ class AibsChoiceChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return AibsSoundTag(sfx: AibsSfx.pop, child: _chip(context));
+  }
+
+  Widget _chip(BuildContext context) {
     return Material(
       color: selected
           ? context.aibsColor(AibsColors.primary)

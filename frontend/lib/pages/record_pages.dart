@@ -16,6 +16,7 @@ import 'event_editor_page.dart';
 import 'package:flutter/material.dart';
 
 import '../core/demo_data.dart';
+import '../core/sound/aibs_sound.dart';
 import '../core/theme/aibs_tokens.dart';
 import '../shared/widgets/koala.dart';
 import '../shared/widgets/status_badge.dart';
@@ -637,7 +638,13 @@ class _CameraFlowPageState extends State<CameraFlowPage> {
       padding: const EdgeInsets.all(AibsSpace.s20),
       children: [
         const SizedBox(height: AibsSpace.s24),
-        const Center(child: Koala(KoalaMood.senang, size: 160)),
+        const Center(
+          child: Koala(
+            KoalaMood.senang,
+            size: 160,
+            entrySound: AibsSfx.success,
+          ),
+        ),
         const SizedBox(height: AibsSpace.s12),
         Text(
           'Tersimpan',

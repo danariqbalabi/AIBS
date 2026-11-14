@@ -11,6 +11,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../core/demo_data.dart';
+import '../core/sound/aibs_sound.dart';
 import '../core/theme/aibs_tokens.dart';
 import 'profile_setup_flow.dart';
 import '../shared/widgets/koala.dart';
@@ -859,6 +860,21 @@ class _ProfilePageState extends State<ProfilePage> {
               : 'Bantuan AI aktif',
           detail: 'Ubah izin dan data',
           onTap: _openPrivacy,
+        ),
+        const SizedBox(height: AibsSpace.s12),
+        AibsCard(
+          padding: 0,
+          child: Material(
+            type: MaterialType.transparency,
+            child: ValueListenableBuilder<bool>(
+              valueListenable: AibsSound.muted,
+              builder: (context, muted, _) => SwitchListTile(
+                title: const Text('Suara'),
+                value: !muted,
+                onChanged: (on) => AibsSound.setMuted(!on),
+              ),
+            ),
+          ),
         ),
         const SizedBox(height: AibsSpace.s12),
         TextButton(

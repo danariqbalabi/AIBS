@@ -44,3 +44,16 @@ When `MediaQuery.disableAnimationsOf(context)` is true:
 - All transitions become a 120 ms fade, no slide or scale.
 - C2 bob stops (static koala).
 - B1 advances immediately.
+- Koala (E1) renders the static brand SVG; tapping still plays its sound.
+
+## E. Living koala and sound
+
+| # | Name | Spec |
+|---|---|---|
+| E1 | Living koala | `Koala` is split into layers (`koala_parts.dart`): breathes (4 s loop), blinks every 2–5 s, wiggles its ears. Every 5–9 s a mood gesture: **senang** waves and sways its leaf, **mikir** tilts its head while thought bubbles float, **khawatir** fidgets its hands with a falling sweat drop. Appears with scale 0.88 → 1, 320 ms emphasized. |
+| E2 | Poke | Tapping the koala: squash, hop 18 px, land (720 ms) + "boing" + light haptic. |
+| E3 | Tap sound | Every enabled tappable plays a soft tick (`AibsTapSounds` around the app). Chips pop. Disabled buttons, drags and plain text stay silent. Override with `AibsSoundTag`. |
+| E4 | Event sounds | Snackbars: chime for "…tersimpan/ditambahkan/disalin", soft two-note hum otherwise. "Tersimpan" screen and senang verdict: chime. Khawatir verdict: hum. |
+| E5 | Mute | Profil → "Suara" switch (persisted). Sounds mix with other audio and respect the iOS silent switch. Regenerate files with `dart run tool/generate_sounds.dart`. |
+| E6 | Night koala | Dark theme only, colors unchanged. Ground shadow black 38% (the brand 10% navy shadow vanishes on dark). Breath 5 s, eyes rest 12% lower, blinks 320 ms and 35% of them linger half shut for 1.3 s. Every 7–11 s (and after a poke) a **yawn** (2.6 s) replaces the mood gesture: mouth opens, eyes squint, head tips back 5°, ears open, senang stretches its arm. |
+| E7 | Sun and moon | Koalas of 150 and up (`Koala.skyMinSize`; `sky:` overrides) get a small sky above the left ear. Light: sun, rays turn once per 24 s, core pulses 4%. Dark: crescent moon sways ±6° over 6 s with three twinkling stars. Both bounce 6 px when the koala is poked. Never in bubbles or verdict cards. With reduced motion they show still. |
