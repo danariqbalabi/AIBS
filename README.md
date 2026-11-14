@@ -1,6 +1,6 @@
 # AIBS
 
-**Kategori:** Web dan Mobile (Android). **Nama tim resmi:** belum dikonfirmasi; lengkapi sesuai pendaftaran sebelum submission.
+**Kategori:** Web dan Mobile (Android). **Nama tim:** udah beli tiket buat final sejak 6 nov.
 
 Pendamping menu dan jurnal makanan/gejala untuk orang dewasa, mengikuti arahan makan yang dilaporkan pengguna. LOGICODIX 2026 · Inclusive Health & Well-being.
 
@@ -155,12 +155,12 @@ uv run python evaluate_ai.py --live --output ../docs/evidence/ai-nlp-evaluation.
 
 | Anggota | Tanggung jawab awal |
 | --- | --- |
-| Danar Iqbal Abi / [danariqbalabi](https://github.com/danariqbalabi) | Backend; kini integrasi full stack |
+| Danar Iqbal Abi Zaidan Suharso / [danariqbalabi](https://github.com/danariqbalabi) | Backend; kini integrasi full stack |
 | Amanda Kwienisa | Frontend |
 | Razan Muhammad | UI/UX |
 | Micguel Katili | AI |
 
-Ketua sesuai pendaftaran: **menunggu konfirmasi tim**. Video aplikasi berjalan 3–5 menit, APK publik, surat orisinalitas/atribusi dan commit final harus dilengkapi sebelum submission. Ikuti [checklist release](docs/hackathon-readiness.md).
+Ketua tim: **Danar Iqbal Abi Zaidan Suharso**. Video aplikasi berjalan 3–5 menit, APK publik, surat orisinalitas/atribusi dan commit final harus dilengkapi sebelum submission. Ikuti [checklist release](docs/hackathon-readiness.md).
 
 ## Penggunaan AI dan atribusi
 
