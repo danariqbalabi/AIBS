@@ -101,6 +101,7 @@ abstract final class AibsSpace {
 }
 
 abstract final class AibsSize {
+  static const mobileViewport = 390.0;
   static const menuHero = 144.0;
   static const navigationClearance = 40.0;
   static const tapMin = 44.0;

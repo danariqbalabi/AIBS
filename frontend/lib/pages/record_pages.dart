@@ -883,7 +883,9 @@ class _UnknownIngredientRow extends StatelessWidget {
         children: [
           const Icon(Icons.help_outline, color: AibsColors.inkMuted),
           const SizedBox(width: AibsSpace.s8),
-          Text('Saus · belum jelas', style: AibsType.bodyStrong),
+          Expanded(
+            child: Text('Saus · belum jelas', style: AibsType.bodyStrong),
+          ),
         ],
       ),
     );

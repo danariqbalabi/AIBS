@@ -69,9 +69,16 @@ class AibsPrimaryButton extends StatelessWidget {
                   ),
                   const SizedBox(width: AibsSpace.s8),
                 ],
-                Text(
-                  label,
-                  style: AibsType.button.copyWith(color: AibsColors.onPrimary),
+                Flexible(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      label,
+                      style: AibsType.button.copyWith(
+                        color: AibsColors.onPrimary,
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -107,7 +114,7 @@ class AibsSecondaryButton extends StatelessWidget {
           ),
           textStyle: AibsType.button,
         ),
-        child: Text(label),
+        child: FittedBox(fit: BoxFit.scaleDown, child: Text(label)),
       ),
     );
   }

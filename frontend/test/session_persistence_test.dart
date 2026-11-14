@@ -112,6 +112,11 @@ void main() {
       expect(find.text('Coba Demo'), findsNothing);
       pending.complete(http.Response(jsonEncode(storedProfile), 200));
       await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.text('Catatan sebelumnya'),
+        150,
+        scrollable: find.byType(Scrollable).first,
+      );
       expect(find.text('Catatan sebelumnya'), findsOneWidget);
       expect(identity.newSessions, 0);
       expect(identity.signOuts, 0);
@@ -139,6 +144,11 @@ void main() {
       fail = false;
       await tester.tap(find.text('Coba lagi'));
       await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.text('Catatan sebelumnya'),
+        150,
+        scrollable: find.byType(Scrollable).first,
+      );
       expect(find.text('Catatan sebelumnya'), findsOneWidget);
       expect(identity.hasSession, true);
       expect(identity.signOuts, 0);
@@ -167,6 +177,11 @@ void main() {
       fail = false;
       await tester.tap(find.text('Coba lagi'));
       await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.text('Catatan sebelumnya'),
+        150,
+        scrollable: find.byType(Scrollable).first,
+      );
       expect(find.text('Catatan sebelumnya'), findsOneWidget);
     },
   );
