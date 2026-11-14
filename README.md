@@ -26,7 +26,7 @@ Target pengguna adalah orang dewasa yang membutuhkan bantuan memilih makanan men
 - Catatan makan manual, cerita atau foto dengan review sebelum simpan; catat ulang dari riwayat.
 - Catatan gejala termasuk gas dan urgensi BAB, serta hubungan dengan catatan makan.
 - Jurnal, grafik waktu makan dan gejala, ringkasan 7/30 hari dan ekspor CSV/PDF.
-- Streak harian, mode gelap dan draft offline yang ditinjau sebelum dikirim saat online.
+- Streak harian dan mode gelap.
 
 ## Alur produk dan arsitektur
 
