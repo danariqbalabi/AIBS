@@ -775,7 +775,10 @@ class _ScheduleSheetState extends State<_ScheduleSheet> {
                     return;
                   }
                   _saving = false;
-                  if (context.mounted) Navigator.pop(context, plan);
+                  if (context.mounted &&
+                      ModalRoute.of(context)?.isCurrent == true) {
+                    Navigator.pop(context, plan);
+                  }
                 },
               ),
             ],

@@ -83,7 +83,10 @@ class TodayPage extends StatelessWidget {
         ),
         const SizedBox(height: AibsSpace.s24),
         if (!hasDiet)
-          _DietPrompt(onOpenProfile: onOpenProfile)
+          _DietPrompt(
+            onOpenProfile: onOpenProfile,
+            onOpenJournal: onOpenJournal,
+          )
         else if (!hasMeals && visiblePlans.isEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AibsSpace.s20),
@@ -129,7 +132,11 @@ class TodayPage extends StatelessWidget {
               ),
             ),
           ],
-          if (hasMeals && symptoms.isEmpty && showSymptomPrompt) ...[
+          if (hasMeals &&
+              !symptoms.any(
+                (s) => DateUtils.isSameDay(s.date, DateTime.now()),
+              ) &&
+              showSymptomPrompt) ...[
             const SizedBox(height: AibsSpace.s20),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: AibsSpace.s20),
@@ -150,11 +157,28 @@ class TodayPage extends StatelessWidget {
             ),
           ),
         ],
-        if (!hasDiet && hasMeals) ...[
-          const SizedBox(height: AibsSpace.s20),
+        if (!hasDiet) ...[
+          if (hasMeals)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AibsSpace.s20),
+              child: _TodayLogCard(meals: meals, onTap: onOpenJournal),
+            ),
+          for (final scheduled in visiblePlans)
+            Padding(
+              padding: const EdgeInsets.all(AibsSpace.s20),
+              child: _PlanCard(
+                plan: scheduled,
+                onTap: () => onOpenMenuItem(scheduled.menu),
+              ),
+            ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AibsSpace.s20),
-            child: _TodayLogCard(meals: meals, onTap: onOpenJournal),
+            padding: const EdgeInsets.all(AibsSpace.s20),
+            child: _WeekCard(
+              meals: meals,
+              symptoms: symptoms,
+              onSummary: onOpenSummary,
+              onJournal: onOpenJournal,
+            ),
           ),
         ],
       ],
@@ -170,8 +194,9 @@ class TodayPage extends StatelessWidget {
 }
 
 class _DietPrompt extends StatelessWidget {
-  const _DietPrompt({required this.onOpenProfile});
+  const _DietPrompt({required this.onOpenProfile, required this.onOpenJournal});
   final VoidCallback onOpenProfile;
+  final VoidCallback onOpenJournal;
 
   @override
   Widget build(BuildContext context) {
@@ -188,12 +213,16 @@ class _DietPrompt extends StatelessWidget {
             const KoalaBubble(
               mood: KoalaMood.mikir,
               koalaSize: 96,
-              text: 'Isi arahan dietmu biar aku bisa kasih rekomendasi menu.',
+              text: 'Catat makanan dan keluhanmu buat dibawa saat konsultasi.',
             ),
             const SizedBox(height: AibsSpace.s12),
             AibsPrimaryButton(
-              label: 'Isi arahan diet',
+              label: 'Catat sekarang',
+              onPressed: onOpenJournal,
+            ),
+            TextButton(
               onPressed: onOpenProfile,
+              child: const Text('Lengkapi profil'),
             ),
           ],
         ),

@@ -29,10 +29,7 @@ void main() {
     await tester.tap(find.text('Simpan rencana'));
     await tester.pumpAndSettle();
     expect(find.text('Rencana tersimpan'), findsOneWidget);
-    await tester.tap(find.byTooltip('Kembali'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Hari Ini').last);
-    await tester.pumpAndSettle();
+    expect(find.text('Hai, Nadia'), findsOneWidget);
     expect(find.text('Nasi ayam bakar kecap'), findsWidgets);
 
     await tester.tap(find.byTooltip('Foto makanan'));
