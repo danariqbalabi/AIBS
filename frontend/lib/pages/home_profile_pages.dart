@@ -675,6 +675,7 @@ class ProfilePage extends StatefulWidget {
     super.key,
     this.profile,
     this.onProfileSaved,
+    this.onOpenOffline,
     this.onOpenShopping,
     this.onLogout,
     this.onDeleteAll,
@@ -687,6 +688,7 @@ class ProfilePage extends StatefulWidget {
   final ProfileSetupAnswers? profile;
   final FutureOr<void> Function(ProfileSetupAnswers)? onProfileSaved;
   final VoidCallback? onOpenShopping;
+  final VoidCallback? onOpenOffline;
   final VoidCallback? onLogout;
   final VoidCallback? onLinkEmail;
   final VoidCallback? onResumeScreening;
@@ -837,6 +839,15 @@ class _ProfilePageState extends State<ProfilePage> {
           onTap: widget.onOpenShopping,
         ),
         const SizedBox(height: AibsSpace.s12),
+        if (widget.onOpenOffline != null) ...[
+          _ProfileSection(
+            title: 'Data offline',
+            value: 'Draft, jurnal & resep',
+            detail: 'Simpan di perangkat ini',
+            onTap: widget.onOpenOffline,
+          ),
+          const SizedBox(height: AibsSpace.s12),
+        ],
         if (themePreferences != null) ...[
           ThemeToggleCard(preferences: themePreferences),
           const SizedBox(height: AibsSpace.s12),

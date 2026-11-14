@@ -7,6 +7,9 @@ import 'core/demo_data.dart';
 import 'data/app_services.dart';
 import 'data/records_repository.dart';
 import 'data/app_config.dart';
+import 'data/api_client.dart';
+import 'data/offline_shell.dart';
+import 'pages/offline_page.dart';
 import 'data/theme_preferences.dart';
 import 'pages/home_profile_pages.dart';
 import 'pages/menu_flow.dart';
@@ -112,6 +115,34 @@ class _AibsAppState extends State<AibsApp> {
       });
       return true;
     } catch (error) {
+      final local = services.offline;
+      if (error is ApiFailure &&
+          (error.status == null || error.status! >= 500) &&
+          local != null) {
+        await local.load();
+        if (local.enabled &&
+            local.data['profile'] != null &&
+            local.data['snapshot'] != null) {
+          services.profiles.rawProfile = Map<String, dynamic>.from(
+            local.data['profile'] as Map,
+          );
+          services.profiles.consent = Map<String, dynamic>.from(
+            local.data['consent'] as Map,
+          );
+          services.profiles.assessment = Map<String, dynamic>.from(
+            local.data['assessment'] as Map,
+          );
+          services.profiles.ingredients = (local.data['ingredients'] as List)
+              .cast<Map<String, dynamic>>();
+          if (mounted) {
+            setState(() {
+              _profile = services.profiles.fromServer(services.identity.email);
+              _onboardingComplete = true;
+            });
+          }
+          return true;
+        }
+      }
       if (!gate) rethrow;
       if (mounted) setState(() => _restoreError = AppServices.message(error));
       return false;
@@ -193,6 +224,12 @@ class _AibsAppState extends State<AibsApp> {
       if (confirmed != true) return;
     }
     try {
+      await widget.services?.offline?.clear();
+      try {
+        await offlineShell(false);
+      } catch (_) {
+        /* Account data has already been removed. */
+      }
       await widget.services?.signOut();
       if (mounted) {
         setState(() {
@@ -318,6 +355,7 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
       _records = RecordsRepository(
         widget.services!.api,
         widget.services!.profiles,
+        offline: widget.services!.offline,
       );
       _menus = [];
       _shoppingItems.clear();
@@ -342,6 +380,7 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
       _loadError = null;
     });
     try {
+      await widget.services?.offline?.load();
       await _records!.load();
       if (!mounted) return;
       setState(() {
@@ -401,137 +440,177 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
     }
     return Scaffold(
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.only(bottom: AibsSize.navigationClearance),
-          child: IndexedStack(
-            index: _selectedIndex,
-            children: [
-              TodayPage(
-                streak: _records?.dashboard['streak'] as Map<String, dynamic>?,
-                serverMode: _records?.dashboard['mode'] as String?,
-                plans: _records?.todayPlans ?? const [],
-                menus: _menus,
-                profile: widget.profile,
-                meals: _meals,
-                symptoms: _symptoms,
-                plan: _plan,
-                showSymptomPrompt: !_didNoSymptomCheckin,
-                onOpenCamera: () => _showCameraIntent(),
-                onOpenMenu: () => setState(() => _selectedIndex = 1),
-                onOpenProfile: () => setState(() => _selectedIndex = 3),
-                onOpenJournal: () => setState(() => _selectedIndex = 2),
-                onOpenSummary: _openSummary,
-                onAddSymptom: _openSymptomEntry,
-                onLogNoSymptoms: _noSymptoms,
-                onOpenMenuItem: _openMenuItem,
-              ),
-              MenuHomePage(
-                key: _menuKey,
-                onCheckMenu: _records?.checkCard,
-                ingredientId: widget.services?.profiles.ingredientId,
-                onShoppingQuantity: _records?.changeShoppingQuantity,
-                menus: _menus,
-                onAddMenuShopping: _records == null
-                    ? null
-                    : _addShoppingIngredients,
-                checkedShopping: _records?.checkedShopping ?? {},
-                onShoppingChecked: _records?.checkShopping,
-                profile: widget.profile,
-                shoppingItems: _shoppingItems,
-                onShoppingChanged: _updateShoppingItems,
-                onStartMealRecord: _openMealRecord,
-                onPlanSaved: _savePlan,
-              ),
-              JournalPage(
-                key: _journalKey,
-                onOpenCapture: _showCameraIntent,
-                onManualStory: _records == null ? null : _reviewManualStory,
-                onSaveSymptomDraft: _records?.saveSymptomDraft,
-                evidenceDate: _evidenceDate,
-                evidenceSymptom: _evidenceSymptom,
-                meals: _meals,
-                symptoms: _symptoms,
-                stories: _stories,
-                aiEnabled: widget.profile?.aiEnabled ?? true,
-                onAddMeal: () => _openCamera(
-                  initialManualEntry: true,
-                  intent: MealIntent.eaten,
+        child: Column(
+          children: [
+            if (_records?.usingCache == true)
+              MaterialBanner(
+                content: Text(
+                  'Offline · data terakhir ${_records?.cachedAt ?? ""}. Penilaian tersimpan, belum diperbarui.',
                 ),
-                onAddSymptom: _addSymptom,
-                onAddStory: _addStory,
-                onAnalyzeStory: _records == null ? null : _reviewStory,
-                onResumeDraft: _records == null ? null : _resumeDraft,
-                onDeleteMeal: _deleteMeal,
-                onDeleteSymptom: _records == null ? null : _deleteSymptom,
-                onEditEvent: _records == null ? null : _editEvent,
-                ingredientId: widget.services?.profiles.ingredientId,
-                onOpenSummary: _openSummary,
-              ),
-              ProfilePage(
-                onResumeScreening: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (routeContext) => ProfileSetupFlow(
-                      displayName: widget.profile?.displayName ?? 'Kamu',
-                      email: widget.profile?.email ?? '',
-                      aiEnabled: widget.profile?.aiEnabled ?? false,
-                      initialAnswers: widget.profile,
-                      onAssess: widget.services?.profiles.assess,
-                      onBackToAccount: () => Navigator.pop(routeContext),
-                      onComplete: (answers) async {
-                        try {
-                          await widget.onProfileSaved?.call(
-                            answers.copyWithDietProfile(
-                              dietType: answers.dietType,
-                              dietPhase: answers.dietPhase,
-                              avoidedIngredients: answers.avoidedIngredients,
-                              portionLimits: answers.portionLimits,
-                              savePhotos: widget.profile?.savePhotos ?? false,
-                            ),
-                          );
-                          if (routeContext.mounted) Navigator.pop(routeContext);
-                        } catch (error) {
-                          if (routeContext.mounted) {
-                            ScaffoldMessenger.of(routeContext).showSnackBar(
-                              SnackBar(
-                                content: Text(AppServices.message(error)),
-                              ),
-                            );
-                          }
-                        }
-                      },
-                    ),
+                actions: [
+                  TextButton(
+                    onPressed: _reload,
+                    child: const Text('Coba online'),
                   ),
-                ),
-                profile: widget.profile,
-                onProfileSaved: widget.onProfileSaved,
-                shoppingCount: _shoppingItems.length,
-                onOpenShopping: _openShoppingList,
-                onLogout: widget.onLogout,
-                onLinkEmail: widget.onLinkEmail,
-                onExportData: _records == null
-                    ? null
-                    : () async {
-                        final data = await widget.services!.api.download(
-                          '/api/v1/me/data/export',
-                        );
-                        await exportFile(
-                          data,
-                          'aibs-data.zip',
-                          'application/zip',
-                        );
-                      },
-                onDeleteAll: _records == null
-                    ? widget.onLogout
-                    : () async {
-                        await widget.services!.api.request(
-                          'DELETE',
-                          '/api/v1/me/data?confirm=true',
-                        );
-                        await widget.onDataDeleted?.call();
-                      },
+                ],
               ),
-            ],
-          ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.only(
+                  bottom: AibsSize.navigationClearance,
+                ),
+                child: IndexedStack(
+                  index: _selectedIndex,
+                  children: [
+                    TodayPage(
+                      streak:
+                          _records?.dashboard['streak']
+                              as Map<String, dynamic>?,
+                      serverMode: _records?.dashboard['mode'] as String?,
+                      plans: _records?.todayPlans ?? const [],
+                      menus: _menus,
+                      profile: widget.profile,
+                      meals: _meals,
+                      symptoms: _symptoms,
+                      plan: _plan,
+                      showSymptomPrompt: !_didNoSymptomCheckin,
+                      onOpenCamera: () => _showCameraIntent(),
+                      onOpenMenu: () => setState(() => _selectedIndex = 1),
+                      onOpenProfile: () => setState(() => _selectedIndex = 3),
+                      onOpenJournal: () => setState(() => _selectedIndex = 2),
+                      onOpenSummary: _openSummary,
+                      onAddSymptom: _openSymptomEntry,
+                      onLogNoSymptoms: _noSymptoms,
+                      onOpenMenuItem: _openMenuItem,
+                    ),
+                    MenuHomePage(
+                      key: _menuKey,
+                      onCheckMenu: _records?.checkCard,
+                      onSuggestSwaps: _records?.suggestSwaps,
+                      ingredientId: widget.services?.profiles.ingredientId,
+                      onShoppingQuantity: _records?.changeShoppingQuantity,
+                      menus: _menus,
+                      onAddMenuShopping: _records == null
+                          ? null
+                          : _addShoppingIngredients,
+                      checkedShopping: _records?.checkedShopping ?? {},
+                      onShoppingChecked: _records?.checkShopping,
+                      profile: widget.profile,
+                      shoppingItems: _shoppingItems,
+                      onShoppingChanged: _updateShoppingItems,
+                      onStartMealRecord: _openMealRecord,
+                      onPlanSaved: _savePlan,
+                    ),
+                    JournalPage(
+                      onRepeatMeal: (meal) => _openCamera(
+                        intent: MealIntent.eaten,
+                        initialManualEntry: true,
+                        foodName: meal.name,
+                        ingredients: meal.ingredients,
+                      ),
+                      key: _journalKey,
+                      onOpenCapture: _showCameraIntent,
+                      onManualStory: _records == null
+                          ? null
+                          : _reviewManualStory,
+                      onSaveSymptomDraft: _records?.saveSymptomDraft,
+                      evidenceDate: _evidenceDate,
+                      evidenceSymptom: _evidenceSymptom,
+                      meals: _meals,
+                      symptoms: _symptoms,
+                      stories: _stories,
+                      aiEnabled: widget.profile?.aiEnabled ?? true,
+                      onAddMeal: () => _openCamera(
+                        initialManualEntry: true,
+                        intent: MealIntent.eaten,
+                      ),
+                      onAddSymptom: _addSymptom,
+                      onAddStory: _addStory,
+                      onAnalyzeStory: _records == null ? null : _reviewStory,
+                      onResumeDraft: _records == null ? null : _resumeDraft,
+                      onDeleteMeal: _deleteMeal,
+                      onDeleteSymptom: _records == null ? null : _deleteSymptom,
+                      onEditEvent: _records == null ? null : _editEvent,
+                      ingredientId: widget.services?.profiles.ingredientId,
+                      onOpenSummary: _openSummary,
+                    ),
+                    ProfilePage(
+                      onOpenOffline: _records?.offline == null
+                          ? null
+                          : _openOffline,
+                      onResumeScreening: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (routeContext) => ProfileSetupFlow(
+                            displayName: widget.profile?.displayName ?? 'Kamu',
+                            email: widget.profile?.email ?? '',
+                            aiEnabled: widget.profile?.aiEnabled ?? false,
+                            initialAnswers: widget.profile,
+                            onAssess: widget.services?.profiles.assess,
+                            onBackToAccount: () => Navigator.pop(routeContext),
+                            onComplete: (answers) async {
+                              try {
+                                await widget.onProfileSaved?.call(
+                                  answers.copyWithDietProfile(
+                                    dietType: answers.dietType,
+                                    dietPhase: answers.dietPhase,
+                                    avoidedIngredients:
+                                        answers.avoidedIngredients,
+                                    portionLimits: answers.portionLimits,
+                                    savePhotos:
+                                        widget.profile?.savePhotos ?? false,
+                                  ),
+                                );
+                                if (routeContext.mounted) {
+                                  Navigator.pop(routeContext);
+                                }
+                              } catch (error) {
+                                if (routeContext.mounted) {
+                                  ScaffoldMessenger.of(
+                                    routeContext,
+                                  ).showSnackBar(
+                                    SnackBar(
+                                      content: Text(AppServices.message(error)),
+                                    ),
+                                  );
+                                }
+                              }
+                            },
+                          ),
+                        ),
+                      ),
+                      profile: widget.profile,
+                      onProfileSaved: widget.onProfileSaved,
+                      shoppingCount: _shoppingItems.length,
+                      onOpenShopping: _openShoppingList,
+                      onLogout: widget.onLogout,
+                      onLinkEmail: widget.onLinkEmail,
+                      onExportData: _records == null
+                          ? null
+                          : () async {
+                              final data = await widget.services!.api.download(
+                                '/api/v1/me/data/export',
+                              );
+                              await exportFile(
+                                data,
+                                'aibs-data.zip',
+                                'application/zip',
+                              );
+                            },
+                      onDeleteAll: _records == null
+                          ? widget.onLogout
+                          : () async {
+                              await widget.services!.api.request(
+                                'DELETE',
+                                '/api/v1/me/data?confirm=true',
+                              );
+                              await widget.onDataDeleted?.call();
+                            },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
       bottomNavigationBar: AibsTabBar(
@@ -655,6 +734,7 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
             savedMealId = await _addMeal(meal);
           },
           onCheckFood: _records?.checkFood,
+          onSuggestSwaps: _records?.suggestSwaps,
           onReviewPhoto: _records == null ? null : _reviewPhoto,
           onAddSymptom: () => _openSymptomEntry(initialMealId: savedMealId),
           onFinish: () => setState(() => _selectedIndex = 0),
@@ -673,6 +753,7 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
             _menuKey.currentState?.showSuitable();
           },
           onCheckMenu: _records?.checkCard,
+          onSuggestSwaps: _records?.suggestSwaps,
           ingredientId: widget.services?.profiles.ingredientId,
           item: item,
           onAddShopping: _addShoppingIngredients,
@@ -890,6 +971,13 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
     );
   }
 
+  Future<void> _openOffline() async {
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => OfflinePage(records: _records!)));
+    await _reload();
+  }
+
   void _openSummary() {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
@@ -908,7 +996,7 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
             setState(() {
               _selectedIndex = 2;
               _evidenceDate = date;
-              _evidenceSymptom = symptom;
+              _evidenceSymptom = symptom.isEmpty ? null : symptom;
             });
           },
         ),

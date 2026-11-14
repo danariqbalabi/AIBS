@@ -79,7 +79,16 @@ class FoodCard(Contract):
 
 class SymptomCard(Contract):
     code: Literal[
-        "pain", "bloating", "nausea", "vomiting", "diarrhea", "constipation", "bowel", "other"
+        "pain",
+        "bloating",
+        "nausea",
+        "vomiting",
+        "diarrhea",
+        "constipation",
+        "gas",
+        "urgency",
+        "bowel",
+        "other",
     ]
     label: str | None = Field(default=None, min_length=1, max_length=100)
     present: bool

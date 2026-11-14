@@ -9,7 +9,7 @@ from app.core.auth import User, get_user
 from app.core.database import get_db
 from app.core.errors import ApiError
 from app.models.entities import Ingredient, Menu
-from app.schemas.domain import FoodCheckInput
+from app.schemas.domain import FoodCard, FoodCheckInput
 from app.services import catalog
 from app.services.assessment import access_for
 from app.services.profiles import profile_for, require_basic
@@ -71,3 +71,8 @@ def food_check(
     payload: FoodCheckInput, user: User = Depends(get_user), db: Session = Depends(get_db)
 ):
     return catalog.check_food(db, user.id, payload)
+
+
+@router.post("/food-swaps")
+def food_swaps(payload: FoodCard, user: User = Depends(get_user), db: Session = Depends(get_db)):
+    return catalog.food_swaps(db, user.id, payload)

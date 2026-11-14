@@ -44,3 +44,5 @@ fi
 "$flutter_bin" config --no-analytics
 "$flutter_bin" pub get --enforce-lockfile
 "$flutter_bin" build web --release --dart-define-from-file=.vercel/aibs-build.json
+
+python3 scripts/offline-assets.py
