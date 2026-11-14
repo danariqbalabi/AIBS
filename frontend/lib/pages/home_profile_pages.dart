@@ -30,6 +30,7 @@ class TodayPage extends StatelessWidget {
     required this.showSymptomPrompt,
     super.key,
     this.plan,
+    this.menus,
   });
 
   final VoidCallback onOpenCamera;
@@ -45,6 +46,7 @@ class TodayPage extends StatelessWidget {
   final ValueChanged<AibsMenuItem> onOpenMenuItem;
   final bool showSymptomPrompt;
   final AibsMealPlan? plan;
+  final List<AibsMenuItem>? menus;
 
   @override
   Widget build(BuildContext context) {
@@ -99,7 +101,11 @@ class TodayPage extends StatelessWidget {
             ),
           )
         else ...[
-          _RecommendationSlider(onOpen: onOpenMenuItem, onSeeAll: onOpenMenu),
+          _RecommendationSlider(
+            onOpen: onOpenMenuItem,
+            onSeeAll: onOpenMenu,
+            menus: menus,
+          ),
           if (plan != null) ...[
             const SizedBox(height: AibsSpace.s20),
             Padding(
@@ -215,13 +221,18 @@ class _OpenMenuCard extends StatelessWidget {
 }
 
 class _RecommendationSlider extends StatelessWidget {
-  const _RecommendationSlider({required this.onOpen, required this.onSeeAll});
+  const _RecommendationSlider({
+    required this.onOpen,
+    required this.onSeeAll,
+    this.menus,
+  });
+  final List<AibsMenuItem>? menus;
   final ValueChanged<AibsMenuItem> onOpen;
   final VoidCallback onSeeAll;
 
   @override
   Widget build(BuildContext context) {
-    final items = aibsDemoMenus
+    final items = (menus ?? aibsDemoMenus)
         .where((menu) => menu.status == CheckStatus.ok)
         .take(3)
         .toList();

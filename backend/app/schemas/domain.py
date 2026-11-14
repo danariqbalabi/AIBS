@@ -69,9 +69,12 @@ class SymptomCard(Contract):
     stress: Literal["low", "medium", "high", "unknown"] | None = None
     notes: str | None = Field(default=None, max_length=2000)
     linked_food_index: int | None = Field(default=None, ge=0)
+    linked_food_event_id: UUID | None = None
 
     @model_validator(mode="after")
     def preserve_negation(self):
+        if self.linked_food_index is not None and self.linked_food_event_id is not None:
+            raise ValueError("Choose a food in this draft or an existing food event, not both")
         if not self.present and (self.severity is not None or self.bristol_type is not None):
             raise ValueError("Negated symptoms cannot carry severity or a bowel observation")
         if self.bristol_type is not None and self.code != "bowel":

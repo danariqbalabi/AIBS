@@ -1,3 +1,7 @@
+import 'dart:async';
+
+import '../data/app_services.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -14,14 +18,22 @@ class MenuHomePage extends StatefulWidget {
     required this.onShoppingChanged,
     required this.onStartMealRecord,
     required this.onPlanSaved,
+    this.menus,
+    this.onAddMenuShopping,
+    this.onShoppingChecked,
+    this.checkedShopping = const {},
     super.key,
   });
 
   final ProfileSetupAnswers? profile;
   final List<String> shoppingItems;
-  final ValueChanged<List<String>> onShoppingChanged;
+  final FutureOr<void> Function(List<String>) onShoppingChanged;
+  final List<AibsMenuItem>? menus;
+  final FutureOr<void> Function(AibsMenuItem)? onAddMenuShopping;
+  final FutureOr<void> Function(String, bool)? onShoppingChecked;
+  final Set<String> checkedShopping;
   final ValueChanged<AibsMenuItem> onStartMealRecord;
-  final ValueChanged<AibsMealPlan> onPlanSaved;
+  final FutureOr<void> Function(AibsMealPlan) onPlanSaved;
 
   @override
   State<MenuHomePage> createState() => _MenuHomePageState();
@@ -41,7 +53,7 @@ class _MenuHomePageState extends State<MenuHomePage> {
   @override
   Widget build(BuildContext context) {
     final budget = _budget;
-    final filtered = aibsDemoMenus.where((item) {
+    final filtered = (widget.menus ?? aibsDemoMenus).where((item) {
       final matchesText = item.name.toLowerCase().contains(
         _searchController.text.trim().toLowerCase(),
       );
@@ -134,9 +146,13 @@ class _MenuHomePageState extends State<MenuHomePage> {
     );
   }
 
-  void _addIngredientsToShoppingList(AibsMenuItem item) {
+  Future<void> _addIngredientsToShoppingList(AibsMenuItem item) async {
+    if (widget.onAddMenuShopping != null) {
+      await widget.onAddMenuShopping!(item);
+      return;
+    }
     final next = {...widget.shoppingItems, ...item.ingredients}.toList();
-    widget.onShoppingChanged(next);
+    await widget.onShoppingChanged(next);
   }
 
   void _openShoppingList() {
@@ -144,6 +160,8 @@ class _MenuHomePageState extends State<MenuHomePage> {
       MaterialPageRoute<void>(
         builder: (_) => ShoppingListPage(
           items: widget.shoppingItems,
+          initialChecked: widget.checkedShopping,
+          onChecked: widget.onShoppingChecked,
           onChanged: widget.onShoppingChanged,
         ),
       ),
@@ -279,9 +297,9 @@ class MenuDetailPage extends StatelessWidget {
   });
 
   final AibsMenuItem item;
-  final ValueChanged<AibsMenuItem> onAddShopping;
+  final FutureOr<void> Function(AibsMenuItem) onAddShopping;
   final ValueChanged<AibsMenuItem> onStartMealRecord;
-  final ValueChanged<AibsMealPlan> onPlanSaved;
+  final FutureOr<void> Function(AibsMealPlan) onPlanSaved;
 
   @override
   Widget build(BuildContext context) {
@@ -388,8 +406,18 @@ class MenuDetailPage extends StatelessWidget {
                 const SizedBox(height: AibsSpace.s12),
                 AibsSecondaryButton(
                   label: 'Masukkan ke checklist belanja',
-                  onPressed: () {
-                    onAddShopping(item);
+                  onPressed: () async {
+                    try {
+                      await onAddShopping(item);
+                    } catch (error) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(AppServices.message(error))),
+                        );
+                      }
+                      return;
+                    }
+                    if (!context.mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Bahan ditambahkan')),
                     );
@@ -443,7 +471,17 @@ class MenuDetailPage extends StatelessWidget {
       isScrollControlled: true,
       builder: (_) => _ScheduleSheet(menu: item),
     );
-    if (plan != null) onPlanSaved(plan);
+    if (plan != null) {
+      try {
+        await onPlanSaved(plan);
+      } catch (error) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(AppServices.message(error))));
+        }
+      }
+    }
   }
 }
 
@@ -472,8 +510,7 @@ class _IngredientLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isProblem = ingredient.toLowerCase().contains('bawang putih');
-    final result = isProblem ? CheckStatus.bad : status;
+    final result = status;
     return Row(
       children: [
         StatusDot(result),
@@ -495,6 +532,22 @@ class _ScheduleSheet extends StatefulWidget {
 class _ScheduleSheetState extends State<_ScheduleSheet> {
   String _day = 'Hari ini';
   String _meal = 'Malam';
+  static const _weekdays = [
+    'Senin',
+    'Selasa',
+    'Rabu',
+    'Kamis',
+    'Jumat',
+    'Sabtu',
+    'Minggu',
+  ];
+  final _anchor = DateTime.now();
+  late final _days = [
+    'Hari ini',
+    'Besok',
+    for (final offset in [2, 3])
+      _weekdays[_anchor.add(Duration(days: offset)).weekday - 1],
+  ];
   TimeOfDay _time = const TimeOfDay(hour: 19, minute: 0);
 
   @override
@@ -520,7 +573,7 @@ class _ScheduleSheetState extends State<_ScheduleSheet> {
               Wrap(
                 spacing: AibsSpace.s8,
                 children: [
-                  for (final day in ['Hari ini', 'Besok', 'Rabu', 'Kamis'])
+                  for (final day in _days)
                     _FilterChip(
                       label: day,
                       selected: _day == day,
@@ -560,6 +613,13 @@ class _ScheduleSheetState extends State<_ScheduleSheet> {
                     day: _day,
                     meal: _meal,
                     time: _time.format(context),
+                    scheduledAt: DateTime(
+                      _anchor.year,
+                      _anchor.month,
+                      _anchor.day + _days.indexOf(_day),
+                      _time.hour,
+                      _time.minute,
+                    ),
                   ),
                 ),
               ),
@@ -581,9 +641,13 @@ class ShoppingListPage extends StatefulWidget {
     super.key,
     required this.items,
     required this.onChanged,
+    this.initialChecked = const {},
+    this.onChecked,
   });
   final List<String> items;
-  final ValueChanged<List<String>> onChanged;
+  final Set<String> initialChecked;
+  final FutureOr<void> Function(String, bool)? onChecked;
+  final FutureOr<void> Function(List<String>) onChanged;
 
   @override
   State<ShoppingListPage> createState() => _ShoppingListPageState();
@@ -598,6 +662,7 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
   void initState() {
     super.initState();
     _items = [...widget.items];
+    _checked.addAll(widget.initialChecked);
   }
 
   @override
@@ -645,16 +710,44 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
                   ),
                 ),
               ),
+              confirmDismiss: (_) async {
+                try {
+                  await widget.onChanged(
+                    _items.where((value) => value != item).toList(),
+                  );
+                  return true;
+                } catch (error) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(AppServices.message(error))),
+                    );
+                  }
+                  return false;
+                }
+              },
               onDismissed: (_) => _remove(item),
               child: CheckboxListTile(
                 value: _checked.contains(item),
-                onChanged: (value) => setState(() {
-                  if (value == true) {
-                    _checked.add(item);
-                  } else {
-                    _checked.remove(item);
+                onChanged: (value) async {
+                  try {
+                    await widget.onChecked?.call(item, value ?? false);
+                  } catch (error) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(AppServices.message(error))),
+                      );
+                    }
+                    return;
                   }
-                }),
+                  if (!mounted) return;
+                  setState(() {
+                    if (value == true) {
+                      _checked.add(item);
+                    } else {
+                      _checked.remove(item);
+                    }
+                  });
+                },
                 title: Text(
                   item,
                   style: AibsType.bodyStrong.copyWith(
@@ -675,12 +768,25 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
     );
   }
 
-  void _add() {
-    final value = _controller.text.trim();
+  Future<void> _add() async {
+    final raw = _controller.text.trim();
+    final value =
+        widget.onChecked != null && !raw.contains('·') && raw.isNotEmpty
+        ? '$raw · 1 porsi'
+        : raw;
     if (value.isEmpty || _items.contains(value)) return;
     final next = [..._items, value];
+    try {
+      await widget.onChanged(next);
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(AppServices.message(error))));
+      }
+      return;
+    }
+    if (!mounted) return;
     setState(() => _items = next);
-    widget.onChanged(next);
     _controller.clear();
   }
 
@@ -690,6 +796,5 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
       _items = next;
       _checked.remove(value);
     });
-    widget.onChanged(next);
   }
 }

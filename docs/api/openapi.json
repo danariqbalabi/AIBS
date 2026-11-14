@@ -3296,6 +3296,18 @@
               }
             ],
             "title": "Linked Food Index"
+          },
+          "linked_food_event_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Linked Food Event Id"
           }
         },
         "additionalProperties": false,

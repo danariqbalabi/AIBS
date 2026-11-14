@@ -478,6 +478,19 @@
         ],
         "default": null,
         "title": "Linked Food Index"
+      },
+      "linked_food_event_id": {
+        "anyOf": [
+          {
+            "format": "uuid",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Linked Food Event Id"
       }
     },
     "required": [
@@ -773,6 +786,19 @@
             ],
             "default": null,
             "title": "Linked Food Index"
+          },
+          "linked_food_event_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Linked Food Event Id"
           }
         },
         "required": [
@@ -1156,6 +1182,19 @@
             ],
             "default": null,
             "title": "Linked Food Index"
+          },
+          "linked_food_event_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Linked Food Event Id"
           }
         },
         "required": [
@@ -1518,6 +1557,19 @@
             ],
             "default": null,
             "title": "Linked Food Index"
+          },
+          "linked_food_event_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Linked Food Event Id"
           }
         },
         "required": [
@@ -3126,6 +3178,19 @@
             ],
             "default": null,
             "title": "Linked Food Index"
+          },
+          "linked_food_event_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Linked Food Event Id"
           }
         },
         "required": [

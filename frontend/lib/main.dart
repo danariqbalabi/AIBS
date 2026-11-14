@@ -5,6 +5,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 import 'core/demo_data.dart';
 import 'data/app_services.dart';
+import 'data/records_repository.dart';
 import 'data/app_config.dart';
 import 'pages/home_profile_pages.dart';
 import 'pages/menu_flow.dart';
@@ -138,6 +139,7 @@ class _AibsAppState extends State<AibsApp> {
       theme: AibsTheme.light,
       home: _onboardingComplete
           ? AibsHomeShell(
+              services: widget.services,
               profile: _profile,
               onProfileSaved: _saveProfile,
               onLogout: _logout,
@@ -163,11 +165,13 @@ class AibsHomeShell extends StatefulWidget {
   const AibsHomeShell({
     super.key,
     this.profile,
+    this.services,
     this.onProfileSaved,
     this.onLogout,
   });
 
   final ProfileSetupAnswers? profile;
+  final AppServices? services;
   final FutureOr<void> Function(ProfileSetupAnswers)? onProfileSaved;
   final VoidCallback? onLogout;
 
@@ -177,6 +181,62 @@ class AibsHomeShell extends StatefulWidget {
 
 class _AibsHomeShellState extends State<AibsHomeShell> {
   int _selectedIndex = 0;
+  RecordsRepository? _records;
+  List<AibsMenuItem>? _menus;
+  bool _loading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.services != null) {
+      _records = RecordsRepository(
+        widget.services!.api,
+        widget.services!.profiles,
+      );
+      _menus = [];
+      _shoppingItems.clear();
+      WidgetsBinding.instance.addPostFrameCallback((_) => _reload());
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant AibsHomeShell oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.profile != widget.profile) _reload();
+  }
+
+  Future<void> _reload() async {
+    if (_records == null || _loading) return;
+    _loading = true;
+    try {
+      await _records!.load();
+      if (!mounted) return;
+      setState(() {
+        _menus = _records!.menus;
+        _meals
+          ..clear()
+          ..addAll(_records!.meals);
+        _symptoms
+          ..clear()
+          ..addAll(_records!.symptoms);
+        _stories
+          ..clear()
+          ..addAll(_records!.stories);
+        _shoppingItems
+          ..clear()
+          ..addAll(_records!.shoppingLabels);
+        _plan = _records!.plan;
+      });
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(AppServices.message(error))));
+      }
+    } finally {
+      _loading = false;
+    }
+  }
+
   final List<AibsMealLog> _meals = [];
   final List<AibsSymptomLog> _symptoms = [];
   final List<AibsStoryLog> _stories = [];
@@ -197,6 +257,7 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
           index: _selectedIndex,
           children: [
             TodayPage(
+              menus: _menus,
               profile: widget.profile,
               meals: _meals,
               symptoms: _symptoms,
@@ -214,6 +275,12 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
               onOpenMenuItem: _openMenuItem,
             ),
             MenuHomePage(
+              menus: _menus,
+              onAddMenuShopping: _records == null
+                  ? null
+                  : _addShoppingIngredients,
+              checkedShopping: _records?.checkedShopping ?? {},
+              onShoppingChecked: _records?.checkShopping,
               profile: widget.profile,
               shoppingItems: _shoppingItems,
               onShoppingChanged: _updateShoppingItems,
@@ -230,7 +297,7 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
                 intent: MealIntent.eaten,
               ),
               onAddSymptom: _addSymptom,
-              onAddStory: (story) => setState(() => _stories.add(story)),
+              onAddStory: _addStory,
               onDeleteMeal: _deleteMeal,
               onOpenSummary: _openSummary,
             ),
@@ -246,7 +313,10 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
       ),
       bottomNavigationBar: AibsTabBar(
         selectedIndex: _selectedIndex,
-        onTabSelected: (index) => setState(() => _selectedIndex = index),
+        onTabSelected: (index) {
+          setState(() => _selectedIndex = index);
+          _reload();
+        },
         onCameraPressed: _showCameraIntent,
       ),
     );
@@ -363,32 +433,73 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
     );
   }
 
-  void _addMeal(AibsMealLog meal) {
+  Future<void> _addMeal(AibsMealLog meal) async {
+    if (_records != null) {
+      await _records!.saveMeal(meal);
+      await _reload();
+      return;
+    }
     setState(() {
       _meals.add(meal);
       _didNoSymptomCheckin = false;
     });
   }
 
-  void _addSymptom(AibsSymptomLog symptom) {
+  Future<void> _addSymptom(AibsSymptomLog symptom) async {
+    if (_records != null) {
+      await _records!.saveSymptom(symptom);
+      await _reload();
+      return;
+    }
     setState(() => _symptoms.add(symptom));
   }
 
-  void _deleteMeal(AibsMealLog meal) {
+  Future<void> _deleteMeal(AibsMealLog meal) async {
+    if (_records != null) {
+      await _records!.deleteMeal(meal);
+      await _reload();
+      return;
+    }
     setState(() => _meals.remove(meal));
   }
 
-  void _savePlan(AibsMealPlan plan) {
+  Future<void> _savePlan(AibsMealPlan plan) async {
+    if (_records != null) {
+      await _records!.savePlan(plan);
+      await _reload();
+      return;
+    }
     setState(() => _plan = plan);
     ScaffoldMessenger.of(context)
         .showSnackBar(const SnackBar(content: Text('Rencana tersimpan')));
   }
 
-  void _addShoppingIngredients(AibsMenuItem item) {
-    _updateShoppingItems({..._shoppingItems, ...item.ingredients}.toList());
+  Future<void> _addShoppingIngredients(AibsMenuItem item) async {
+    if (_records != null) {
+      await _records!.addMenuShopping(item);
+      await _reload();
+      return;
+    }
+    await _updateShoppingItems(
+      {..._shoppingItems, ...item.ingredients}.toList(),
+    );
   }
 
-  void _updateShoppingItems(List<String> items) {
+  Future<void> _addStory(AibsStoryLog story) async {
+    if (_records != null) {
+      await _records!.saveStory(story);
+      await _reload();
+      return;
+    }
+    setState(() => _stories.add(story));
+  }
+
+  Future<void> _updateShoppingItems(List<String> items) async {
+    if (_records != null) {
+      await _records!.replaceShopping(items);
+      await _reload();
+      return;
+    }
     setState(() {
       _shoppingItems
         ..clear()
@@ -401,6 +512,8 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
       MaterialPageRoute<void>(
         builder: (_) => ShoppingListPage(
           items: _shoppingItems,
+          initialChecked: _records?.checkedShopping ?? {},
+          onChecked: _records?.checkShopping,
           onChanged: _updateShoppingItems,
         ),
       ),
@@ -410,13 +523,7 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
   void _openSymptomEntry() {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => SymptomEntryPage(
-          meals: _meals,
-          onSave: (symptom) {
-            _addSymptom(symptom);
-            Navigator.of(context).pop();
-          },
-        ),
+        builder: (_) => SymptomEntryPage(meals: _meals, onSave: _addSymptom),
       ),
     );
   }
@@ -428,6 +535,7 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
           meals: _meals,
           symptoms: _symptoms,
           profile: widget.profile,
+          loadSummary: _records?.summary,
           onOpenJournal: () => setState(() => _selectedIndex = 2),
         ),
       ),

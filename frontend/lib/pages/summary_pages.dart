@@ -14,12 +14,14 @@ class SummaryPage extends StatefulWidget {
     required this.profile,
     required this.onOpenJournal,
     super.key,
+    this.loadSummary,
   });
 
   final List<AibsMealLog> meals;
   final List<AibsSymptomLog> symptoms;
   final ProfileSetupAnswers? profile;
   final VoidCallback onOpenJournal;
+  final Future<Map<String, dynamic>> Function(int)? loadSummary;
 
   @override
   State<SummaryPage> createState() => _SummaryPageState();
@@ -27,32 +29,93 @@ class SummaryPage extends StatefulWidget {
 
 class _SummaryPageState extends State<SummaryPage> {
   int _period = 7;
+  Future<Map<String, dynamic>>? _summaryFuture;
+  Map<String, dynamic>? _report;
+
+  @override
+  void initState() {
+    super.initState();
+    _summaryFuture = widget.loadSummary?.call(_period);
+  }
+
+  void _changePeriod(int period) => setState(() {
+    _period = period;
+    _summaryFuture = widget.loadSummary?.call(period);
+  });
 
   @override
   Widget build(BuildContext context) {
+    if (_summaryFuture == null) return _render(context);
+    return FutureBuilder<Map<String, dynamic>>(
+      future: _summaryFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return Scaffold(
+            appBar: AppBar(title: const Text('Ringkasan')),
+            body: const Center(child: CircularProgressIndicator()),
+          );
+        }
+        if (snapshot.hasError) {
+          return Scaffold(
+            appBar: AppBar(title: const Text('Ringkasan')),
+            body: Center(
+              child: AibsSecondaryButton(
+                label: 'Coba lagi',
+                onPressed: () => _changePeriod(_period),
+              ),
+            ),
+          );
+        }
+        _report = snapshot.data;
+        return _render(context);
+      },
+    );
+  }
+
+  Widget _render(BuildContext context) {
     final meals = _mealsInPeriod;
     final symptoms = _symptomsInPeriod;
     final activeDays = {
-      ...meals.map((entry) => entry.date.day),
-      ...symptoms.map((entry) => entry.date.day),
+      ...meals.map((entry) => DateUtils.dateOnly(entry.date)),
+      ...symptoms.map((entry) => DateUtils.dateOnly(entry.date)),
     };
-    final enoughData =
-        meals.length >= 3 && symptoms.isNotEmpty && activeDays.length >= 3;
+    final enoughData = _report == null
+        ? meals.length >= 3 && symptoms.isNotEmpty && activeDays.length >= 3
+        : _report!['status'] != 'insufficient_data';
 
     return Scaffold(
       appBar: AppBar(title: const Text('Ringkasan')),
       body: enoughData
           ? _buildSummary(context, meals, symptoms)
-          : _buildEmpty(context, activeDays.length),
+          : _buildEmpty(
+              context,
+              _report?['logged_days'] as int? ?? activeDays.length,
+            ),
     );
   }
 
   List<AibsMealLog> get _mealsInPeriod => widget.meals
-      .where((entry) => DateTime.now().difference(entry.date).inDays < _period)
+      .where(
+        (entry) =>
+            !DateUtils.dateOnly(entry.date).isBefore(
+              DateUtils.dateOnly(DateTime.now())
+                  .subtract(Duration(days: _period - 1)),
+            ) &&
+            !DateUtils.dateOnly(entry.date)
+                .isAfter(DateUtils.dateOnly(DateTime.now())),
+      )
       .toList();
 
   List<AibsSymptomLog> get _symptomsInPeriod => widget.symptoms
-      .where((entry) => DateTime.now().difference(entry.date).inDays < _period)
+      .where(
+        (entry) =>
+            !DateUtils.dateOnly(entry.date).isBefore(
+              DateUtils.dateOnly(DateTime.now())
+                  .subtract(Duration(days: _period - 1)),
+            ) &&
+            !DateUtils.dateOnly(entry.date)
+                .isAfter(DateUtils.dateOnly(DateTime.now())),
+      )
       .toList();
 
   Widget _buildEmpty(BuildContext context, int activeDays) {
@@ -68,7 +131,7 @@ class _SummaryPageState extends State<SummaryPage> {
                   child: AibsChoiceChip(
                     label: '$period hari',
                     selected: _period == period,
-                    onTap: () => setState(() => _period = period),
+                    onTap: () => _changePeriod(period),
                   ),
                 ),
               ),
@@ -125,14 +188,21 @@ class _SummaryPageState extends State<SummaryPage> {
     List<AibsSymptomLog> symptoms,
   ) {
     final uniqueDays = {
-      ...meals.map((entry) => entry.date.day),
-      ...symptoms.map((entry) => entry.date.day),
+      ...meals.map((entry) => DateUtils.dateOnly(entry.date)),
+      ...symptoms.map((entry) => DateUtils.dateOnly(entry.date)),
     };
-    final unknownCount = meals.where((meal) => meal.note != null).length;
+    final unknownCount =
+        _report?['unknown_composition_count'] as int? ??
+        meals.where((meal) => meal.note != null).length;
     final frequent = _frequentSymptom(symptoms);
-    final matchingMeals = meals
+    final frequentCount = symptoms
+        .where((symptom) => symptom.name == frequent)
+        .length;
+    final matchingMeals = symptoms
         .where(
-          (meal) => symptoms.any((symptom) => symptom.mealName == meal.name),
+          (symptom) =>
+              symptom.name == frequent &&
+              (symptom.mealId != null || symptom.mealName != null),
         )
         .length;
     return ListView(
@@ -147,7 +217,7 @@ class _SummaryPageState extends State<SummaryPage> {
                   child: AibsChoiceChip(
                     label: '$period hari',
                     selected: _period == period,
-                    onTap: () => setState(() => _period = period),
+                    onTap: () => _changePeriod(period),
                   ),
                 ),
               ),
@@ -174,7 +244,9 @@ class _SummaryPageState extends State<SummaryPage> {
                 ],
               ),
               const SizedBox(height: AibsSpace.s16),
-              _SummaryDayStrip(activeDays: uniqueDays),
+              _SummaryDayStrip(
+                activeDays: uniqueDays.map((day) => day.day).toSet(),
+              ),
             ],
           ),
         ),
@@ -190,7 +262,7 @@ class _SummaryPageState extends State<SummaryPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '$frequent ${symptoms.length}x · $matchingMeals x setelah catatan makan',
+                '$frequent ${frequentCount}x · $matchingMeals x setelah catatan makan',
                 style: AibsType.bodyStrong,
               ),
               const SizedBox(height: AibsSpace.s4),

@@ -1,3 +1,9 @@
+import 'dart:async';
+
+import 'package:uuid/uuid.dart';
+
+import '../data/app_services.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -33,7 +39,7 @@ class CameraFlowPage extends StatefulWidget {
     this.initialIngredients = const [],
   });
 
-  final ValueChanged<AibsMealLog> onSaved;
+  final FutureOr<void> Function(AibsMealLog) onSaved;
   final VoidCallback onAddSymptom;
   final VoidCallback? onFinish;
   final bool initialManualEntry;
@@ -54,6 +60,9 @@ class _CameraFlowPageState extends State<CameraFlowPage> {
   String _clarification = 'Nggak tahu';
   bool _unknownIngredient = true;
   AibsMealLog? _savedMeal;
+  AibsMealLog? _pendingMeal;
+  final _requestId = const Uuid().v4();
+  bool _saving = false;
 
   @override
   void initState() {
@@ -539,18 +548,33 @@ class _CameraFlowPageState extends State<CameraFlowPage> {
     }
   }
 
-  void _saveMeal() {
+  Future<void> _saveMeal() async {
+    if (_saving) return;
+    _saving = true;
     final meal = AibsMealLog(
+      requestId: _requestId,
       name: _foodController.text.trim().isEmpty
           ? 'Makanan'
           : _foodController.text.trim(),
-      time: TimeOfDay.now().format(context),
-      date: DateTime.now(),
+      time: _pendingMeal?.time ?? TimeOfDay.now().format(context),
+      date: _pendingMeal?.date ?? DateTime.now(),
       status: CheckStatus.unknown,
       ingredients: List.unmodifiable(_ingredients),
       note: _unknownIngredient ? 'Ada bahan yang belum diketahui' : null,
     );
-    widget.onSaved(meal);
+    _pendingMeal = meal;
+    try {
+      await widget.onSaved(meal);
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(AppServices.message(error))));
+      }
+      _saving = false;
+      return;
+    }
+    _saving = false;
+    if (!mounted) return;
     setState(() {
       _savedMeal = meal;
       _step = _CameraStep.saved;
@@ -707,9 +731,9 @@ class JournalPage extends StatefulWidget {
   final List<AibsStoryLog> stories;
   final bool aiEnabled;
   final VoidCallback onAddMeal;
-  final ValueChanged<AibsSymptomLog> onAddSymptom;
-  final ValueChanged<AibsStoryLog> onAddStory;
-  final ValueChanged<AibsMealLog> onDeleteMeal;
+  final FutureOr<void> Function(AibsSymptomLog) onAddSymptom;
+  final FutureOr<void> Function(AibsStoryLog) onAddStory;
+  final FutureOr<void> Function(AibsMealLog) onDeleteMeal;
   final VoidCallback onOpenSummary;
 
   @override
@@ -960,14 +984,15 @@ class _JournalPageState extends State<JournalPage> {
         builder: (_) => _StoryEntryPage(
           initialText: initialText ?? '',
           onDraftChanged: (draft) => setState(() => _storyDraft = draft),
-          onSave: (text) {
-            widget.onAddStory(
+          onSave: (text) async {
+            await widget.onAddStory(
               AibsStoryLog(
                 text: text,
                 time: TimeOfDay.now().format(context),
                 date: DateTime.now(),
               ),
             );
+            if (!mounted || !context.mounted) return;
             setState(() => _storyDraft = null);
             ScaffoldMessenger.of(
               context,
@@ -984,13 +1009,8 @@ class _JournalPageState extends State<JournalPage> {
   void _openSymptom(BuildContext context) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => SymptomEntryPage(
-          meals: widget.meals,
-          onSave: (symptom) {
-            widget.onAddSymptom(symptom);
-            Navigator.pop(context);
-          },
-        ),
+        builder: (_) =>
+            SymptomEntryPage(meals: widget.meals, onSave: widget.onAddSymptom),
       ),
     );
   }
@@ -1021,8 +1041,17 @@ class _JournalPageState extends State<JournalPage> {
                     ),
                   );
                   if (remove != true || !context.mounted) return;
-                  widget.onDeleteMeal(record.meal!);
-                  Navigator.pop(context);
+                  try {
+                    await widget.onDeleteMeal(record.meal!);
+                  } catch (error) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(AppServices.message(error))),
+                      );
+                    }
+                    return;
+                  }
+                  if (context.mounted) Navigator.pop(context);
                 },
         ),
       ),
@@ -1095,13 +1124,14 @@ class _StoryEntryPage extends StatefulWidget {
   });
   final String initialText;
   final ValueChanged<String?> onDraftChanged;
-  final ValueChanged<String> onSave;
+  final FutureOr<void> Function(String) onSave;
 
   @override
   State<_StoryEntryPage> createState() => _StoryEntryPageState();
 }
 
 class _StoryEntryPageState extends State<_StoryEntryPage> {
+  bool _saving = false;
   late final TextEditingController _controller = TextEditingController(
     text: widget.initialText,
   );
@@ -1185,10 +1215,32 @@ class _StoryEntryPageState extends State<_StoryEntryPage> {
                               const SizedBox(height: AibsSpace.s12),
                               AibsPrimaryButton(
                                 label: 'Simpan semua',
-                                onPressed: () {
-                                  Navigator.pop(sheetContext);
-                                  widget.onSave(_controller.text.trim());
-                                  Navigator.pop(context);
+                                onPressed: () async {
+                                  if (_saving) return;
+                                  _saving = true;
+                                  try {
+                                    await widget.onSave(
+                                      _controller.text.trim(),
+                                    );
+                                  } catch (error) {
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                AppServices.message(error),
+                                              ),
+                                            ),
+                                          );
+                                    }
+                                    _saving = false;
+                                    return;
+                                  }
+                                  _saving = false;
+                                  if (sheetContext.mounted) {
+                                    Navigator.pop(sheetContext);
+                                  }
+                                  if (context.mounted) Navigator.pop(context);
                                 },
                               ),
                             ],
@@ -1275,7 +1327,7 @@ class SymptomEntryPage extends StatefulWidget {
     required this.onSave,
   });
   final List<AibsMealLog> meals;
-  final ValueChanged<AibsSymptomLog> onSave;
+  final FutureOr<void> Function(AibsSymptomLog) onSave;
 
   @override
   State<SymptomEntryPage> createState() => _SymptomEntryPageState();
@@ -1296,6 +1348,8 @@ class _SymptomEntryPageState extends State<SymptomEntryPage> {
   String _stress = 'Sedang';
   String? _linkedMeal;
   TimeOfDay _time = TimeOfDay.now();
+  bool _saving = false;
+  final _requestId = const Uuid().v4();
 
   @override
   void dispose() {
@@ -1389,7 +1443,7 @@ class _SymptomEntryPageState extends State<SymptomEntryPage> {
                       ),
                       for (final meal in widget.meals)
                         DropdownMenuItem(
-                          value: meal.name,
+                          value: meal.id ?? meal.name,
                           child: Text(meal.name),
                         ),
                     ],
@@ -1416,26 +1470,47 @@ class _SymptomEntryPageState extends State<SymptomEntryPage> {
     if (selected != null) setState(() => _time = selected);
   }
 
-  void _save() {
+  Future<void> _save() async {
+    if (_saving) return;
     if (_selected.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Pilih gejala yang kamu rasakan.')),
       );
       return;
     }
-    widget.onSave(
-      AibsSymptomLog(
-        name: _selected.join(', '),
-        time: _time.format(context),
-        date: DateTime.now(),
-        severity: _severity,
-        stress: _stress,
-        note: _noteController.text.trim().isEmpty
-            ? null
-            : _noteController.text.trim(),
-        mealName: _linkedMeal,
-      ),
-    );
+    _saving = true;
+    try {
+      await widget.onSave(
+        AibsSymptomLog(
+          requestId: _requestId,
+          mealId: widget.meals
+              .where((m) => m.id == _linkedMeal)
+              .firstOrNull
+              ?.id,
+          name: _selected.join(', '),
+          time: _time.format(context),
+          date: DateTime.now(),
+          severity: _severity,
+          stress: _stress,
+          note: _noteController.text.trim().isEmpty
+              ? null
+              : _noteController.text.trim(),
+          mealName: widget.meals
+              .where((m) => (m.id ?? m.name) == _linkedMeal)
+              .firstOrNull
+              ?.name,
+        ),
+      );
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(AppServices.message(error))));
+      }
+      _saving = false;
+      return;
+    }
+    _saving = false;
+    if (mounted) Navigator.pop(context);
   }
 
   String _severityLabel(int value) => const [

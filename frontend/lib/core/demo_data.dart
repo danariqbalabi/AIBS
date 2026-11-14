@@ -11,6 +11,7 @@ class AibsMenuItem {
     required this.ingredients,
     this.orderTips = const [],
     this.cookSteps = const [],
+    this.serverIngredients = const [],
   });
 
   final String id;
@@ -22,6 +23,7 @@ class AibsMenuItem {
   final List<String> ingredients;
   final List<String> orderTips;
   final List<String> cookSteps;
+  final List<Map<String, dynamic>> serverIngredients;
 
   String get priceLabel => 'Rp${price ~/ 1000}.000';
   String get meta => '$kind · $priceLabel · $reason';
@@ -113,6 +115,9 @@ class AibsMealLog {
     this.status = CheckStatus.unknown,
     this.ingredients = const [],
     this.note,
+    this.id,
+    this.version,
+    this.requestId,
   });
 
   final String name;
@@ -121,6 +126,9 @@ class AibsMealLog {
   final CheckStatus status;
   final List<String> ingredients;
   final String? note;
+  final String? id;
+  final int? version;
+  final String? requestId;
 }
 
 class AibsSymptomLog {
@@ -132,6 +140,10 @@ class AibsSymptomLog {
     this.stress,
     this.note,
     this.mealName,
+    this.id,
+    this.version,
+    this.mealId,
+    this.requestId,
   });
 
   final String name;
@@ -141,6 +153,10 @@ class AibsSymptomLog {
   final String? stress;
   final String? note;
   final String? mealName;
+  final String? id;
+  final int? version;
+  final String? mealId;
+  final String? requestId;
 }
 
 class AibsStoryLog {
@@ -161,9 +177,11 @@ class AibsMealPlan {
     required this.day,
     required this.meal,
     required this.time,
+    this.scheduledAt,
   });
 
   final AibsMenuItem menu;
+  final DateTime? scheduledAt;
   final String day;
   final String meal;
   final String time;
