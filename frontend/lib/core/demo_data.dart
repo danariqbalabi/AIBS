@@ -118,6 +118,7 @@ class AibsMealLog {
     this.id,
     this.version,
     this.requestId,
+    this.serverPayload,
   });
 
   final String name;
@@ -129,6 +130,7 @@ class AibsMealLog {
   final String? id;
   final int? version;
   final String? requestId;
+  final Map<String, dynamic>? serverPayload;
 }
 
 class AibsSymptomLog {
@@ -144,12 +146,13 @@ class AibsSymptomLog {
     this.version,
     this.mealId,
     this.requestId,
+    this.serverPayload,
   });
 
   final String name;
   final String time;
   final DateTime date;
-  final int severity;
+  final int? severity;
   final String? stress;
   final String? note;
   final String? mealName;
@@ -157,6 +160,7 @@ class AibsSymptomLog {
   final int? version;
   final String? mealId;
   final String? requestId;
+  final Map<String, dynamic>? serverPayload;
 }
 
 class AibsStoryLog {

@@ -421,7 +421,9 @@ class _PatternDetailPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('${entry.time} · $symptom · ${entry.severity}'),
+                  Text(
+                    '${entry.time} · $symptom · ${entry.severity ?? 'belum diisi'}',
+                  ),
                   if (entry.mealName != null) ...[
                     const SizedBox(height: AibsSpace.s8),
                     Text('Sebelum ${entry.mealName}'),
@@ -581,13 +583,13 @@ class _ConsultationSummaryPageState extends State<_ConsultationSummaryPage> {
 
 class _SeverityDot extends StatelessWidget {
   const _SeverityDot({required this.value});
-  final int value;
+  final int? value;
 
   @override
   Widget build(BuildContext context) => CircleAvatar(
     radius: 20,
     backgroundColor: AibsColors.primarySoft,
-    child: Text('$value', style: AibsType.bodyStrong),
+    child: Text(value?.toString() ?? '?', style: AibsType.bodyStrong),
   );
 }
 

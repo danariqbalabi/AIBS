@@ -3219,9 +3219,23 @@
               "vomiting",
               "diarrhea",
               "constipation",
-              "bowel"
+              "bowel",
+              "other"
             ],
             "title": "Code"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
           },
           "present": {
             "type": "boolean",

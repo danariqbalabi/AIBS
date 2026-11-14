@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 
 import '../data/app_services.dart';
 import '../data/records_repository.dart';
+import 'event_editor_page.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -770,6 +771,9 @@ class JournalPage extends StatefulWidget {
     required this.onAddStory,
     required this.onDeleteMeal,
     required this.onOpenSummary,
+    this.onDeleteSymptom,
+    this.onEditEvent,
+    this.ingredientId,
     super.key,
   });
 
@@ -782,6 +786,9 @@ class JournalPage extends StatefulWidget {
   final FutureOr<void> Function(AibsStoryLog) onAddStory;
   final FutureOr<void> Function(AibsMealLog) onDeleteMeal;
   final VoidCallback onOpenSummary;
+  final Future<void> Function(AibsSymptomLog)? onDeleteSymptom;
+  final Future<void> Function(Map<String, dynamic>)? onEditEvent;
+  final String? Function(String)? ingredientId;
 
   @override
   State<JournalPage> createState() => _JournalPageState();
@@ -1063,25 +1070,62 @@ class _JournalPageState extends State<JournalPage> {
   }
 
   void _openRecordDetail(BuildContext context, _JournalRecord record) {
+    final canEdit =
+        widget.onEditEvent != null &&
+        (record.meal?.serverPayload != null ||
+            record.symptom?.serverPayload != null);
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => _JournalDetailPage(
           record: record,
-          onDelete: record.meal == null
+          onEdit: !canEdit
+              ? null
+              : () async {
+                  final payload = Map<String, dynamic>.from(
+                    record.meal?.serverPayload ??
+                        record.symptom!.serverPayload!,
+                  );
+                  if (record.symptom != null) {
+                    payload['linked_food_index'] = null;
+                    payload['linked_food_event_id'] = record.symptom!.mealId;
+                  }
+                  final updated = await Navigator.of(context).push<bool>(
+                    MaterialPageRoute(
+                      builder: (_) => EventEditorPage(
+                        event: {
+                          'id': record.meal?.id ?? record.symptom!.id,
+                          'kind': record.meal != null ? 'food' : 'symptom',
+                          'version':
+                              record.meal?.version ?? record.symptom!.version,
+                          'payload': payload,
+                        },
+                        meals: widget.meals,
+                        ingredientId: widget.ingredientId,
+                        onSave: widget.onEditEvent!,
+                      ),
+                    ),
+                  );
+                  if (updated == true && context.mounted) {
+                    Navigator.pop(context);
+                  }
+                },
+          onDelete:
+              record.meal == null &&
+                  (record.symptom == null || widget.onDeleteSymptom == null)
               ? null
               : () async {
                   final remove = await showDialog<bool>(
                     context: context,
-                    builder: (_) => AlertDialog(
+                    builder: (dialogContext) => AlertDialog(
                       title: const Text('Hapus catatan ini?'),
-                      content: Text(record.meal!.name),
+                      content: Text(record.title),
                       actions: [
                         TextButton(
-                          onPressed: () => Navigator.pop(context, false),
+                          onPressed: () => Navigator.pop(dialogContext, false),
                           child: const Text('Batal'),
                         ),
                         TextButton(
-                          onPressed: () => Navigator.pop(context, true),
+                          onPressed: () => Navigator.pop(dialogContext, true),
                           child: const Text('Hapus'),
                         ),
                       ],
@@ -1089,7 +1133,11 @@ class _JournalPageState extends State<JournalPage> {
                   );
                   if (remove != true || !context.mounted) return;
                   try {
-                    await widget.onDeleteMeal(record.meal!);
+                    if (record.meal != null) {
+                      await widget.onDeleteMeal(record.meal!);
+                    } else {
+                      await widget.onDeleteSymptom!(record.symptom!);
+                    }
                   } catch (error) {
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -1121,7 +1169,7 @@ class _JournalRecord {
   String? get subtitle => meal == null
       ? symptom == null
             ? story!.text
-            : 'Skala ${symptom!.severity} · stres ${symptom!.stress ?? 'belum diisi'}'
+            : 'Skala ${symptom!.severity ?? 'belum diisi'} · stres ${symptom!.stress ?? 'belum diisi'}'
       : meal!.note;
   String get time => meal?.time ?? symptom?.time ?? story!.time;
   DateTime get sortTime {
@@ -1612,20 +1660,21 @@ class _ScaleDot extends StatelessWidget {
 
 class _SeverityDot extends StatelessWidget {
   const _SeverityDot({required this.value});
-  final int value;
+  final int? value;
 
   @override
   Widget build(BuildContext context) => CircleAvatar(
     radius: 20,
     backgroundColor: AibsColors.primarySoft,
-    child: Text('$value', style: AibsType.bodyStrong),
+    child: Text(value?.toString() ?? '?', style: AibsType.bodyStrong),
   );
 }
 
 class _JournalDetailPage extends StatelessWidget {
-  const _JournalDetailPage({required this.record, this.onDelete});
+  const _JournalDetailPage({required this.record, this.onDelete, this.onEdit});
   final _JournalRecord record;
   final VoidCallback? onDelete;
+  final VoidCallback? onEdit;
 
   @override
   Widget build(BuildContext context) {
@@ -1667,10 +1716,6 @@ class _JournalDetailPage extends StatelessWidget {
               const SizedBox(height: AibsSpace.s12),
               Text(meal.note!, style: AibsType.caption),
             ],
-            if (onDelete != null) ...[
-              const SizedBox(height: AibsSpace.s20),
-              AibsSecondaryButton(label: 'Hapus', onPressed: onDelete!),
-            ],
           ] else ...[
             const SizedBox(height: AibsSpace.s12),
             AibsCard(
@@ -1679,7 +1724,7 @@ class _JournalDetailPage extends StatelessWidget {
                 children: [
                   Text('Seberapa ganggu?', style: AibsType.caption),
                   Text(
-                    'Skala ${symptom!.severity}',
+                    'Skala ${symptom!.severity ?? 'belum diisi'}',
                     style: AibsType.bodyStrong,
                   ),
                   if (symptom.mealName != null) ...[
@@ -1693,6 +1738,14 @@ class _JournalDetailPage extends StatelessWidget {
                 ],
               ),
             ),
+          ],
+          if (onEdit != null) ...[
+            const SizedBox(height: AibsSpace.s20),
+            AibsPrimaryButton(label: 'Edit', onPressed: onEdit),
+          ],
+          if (onDelete != null) ...[
+            const SizedBox(height: AibsSpace.s12),
+            AibsSecondaryButton(label: 'Hapus', onPressed: onDelete!),
           ],
         ],
       ),
