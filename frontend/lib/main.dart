@@ -1,7 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import 'core/demo_data.dart';
+import 'data/app_services.dart';
+import 'data/app_config.dart';
 import 'pages/home_profile_pages.dart';
 import 'pages/menu_flow.dart';
 import 'pages/onboarding_flow.dart';
@@ -11,12 +15,16 @@ import 'pages/summary_pages.dart';
 import 'theme/aibs_theme.dart';
 import 'widgets/aibs_tab_bar.dart';
 
-void main() {
-  runApp(const AibsApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final services = await AppServices.create(const AppConfig());
+  runApp(AibsApp(services: services));
 }
 
 class AibsApp extends StatefulWidget {
-  const AibsApp({super.key});
+  const AibsApp({super.key, this.services});
+
+  final AppServices? services;
 
   @override
   State<AibsApp> createState() => _AibsAppState();
@@ -25,27 +33,127 @@ class AibsApp extends StatefulWidget {
 class _AibsAppState extends State<AibsApp> {
   bool _onboardingComplete = false;
   ProfileSetupAnswers? _profile;
+  ProfileSetupAnswers? _savedProfile;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _restore());
+  }
+
+  void _error(Object error) {
+    if (!mounted) return;
+    contextForMessages.currentState?.showSnackBar(
+      SnackBar(content: Text(AppServices.message(error))),
+    );
+  }
+
+  final contextForMessages = GlobalKey<ScaffoldMessengerState>();
+
+  Future<bool> _restore() async {
+    final services = widget.services;
+    if (services?.auth?.auth.currentSession == null) return false;
+    try {
+      final profile = await services!.profiles.restore(
+        services.auth!.auth.currentUser?.email ?? '',
+      );
+      if (!mounted || profile == null) return false;
+      setState(() {
+        _profile = profile;
+        _onboardingComplete = true;
+      });
+      return true;
+    } catch (error) {
+      _error(error);
+      return false;
+    }
+  }
+
+  Future<ProfileSetupAnswers> _demo(String template) async {
+    final services = widget.services!;
+    final client = services.client;
+    final previous = client.auth.currentUser;
+    if (previous != null) await services.signOut();
+    await client.auth.signInAnonymously();
+    await services.api.request(
+      'POST',
+      '/api/v1/demo/sessions',
+      body: {'template': template},
+    );
+    final profile = await services.profiles.restore('');
+    if (profile == null) throw StateError('Demo profile missing');
+    _savedProfile = profile;
+    return profile;
+  }
+
+  Future<void> _complete(ProfileSetupAnswers profile) async {
+    if (_saving) return;
+    _saving = true;
+    try {
+      final saved = widget.services == null || identical(profile, _savedProfile)
+          ? profile
+          : await widget.services!.profiles.save(profile);
+      if (mounted) {
+        setState(() {
+          _profile = saved;
+          _onboardingComplete = true;
+        });
+      }
+    } catch (error) {
+      _error(error);
+    } finally {
+      _saving = false;
+    }
+  }
+
+  Future<void> _saveProfile(ProfileSetupAnswers profile) async {
+    final saved = widget.services == null
+        ? profile
+        : await widget.services!.profiles.save(profile);
+    if (mounted) setState(() => _profile = saved);
+  }
+
+  Future<void> _logout() async {
+    try {
+      await widget.services?.signOut();
+      if (mounted) {
+        setState(() {
+          _profile = null;
+          _onboardingComplete = false;
+          _savedProfile = null;
+        });
+      }
+    } catch (error) {
+      _error(error);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'AIBS',
+      scaffoldMessengerKey: contextForMessages,
       debugShowCheckedModeBanner: false,
       theme: AibsTheme.light,
       home: _onboardingComplete
           ? AibsHomeShell(
               profile: _profile,
-              onProfileSaved: (profile) => setState(() => _profile = profile),
-              onLogout: () => setState(() {
-                _profile = null;
-                _onboardingComplete = false;
-              }),
+              onProfileSaved: _saveProfile,
+              onLogout: _logout,
             )
           : OnboardingFlow(
-              onComplete: (profile) => setState(() {
-                _profile = profile;
-                _onboardingComplete = true;
-              }),
+              onComplete: _complete,
+              onAssess: widget.services?.profiles.assess,
+              onDemo: widget.services == null ? null : _demo,
+              onSendCode: widget.services?.sendCode,
+              onVerifyCode: widget.services == null
+                  ? null
+                  : (email, code) async {
+                      await widget.services!.verifyCode(email, code);
+                      return _restore();
+                    },
+              onConsent: widget.services?.profiles.ensureConsent,
             ),
     );
   }
@@ -60,7 +168,7 @@ class AibsHomeShell extends StatefulWidget {
   });
 
   final ProfileSetupAnswers? profile;
-  final ValueChanged<ProfileSetupAnswers>? onProfileSaved;
+  final FutureOr<void> Function(ProfileSetupAnswers)? onProfileSaved;
   final VoidCallback? onLogout;
 
   @override

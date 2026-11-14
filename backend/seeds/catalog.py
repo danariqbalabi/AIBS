@@ -24,6 +24,18 @@ INGREDIENTS = {
     "carrot": ("Wortel", []),
     "coconut": ("Santan", []),
     "ginger": ("Jahe", []),
+    "milk": ("Susu sapi", ["susu"]),
+    "wheat": ("Gandum", []),
+    "egg": ("Telur", []),
+    "fish": ("Ikan", []),
+    "soy": ("Kedelai", []),
+    "shellfish": ("Kerang", []),
+    "fried": ("Gorengan", ["makanan berminyak"]),
+    "coffee": ("Kopi", []),
+    "soda": ("Soda", []),
+    "skin": ("Kulit ayam", []),
+    "fruit": ("Buah", []),
+    "bread": ("Roti", []),
 }
 
 MENUS = [

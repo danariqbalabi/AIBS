@@ -1,3 +1,7 @@
+import 'dart:async';
+
+import '../data/app_services.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -532,7 +536,7 @@ class ProfilePage extends StatefulWidget {
   });
 
   final ProfileSetupAnswers? profile;
-  final ValueChanged<ProfileSetupAnswers>? onProfileSaved;
+  final FutureOr<void> Function(ProfileSetupAnswers)? onProfileSaved;
   final VoidCallback? onOpenShopping;
   final VoidCallback? onLogout;
   final int shoppingCount;
@@ -696,8 +700,17 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
     );
     if (updated == null || !mounted) return;
+    try {
+      await widget.onProfileSaved?.call(updated);
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(AppServices.message(error))));
+      }
+      return;
+    }
+    if (!mounted) return;
     setState(() => _profile = updated);
-    widget.onProfileSaved?.call(updated);
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Perubahan tersimpan untuk sesi ini')),
     );
@@ -728,8 +741,17 @@ class _ProfilePageState extends State<ProfilePage> {
         updated.savePhotos == profile.savePhotos) {
       return;
     }
+    try {
+      await widget.onProfileSaved?.call(updated);
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(AppServices.message(error))));
+      }
+      return;
+    }
+    if (!mounted) return;
     setState(() => _profile = updated);
-    widget.onProfileSaved?.call(updated);
   }
 
   void _openScreening() {

@@ -52,7 +52,6 @@ def evaluate(profile, raw_answers):
             "anemia",
             "family_history",
             "q1",
-            "q3_months",
             "q4",
             "q5",
             "q6",
@@ -61,6 +60,8 @@ def evaluate(profile, raw_answers):
     ]
     if answers.q2_days in (None, "unknown") and answers.q2_band in (None, "unknown"):
         missing.append("q2_frequency")
+    if answers.q3_months in (None, "unknown") and answers.q3_band in (None, "unknown"):
+        missing.append("q3_duration")
     for field in ("age_band", "diagnosis_reported", "clinician_guidance"):
         if getattr(profile, field) in (None, "unknown"):
             missing.append(field)
@@ -77,12 +78,18 @@ def evaluate(profile, raw_answers):
         if isinstance(answers.q2_days, int)
         else answers.q2_band in ("3_4", "5_plus")
     )
-    matches = (
-        answers.q1 == "yes"
-        and frequency_matches
-        and answers.q3_months >= 6
-        and sum(getattr(answers, field) == "yes" for field in ("q4", "q5", "q6")) >= 2
+    duration_matches = (
+        answers.q3_months >= 6
+        if isinstance(answers.q3_months, int)
+        else answers.q3_band in ("6_12", "over_12")
     )
+    result["criteria"] = [
+        answers.q1 == "yes",
+        frequency_matches,
+        duration_matches,
+        sum(getattr(answers, field) == "yes" for field in ("q4", "q5", "q6")) >= 2,
+    ]
+    matches = all(result["criteria"])
     result["pattern_status"] = "matches_demo" if matches else "does_not_match_demo"
     if profile.diagnosis_reported == "yes" and profile.clinician_guidance == "yes":
         return route(
