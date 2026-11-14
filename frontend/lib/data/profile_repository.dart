@@ -163,6 +163,7 @@ class ProfileRepository {
       spicy: labelFor(spicyCodes, diet['spicy']),
       preferences: (diet['preferences'] as List? ?? []).cast<String>(),
       aiEnabled: consent['ai'] == true,
+      serverVersion: row['version'] as int?,
     );
   }
 
@@ -176,9 +177,25 @@ class ProfileRepository {
   }
 
   Future<ProfileSetupAnswers> save(ProfileSetupAnswers profile) async {
+    var consentUpdates = 0;
+    if (profile.serverVersion != null) {
+      final latest = await api.request('GET', '/api/v1/me/profile');
+      if (latest['version'] != profile.serverVersion) {
+        throw const ApiFailure(
+          'Profil berubah. Muat ulang sebelum menyimpan.',
+          status: 409,
+        );
+      }
+    }
+    if (profile.savePhotos) {
+      throw const ApiFailure(
+        'Penyimpanan foto belum tersedia. Matikan pilihan simpan foto untuk melanjutkan.',
+      );
+    }
     // Resolve every restriction before sending a mutation: never silently omit an allergy.
     if (ingredients.isEmpty) {
       await ensureConsent(profile.aiEnabled);
+      consentUpdates++;
       await loadIngredients();
     }
     final diet = {
@@ -203,7 +220,15 @@ class ProfileRepository {
       'preferences': profile.preferences,
     };
     await ensureConsent(profile.aiEnabled);
+    consentUpdates++;
     final current = await api.request('GET', '/api/v1/me/profile');
+    if (profile.serverVersion != null &&
+        current['version'] != profile.serverVersion! + consentUpdates) {
+      throw const ApiFailure(
+        'Profil berubah. Muat ulang sebelum menyimpan.',
+        status: 409,
+      );
+    }
     rawProfile = await api.request(
       'PATCH',
       '/api/v1/me/profile',
@@ -218,6 +243,66 @@ class ProfileRepository {
       },
     );
     assessment = await api.request('GET', '/api/v1/me/assessment');
+    final answers = <String, dynamic>{};
+    for (final (index, key) in [
+      'severe_active',
+      'bleeding',
+      'weight_loss',
+      'anemia',
+      'family_history',
+    ].indexed) {
+      if (index < profile.redFlags.length && profile.redFlags[index] != null) {
+        answers[key] = answerCodes[profile.redFlags[index]];
+      }
+    }
+    if (answers.containsKey('bleeding')) {
+      answers['bleeding_active'] = answers['bleeding'];
+    }
+    for (final entry in {0: 'q1', 3: 'q4', 4: 'q5', 5: 'q6'}.entries) {
+      if (entry.key < profile.pattern.length &&
+          profile.pattern[entry.key] != null) {
+        answers[entry.value] = answerCodes[profile.pattern[entry.key]];
+      }
+    }
+    if (profile.pattern.length > 1 && profile.pattern[1] != null) {
+      final value = profile.pattern[1]!;
+      final numeric = RegExp(r'^(\d+) hari$').firstMatch(value);
+      answers['q2_days'] = numeric == null ? null : int.parse(numeric[1]!);
+      answers['q2_band'] = numeric != null
+          ? null
+          : const {
+                  'Kurang dari 1 hari': 'under_1',
+                  '1–2 hari': '1_2',
+                  '3–4 hari': '3_4',
+                  '5 hari atau lebih': '5_plus',
+                  'Tidak tahu': 'unknown',
+                }[value] ??
+                'unknown';
+    }
+    if (profile.pattern.length > 2 && profile.pattern[2] != null) {
+      final value = profile.pattern[2]!;
+      final numeric = RegExp(r'^(\d+) bulan$').firstMatch(value);
+      answers['q3_months'] = numeric == null ? null : int.parse(numeric[1]!);
+      answers['q3_band'] = numeric != null
+          ? null
+          : const {
+                  'Kurang dari 3 bulan': 'under_3',
+                  '3–5 bulan': '3_5',
+                  '6–12 bulan': '6_12',
+                  'Lebih dari 12 bulan': 'over_12',
+                  'Tidak tahu': 'unknown',
+                }[value] ??
+                'unknown';
+    }
+    if (answers.isNotEmpty) {
+      assessment = await api.request(
+        'PATCH',
+        '/api/v1/me/assessment',
+        body: {'version': assessment['version'], 'answers': answers},
+      );
+      await api.request('POST', '/api/v1/me/assessment/evaluate');
+      rawProfile = await api.request('GET', '/api/v1/me/profile');
+    }
     return fromServer(profile.email);
   }
 

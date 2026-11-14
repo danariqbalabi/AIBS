@@ -61,6 +61,7 @@ class RecordsRepository {
   List<Map<String, dynamic>> shopping = [];
   AibsMealPlan? plan;
   Map<String, dynamic> dashboard = {};
+  bool noSymptomsForLatestMeal = false;
   final _pending = <String, Map<String, dynamic>>{};
 
   static String ingredientLabel(Map row) =>
@@ -92,8 +93,14 @@ class RecordsRepository {
     );
   }
 
-  String shoppingLabel(Map row) =>
-      '${row['name']} · ${row['quantity']} ${row['unit']}';
+  String shoppingLabel(Map row) {
+    final amount = num.parse(row['quantity'].toString());
+    final quantity = amount == amount.toInt()
+        ? amount.toInt().toString()
+        : amount.toString();
+    return '${row['name']} · $quantity ${row['unit']}';
+  }
+
   List<String> get shoppingLabels => shopping.map(shoppingLabel).toList();
   Set<String> get checkedShopping =>
       shopping.where((r) => r['checked'] == true).map(shoppingLabel).toSet();
@@ -230,6 +237,15 @@ class RecordsRepository {
     shopping = ((results[2] as Map)['items'] as List)
         .cast<Map<String, dynamic>>();
     dashboard = results[5] as Map<String, dynamic>;
+    final latest = nextMeals.firstOrNull?.id;
+    noSymptomsForLatestMeal =
+        latest != null &&
+        events.any(
+          (row) =>
+              row['kind'] == 'symptom' &&
+              (row['payload'] as Map)['present'] == false &&
+              (row['linked_event_ids'] as List).contains(latest),
+        );
   }
 
   List<Map<String, dynamic>> ingredientsFor(List<String> labels) =>
@@ -307,6 +323,23 @@ class RecordsRepository {
     });
   }
 
+  Future<Map<String, dynamic>> checkFood(
+    List<String> labels,
+    bool complete,
+  ) async {
+    final profile = await api.request('GET', '/api/v1/me/profile');
+    profiles.rawProfile = profile;
+    return api.request(
+      'POST',
+      '/api/v1/food-checks',
+      body: {
+        'profile_version': profile['version'],
+        'ingredients': ingredientsFor(labels),
+        'ingredients_complete': complete && labels.isNotEmpty,
+      },
+    );
+  }
+
   Future<void> saveSymptom(AibsSymptomLog symptom) async {
     final cards = <Map<String, dynamic>>[];
     for (final name in symptom.name.split(', ')) {
@@ -344,6 +377,25 @@ class RecordsRepository {
         'content': {'story': story.text},
       },
     );
+  }
+
+  Future<void> saveNoSymptoms() async {
+    final food = meals
+        .where((m) => dateLabel(m.date) == dateLabel(DateTime.now()))
+        .firstOrNull;
+    if (food?.id == null) return;
+    final now = DateTime.now();
+    await _saveContent('no-symptoms-${food!.id}', {
+      'symptoms': [
+        for (final code in symptomCodes.values)
+          {
+            'code': code,
+            'present': false,
+            'time': eventTime(now, clockLabel(now)),
+            'linked_food_event_id': food.id,
+          },
+      ],
+    });
   }
 
   Future<void> deleteMeal(AibsMealLog meal) async {

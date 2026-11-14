@@ -4,7 +4,7 @@ Pendamping pemilihan menu dan pencatatan makanan/gejala untuk orang dewasa denga
 
 **LOGICODIX 2026 · Mobile Android · Inclusive Health & Well-being**
 
-**Status:** source backend sudah diimplementasikan bertahap dan diuji otomatis. Flutter/APK, deployment HTTPS, Auth/Storage Supabase nyata dan model Gemini nyata **belum diverifikasi**. Katalog, profil demo, dan aturan pengecekan merupakan data/aturan sintetis, bukan diagnosis atau jaminan keamanan makanan.
+**Status:** alur manual Flutter sudah dihubungkan ke FastAPI dan Supabase Auth/DB untuk pengujian lokal, tanpa perombakan desain. Kamera/NLP frontend, APK/iOS dan deployment HTTPS masih pending. Katalog, profil demo dan aturan merupakan data sintetis. Lihat [status integrasi dan cara tes](docs/frontend-backend-integration.md).
 
 - [Setup backend](backend/README.md)
 - [Status tahap, branch, dan PR](docs/backend-progress.md)
@@ -50,12 +50,12 @@ Tabel ini menyatakan cakupan **backend**, bukan Android sudah selesai. Bukti lok
 
 | Fitur | Backend tersedia | Verifikasi tambahan |
 | --- | --- | --- |
-| Auth/demo | JWT asymmetric, demo namespace per subject | OTP/anonymous Supabase nyata dan client |
+| Auth/demo | JWT asymmetric, demo namespace per subject, client anonymous/OTP | Pengiriman/verifikasi email OTP dari inbox pengguna |
 | Profil/izin | Izin dasar/AI terpisah, diet berversi, autosave jawaban | Review flow/copy dengan FE/UX |
 | Pengecekan awal | Routing dan `rome_v_c1_demo`, unknown terpisah | Klinisi/izin instrumen untuk penggunaan di luar demo |
 | Menu/cek makanan | Filter/detail, konflik alergi/bahan/porsi, ranking deterministik | Kurasi klinis, komposisi dan harga nyata |
-| Rencana/belanja | CRUD terpisah dari konsumsi; merge bahan+satuan sama | Integrasi UI |
-| Draft/manual | CRUD, story, review versi dan discard | Editor Flutter |
+| Rencana/belanja | CRUD dan UI terhubung; merge bahan+satuan sama | Pengujian pengguna di perangkat |
+| Draft/manual | Draft/commit dan riwayat Flutter terhubung | Edit event penuh dan editor hasil NLP |
 | Foto/jurnal AI | Adapter JSON schema, consent/quota/fallback | Key/model, provider live, evaluasi Miguel |
 | Media | Gambar tervalidasi, path owner, signed URL privat | Key/bucket dan smoke Storage nyata |
 | Penyimpanan | Transaksi, idempotency, satu commit per draft | Smoke Flutter/jaringan |
@@ -69,7 +69,7 @@ OCR, merchant, ekspor, suara, pengingat, hapus akun menyeluruh dan retensi foto 
 
 ```mermaid
 flowchart TD
-    M[Flutter Android - integrasi pending] --> A[Supabase Auth]
+    M[Flutter - alur manual terhubung] --> A[Supabase Auth]
     A -->|Access token| M
     M -->|REST bearer token| B[FastAPI + Pydantic]
     B --> V[JWT, owner, consent dan versi]

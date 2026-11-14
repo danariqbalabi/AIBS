@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:uuid/uuid.dart';
 
 import '../data/app_services.dart';
+import '../data/records_repository.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -37,6 +38,7 @@ class CameraFlowPage extends StatefulWidget {
     this.aiEnabled = true,
     this.initialFoodName,
     this.initialIngredients = const [],
+    this.onCheckFood,
   });
 
   final FutureOr<void> Function(AibsMealLog) onSaved;
@@ -47,6 +49,7 @@ class CameraFlowPage extends StatefulWidget {
   final bool aiEnabled;
   final String? initialFoodName;
   final List<String> initialIngredients;
+  final Future<Map<String, dynamic>> Function(List<String>, bool)? onCheckFood;
 
   @override
   State<CameraFlowPage> createState() => _CameraFlowPageState();
@@ -63,6 +66,8 @@ class _CameraFlowPageState extends State<CameraFlowPage> {
   AibsMealLog? _pendingMeal;
   final _requestId = const Uuid().v4();
   bool _saving = false;
+  bool _checking = false;
+  Map<String, dynamic>? _evaluation;
 
   @override
   void initState() {
@@ -386,10 +391,14 @@ class _CameraFlowPageState extends State<CameraFlowPage> {
                   : 'Cek makanan',
               onPressed: () {
                 _unknownIngredient = _clarification == 'Nggak tahu';
+                if (!_unknownIngredient &&
+                    !_ingredients.contains(_clarification)) {
+                  _ingredients.add(_clarification);
+                }
                 if (widget.intent == MealIntent.eaten) {
                   _saveMeal();
                 } else {
-                  setState(() => _step = _CameraStep.result);
+                  _checkResult();
                 }
               },
             ),
@@ -400,6 +409,12 @@ class _CameraFlowPageState extends State<CameraFlowPage> {
   }
 
   Widget _buildResult() {
+    final status = statusFor(_evaluation?['status']);
+    final reasons = (_evaluation?['reasons'] as List? ?? [])
+        .map((r) => r['message'].toString())
+        .toList();
+    final missing = (_evaluation?['missing_information'] as List? ?? [])
+        .cast<String>();
     return Column(
       children: [
         const _PhotoTopBar(title: 'Hasil cek'),
@@ -415,15 +430,23 @@ class _CameraFlowPageState extends State<CameraFlowPage> {
               ),
               const SizedBox(height: AibsSpace.s16),
               VerdictCard(
-                mood: KoalaMood.mikir,
+                mood: status == CheckStatus.bad
+                    ? KoalaMood.khawatir
+                    : status == CheckStatus.ok
+                    ? KoalaMood.senang
+                    : KoalaMood.mikir,
                 label: 'Hasil cek',
-                headline: 'Belum bisa dinilai',
-                detail: 'Hasil pengecekan belum tersedia.',
-                color: AibsColors.unknownSoft,
-                headlineColor: AibsColors.inkMuted,
+                headline: status.groupLabel,
+                detail:
+                    [...reasons, ...missing].firstOrNull ??
+                    (_evaluation == null
+                        ? 'Hasil pengecekan belum tersedia.'
+                        : 'Mengikuti arahan yang tersimpan.'),
+                color: status.soft,
+                headlineColor: status.ink,
               ),
               const SizedBox(height: AibsSpace.s16),
-              const StatusBadge(CheckStatus.unknown),
+              StatusBadge(status),
               const SizedBox(height: AibsSpace.s12),
               const Text('Belum tentu penyebab gejala.'),
               const SizedBox(height: AibsSpace.s20),
@@ -544,7 +567,31 @@ class _CameraFlowPageState extends State<CameraFlowPage> {
     } else if (_unknownIngredient || _ingredients.isEmpty) {
       setState(() => _step = _CameraStep.clarify);
     } else {
-      setState(() => _step = _CameraStep.result);
+      _checkResult();
+    }
+  }
+
+  Future<void> _checkResult() async {
+    if (_checking) return;
+    _checking = true;
+    try {
+      final evaluation = await widget.onCheckFood?.call(
+        List.unmodifiable(_ingredients),
+        !_unknownIngredient,
+      );
+      if (mounted) {
+        setState(() {
+          _evaluation = evaluation;
+          _step = _CameraStep.result;
+        });
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(AppServices.message(error))));
+      }
+    } finally {
+      _checking = false;
     }
   }
 
@@ -1079,14 +1126,10 @@ class _JournalRecord {
   String get time => meal?.time ?? symptom?.time ?? story!.time;
   DateTime get sortTime {
     final date = meal?.date ?? symptom?.date ?? story!.date;
-    final timeParts = time.split(':');
-    final hour = int.tryParse(timeParts.first) ?? 0;
-    final minute = int.tryParse(timeParts.last.split(' ').first) ?? 0;
-    final isAfternoon = time.toLowerCase().contains('pm');
-    final normalizedHour = hour == 12
-        ? (isAfternoon ? 12 : 0)
-        : hour + (isAfternoon ? 12 : 0);
-    return DateTime(date.year, date.month, date.day, normalizedHour, minute);
+    if (!RegExp(r'\d{1,2}[:.]\d{2}').hasMatch(time)) {
+      return DateUtils.dateOnly(date);
+    }
+    return timeForInput(date, time);
   }
 
   DateTime get entryDate => meal?.date ?? symptom?.date ?? story!.date;

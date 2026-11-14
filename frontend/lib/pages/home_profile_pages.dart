@@ -55,7 +55,9 @@ class TodayPage extends StatelessWidget {
     final hasDiet =
         profile?.dietType != null && profile!.dietType != 'Belum ada arahan';
     final mealLabel = _mealLabel(DateTime.now().hour);
-    final hasMeals = meals.isNotEmpty;
+    final hasMeals = meals.any(
+      (meal) => DateUtils.isSameDay(meal.date, DateTime.now()),
+    );
     return ListView(
       padding: const EdgeInsets.fromLTRB(0, 20, 0, 28),
       children: [
@@ -81,7 +83,12 @@ class TodayPage extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: AibsSpace.s20),
             child: Column(
               children: [
-                _OpenMenuCard(onTap: onOpenMenu),
+                _OpenMenuCard(
+                  onTap: onOpenMenu,
+                  count:
+                      menus?.where((m) => m.status == CheckStatus.ok).length ??
+                      12,
+                ),
                 const SizedBox(height: AibsSpace.s20),
                 AibsCard(
                   child: Column(
@@ -190,7 +197,8 @@ class _DietPrompt extends StatelessWidget {
 }
 
 class _OpenMenuCard extends StatelessWidget {
-  const _OpenMenuCard({required this.onTap});
+  const _OpenMenuCard({required this.onTap, required this.count});
+  final int count;
   final VoidCallback onTap;
 
   @override
@@ -207,7 +215,7 @@ class _OpenMenuCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  'Lihat 12 menu yang sesuai',
+                  'Lihat $count menu yang sesuai',
                   style: AibsType.bodyStrong,
                 ),
               ),
@@ -421,7 +429,16 @@ class _WeekCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final daysWithSymptoms = symptoms.map((item) => item.date.day).toSet();
+    final today = DateUtils.dateOnly(DateTime.now());
+    final daysWithSymptoms = symptoms
+        .where(
+          (item) =>
+              !DateUtils.dateOnly(item.date)
+                  .isBefore(today.subtract(const Duration(days: 6))) &&
+              !DateUtils.dateOnly(item.date).isAfter(today),
+        )
+        .map((item) => DateUtils.dateOnly(item.date))
+        .toSet();
     return AibsCard(
       child: Column(
         children: [
@@ -444,7 +461,9 @@ class _WeekCard extends StatelessWidget {
                 _DayDot(
                   date: DateTime.now().subtract(Duration(days: index)),
                   hasSymptom: daysWithSymptoms.contains(
-                    DateTime.now().subtract(Duration(days: index)).day,
+                    DateUtils.dateOnly(
+                      DateTime.now().subtract(Duration(days: index)),
+                    ),
                   ),
                 ),
             ],
@@ -543,6 +562,7 @@ class ProfilePage extends StatefulWidget {
     this.onProfileSaved,
     this.onOpenShopping,
     this.onLogout,
+    this.onDeleteAll,
     this.shoppingCount = 0,
   });
 
@@ -550,6 +570,7 @@ class ProfilePage extends StatefulWidget {
   final FutureOr<void> Function(ProfileSetupAnswers)? onProfileSaved;
   final VoidCallback? onOpenShopping;
   final VoidCallback? onLogout;
+  final FutureOr<void> Function()? onDeleteAll;
   final int shoppingCount;
 
   @override
@@ -735,7 +756,7 @@ class _ProfilePageState extends State<ProfilePage> {
           MaterialPageRoute(
             builder: (_) => _PrivacyPage(
               profile: profile,
-              onDeleteAll: widget.onLogout ?? () {},
+              onDeleteAll: widget.onDeleteAll ?? widget.onLogout ?? () {},
             ),
           ),
         );
@@ -796,7 +817,7 @@ class _ProfilePageState extends State<ProfilePage> {
 class _PrivacyPage extends StatefulWidget {
   const _PrivacyPage({required this.profile, required this.onDeleteAll});
   final ProfileSetupAnswers profile;
-  final VoidCallback onDeleteAll;
+  final FutureOr<void> Function() onDeleteAll;
 
   @override
   State<_PrivacyPage> createState() => _PrivacyPageState();
@@ -874,8 +895,17 @@ class _PrivacyPageState extends State<_PrivacyPage> {
       ),
     );
     if (confirm == true && mounted) {
-      widget.onDeleteAll();
-      Navigator.of(context).popUntil((route) => route.isFirst);
+      try {
+        await widget.onDeleteAll();
+      } catch (error) {
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(AppServices.message(error))));
+        }
+        return;
+      }
+      if (mounted) Navigator.of(context).popUntil((route) => route.isFirst);
     }
   }
 

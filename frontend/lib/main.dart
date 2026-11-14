@@ -6,6 +6,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'core/demo_data.dart';
 import 'data/app_services.dart';
 import 'data/records_repository.dart';
+import 'data/api_client.dart';
 import 'data/app_config.dart';
 import 'pages/home_profile_pages.dart';
 import 'pages/menu_flow.dart';
@@ -226,6 +227,7 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
           ..clear()
           ..addAll(_records!.shoppingLabels);
         _plan = _records!.plan;
+        _didNoSymptomCheckin = _records!.noSymptomsForLatestMeal;
       });
     } catch (error) {
       if (mounted) {
@@ -269,9 +271,7 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
               onOpenJournal: () => setState(() => _selectedIndex = 2),
               onOpenSummary: _openSummary,
               onAddSymptom: _openSymptomEntry,
-              onLogNoSymptoms: () => setState(() {
-                _didNoSymptomCheckin = true;
-              }),
+              onLogNoSymptoms: _noSymptoms,
               onOpenMenuItem: _openMenuItem,
             ),
             MenuHomePage(
@@ -307,6 +307,13 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
               shoppingCount: _shoppingItems.length,
               onOpenShopping: _openShoppingList,
               onLogout: widget.onLogout,
+              onDeleteAll: _records == null
+                  ? widget.onLogout
+                  : () async {
+                      throw const ApiFailure(
+                        'Hapus semua data belum tersedia. Data kamu belum dihapus.',
+                      );
+                    },
             ),
           ],
         ),
@@ -404,6 +411,7 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
           initialFoodName: foodName,
           initialIngredients: ingredients,
           onSaved: _addMeal,
+          onCheckFood: _records?.checkFood,
           onAddSymptom: _openSymptomEntry,
           onFinish: () => setState(() => _selectedIndex = 0),
         ),
@@ -431,6 +439,18 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
       foodName: item.name,
       ingredients: item.ingredients,
     );
+  }
+
+  Future<void> _noSymptoms() async {
+    try {
+      if (_records != null) await _records!.saveNoSymptoms();
+      if (mounted) setState(() => _didNoSymptomCheckin = true);
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(AppServices.message(error))));
+      }
+    }
   }
 
   Future<void> _addMeal(AibsMealLog meal) async {

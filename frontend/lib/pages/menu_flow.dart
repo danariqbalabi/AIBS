@@ -466,22 +466,11 @@ class MenuDetailPage extends StatelessWidget {
   }
 
   Future<void> _schedule(BuildContext context) async {
-    final plan = await showModalBottomSheet<AibsMealPlan>(
+    await showModalBottomSheet<AibsMealPlan>(
       context: context,
       isScrollControlled: true,
-      builder: (_) => _ScheduleSheet(menu: item),
+      builder: (_) => _ScheduleSheet(menu: item, onSave: onPlanSaved),
     );
-    if (plan != null) {
-      try {
-        await onPlanSaved(plan);
-      } catch (error) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(AppServices.message(error))));
-        }
-      }
-    }
   }
 }
 
@@ -522,8 +511,9 @@ class _IngredientLine extends StatelessWidget {
 }
 
 class _ScheduleSheet extends StatefulWidget {
-  const _ScheduleSheet({required this.menu});
+  const _ScheduleSheet({required this.menu, required this.onSave});
   final AibsMenuItem menu;
+  final FutureOr<void> Function(AibsMealPlan) onSave;
 
   @override
   State<_ScheduleSheet> createState() => _ScheduleSheetState();
@@ -531,6 +521,7 @@ class _ScheduleSheet extends StatefulWidget {
 
 class _ScheduleSheetState extends State<_ScheduleSheet> {
   String _day = 'Hari ini';
+  bool _saving = false;
   String _meal = 'Malam';
   static const _weekdays = [
     'Senin',
@@ -606,9 +597,10 @@ class _ScheduleSheetState extends State<_ScheduleSheet> {
               ),
               AibsPrimaryButton(
                 label: 'Simpan rencana',
-                onPressed: () => Navigator.pop(
-                  context,
-                  AibsMealPlan(
+                onPressed: () async {
+                  if (_saving) return;
+                  _saving = true;
+                  final plan = AibsMealPlan(
                     menu: widget.menu,
                     day: _day,
                     meal: _meal,
@@ -620,8 +612,21 @@ class _ScheduleSheetState extends State<_ScheduleSheet> {
                       _time.hour,
                       _time.minute,
                     ),
-                  ),
-                ),
+                  );
+                  try {
+                    await widget.onSave(plan);
+                  } catch (error) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(AppServices.message(error))),
+                      );
+                    }
+                    _saving = false;
+                    return;
+                  }
+                  _saving = false;
+                  if (context.mounted) Navigator.pop(context, plan);
+                },
               ),
             ],
           ),
