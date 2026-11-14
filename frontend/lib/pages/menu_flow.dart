@@ -99,7 +99,9 @@ class MenuHomePageState extends State<MenuHomePage> {
       children: [
         Row(
           children: [
-            Expanded(child: Text('Menu', style: AibsType.title)),
+            Expanded(
+              child: Text('Menu', style: context.aibsText(AibsType.title)),
+            ),
             _CartButton(
               count: widget.shoppingItems.length,
               onTap: _openShoppingList,
@@ -107,7 +109,10 @@ class MenuHomePageState extends State<MenuHomePage> {
           ],
         ),
         const SizedBox(height: AibsSpace.s16),
-        Text('Katalog demo · harga perkiraan', style: AibsType.micro),
+        Text(
+          'Katalog demo · harga perkiraan',
+          style: context.aibsText(AibsType.micro),
+        ),
         TextField(
           controller: _searchController,
           decoration: const InputDecoration(
@@ -233,7 +238,10 @@ class _CartButton extends StatelessWidget {
           'assets/icons/cart.svg',
           width: AibsSize.navIcon,
           height: AibsSize.navIcon,
-          colorFilter: const ColorFilter.mode(AibsColors.ink, BlendMode.srcIn),
+          colorFilter: ColorFilter.mode(
+            context.aibsColor(AibsColors.ink),
+            BlendMode.srcIn,
+          ),
         ),
       ),
     );
@@ -253,7 +261,9 @@ class _FilterChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: selected ? AibsColors.primarySoft : AibsColors.card,
+      color: selected
+          ? context.aibsColor(AibsColors.primarySoft)
+          : context.aibsColor(AibsColors.card),
       borderRadius: BorderRadius.circular(AibsRadius.pill),
       child: InkWell(
         onTap: onTap,
@@ -265,16 +275,22 @@ class _FilterChip extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(AibsRadius.pill),
             border: Border.all(
-              color: selected ? AibsColors.primarySoft : AibsColors.line,
+              color: selected
+                  ? context.aibsColor(AibsColors.primarySoft)
+                  : context.aibsColor(AibsColors.line),
               width: 2,
             ),
           ),
           child: Text(
             label,
-            style: AibsType.small.copyWith(
-              color: selected ? AibsColors.primaryStrong : AibsColors.ink,
-              fontWeight: AibsType.w800,
-            ),
+            style: context
+                .aibsText(AibsType.small)
+                .copyWith(
+                  color: selected
+                      ? context.aibsColor(AibsColors.primaryStrong)
+                      : context.aibsColor(AibsColors.ink),
+                  fontWeight: AibsType.w800,
+                ),
           ),
         ),
       ),
@@ -290,7 +306,7 @@ class _MenuCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AibsColors.card,
+      color: context.aibsColor(AibsColors.card),
       borderRadius: BorderRadius.circular(AibsRadius.lg),
       child: InkWell(
         onTap: onTap,
@@ -319,13 +335,19 @@ class _MenuCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(item.name, style: AibsType.bodyStrong),
+                    Text(
+                      item.name,
+                      style: context.aibsText(AibsType.bodyStrong),
+                    ),
                     const SizedBox(height: AibsSpace.s4),
-                    Text(item.meta, style: AibsType.small),
+                    Text(item.meta, style: context.aibsText(AibsType.small)),
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right, color: AibsColors.inkMuted),
+              Icon(
+                Icons.chevron_right,
+                color: context.aibsColor(AibsColors.inkMuted),
+              ),
             ],
           ),
         ),
@@ -417,11 +439,13 @@ class _MenuDetailPageState extends State<MenuDetailPage> {
                 AibsSpace.s24,
               ),
               children: [
-                Text(item.name, style: AibsType.titleDetail),
+                Text(item.name, style: context.aibsText(AibsType.titleDetail)),
                 const SizedBox(height: AibsSpace.s8),
                 Text(
                   '${item.kind} · ${item.priceLabel} · 1 porsi',
-                  style: AibsType.caption.copyWith(color: AibsColors.inkMuted),
+                  style: context
+                      .aibsText(AibsType.caption)
+                      .copyWith(color: context.aibsColor(AibsColors.inkMuted)),
                 ),
                 const SizedBox(height: AibsSpace.s10),
                 StatusBadge(item.status),
@@ -434,13 +458,15 @@ class _MenuDetailPageState extends State<MenuDetailPage> {
                   ),
                   child: Text(
                     item.reason,
-                    style: AibsType.caption.copyWith(color: item.status.ink),
+                    style: context
+                        .aibsText(AibsType.caption)
+                        .copyWith(color: item.status.ink),
                   ),
                 ),
                 const SizedBox(height: AibsSpace.s20),
                 Text(
                   item.kind == 'Beli' ? 'Cara pesan' : 'Cara masak',
-                  style: AibsType.sectionTitle,
+                  style: context.aibsText(AibsType.sectionTitle),
                 ),
                 const SizedBox(height: AibsSpace.s8),
                 AibsCard(
@@ -455,7 +481,7 @@ class _MenuDetailPageState extends State<MenuDetailPage> {
                         if (index > 0) const Divider(height: AibsSpace.s20),
                         Text(
                           item.kind == 'Beli' ? line : '${index + 1}. $line',
-                          style: AibsType.bodyStrong,
+                          style: context.aibsText(AibsType.bodyStrong),
                         ),
                       ],
                     ],
@@ -477,7 +503,7 @@ class _MenuDetailPageState extends State<MenuDetailPage> {
                     icon: const Icon(Icons.copy),
                     label: const Text('Salin cara pesan'),
                   ),
-                Text('Bahan', style: AibsType.sectionTitle),
+                Text('Bahan', style: context.aibsText(AibsType.sectionTitle)),
                 if (widget.onCheckMenu != null)
                   TextButton(
                     onPressed: _edit,
@@ -531,8 +557,8 @@ class _MenuDetailPageState extends State<MenuDetailPage> {
                 AibsSpace.s20,
                 AibsSpace.s16,
               ),
-              decoration: const BoxDecoration(
-                color: AibsColors.card,
+              decoration: BoxDecoration(
+                color: context.aibsColor(AibsColors.card),
                 boxShadow: AibsShadows.bar,
                 borderRadius: AibsRadius.sheetTop,
               ),
@@ -709,7 +735,7 @@ class _BackButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AibsColors.card,
+      color: context.aibsColor(AibsColors.card),
       borderRadius: BorderRadius.circular(AibsRadius.sm),
       child: IconButton(
         tooltip: 'Kembali',
@@ -732,7 +758,9 @@ class _IngredientLine extends StatelessWidget {
       children: [
         StatusDot(result),
         const SizedBox(width: AibsSpace.s10),
-        Expanded(child: Text(ingredient, style: AibsType.bodyStrong)),
+        Expanded(
+          child: Text(ingredient, style: context.aibsText(AibsType.bodyStrong)),
+        ),
       ],
     );
   }
@@ -785,9 +813,9 @@ class _ScheduleSheetState extends State<_ScheduleSheet> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Jadwalkan', style: AibsType.sheetTitle),
+              Text('Jadwalkan', style: context.aibsText(AibsType.sheetTitle)),
               const SizedBox(height: AibsSpace.s16),
-              Text('Hari', style: AibsType.caption),
+              Text('Hari', style: context.aibsText(AibsType.caption)),
               const SizedBox(height: AibsSpace.s8),
               Wrap(
                 spacing: AibsSpace.s8,
@@ -801,7 +829,7 @@ class _ScheduleSheetState extends State<_ScheduleSheet> {
                 ],
               ),
               const SizedBox(height: AibsSpace.s16),
-              Text('Waktu', style: AibsType.caption),
+              Text('Waktu', style: context.aibsText(AibsType.caption)),
               const SizedBox(height: AibsSpace.s8),
               Wrap(
                 spacing: AibsSpace.s8,
@@ -991,14 +1019,16 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
                 },
                 title: Text(
                   item,
-                  style: AibsType.bodyStrong.copyWith(
-                    color: _checked.contains(item)
-                        ? AibsColors.inkMuted
-                        : AibsColors.ink,
-                    decoration: _checked.contains(item)
-                        ? TextDecoration.lineThrough
-                        : null,
-                  ),
+                  style: context
+                      .aibsText(AibsType.bodyStrong)
+                      .copyWith(
+                        color: _checked.contains(item)
+                            ? context.aibsColor(AibsColors.inkMuted)
+                            : context.aibsColor(AibsColors.ink),
+                        decoration: _checked.contains(item)
+                            ? TextDecoration.lineThrough
+                            : null,
+                      ),
                 ),
                 subtitle: widget.onQuantity == null
                     ? null

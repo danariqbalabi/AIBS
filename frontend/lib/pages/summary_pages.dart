@@ -149,7 +149,7 @@ class _SummaryPageState extends State<SummaryPage> {
         Text(
           'Catatannya belum cukup',
           textAlign: TextAlign.center,
-          style: AibsType.title,
+          style: context.aibsText(AibsType.title),
         ),
         const SizedBox(height: AibsSpace.s12),
         Row(
@@ -161,8 +161,8 @@ class _SummaryPageState extends State<SummaryPage> {
                   margin: const EdgeInsets.symmetric(horizontal: AibsSpace.s2),
                   decoration: BoxDecoration(
                     color: index < activeDays
-                        ? AibsColors.primary
-                        : AibsColors.line,
+                        ? context.aibsColor(AibsColors.primary)
+                        : context.aibsColor(AibsColors.line),
                     borderRadius: BorderRadius.circular(AibsRadius.pill),
                   ),
                 ),
@@ -269,19 +269,25 @@ class _SummaryPageState extends State<SummaryPage> {
         Container(
           padding: const EdgeInsets.all(AibsSpace.s16),
           decoration: BoxDecoration(
-            color: AibsColors.card,
+            color: context.aibsColor(AibsColors.card),
             borderRadius: BorderRadius.circular(AibsRadius.xl),
-            border: Border.all(color: AibsColors.primary, width: 2),
+            border: Border.all(
+              color: context.aibsColor(AibsColors.primary),
+              width: 2,
+            ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 '$frequent ${frequentCount}x · $matchingMeals x setelah catatan makan',
-                style: AibsType.bodyStrong,
+                style: context.aibsText(AibsType.bodyStrong),
               ),
               const SizedBox(height: AibsSpace.s4),
-              Text('Belum tentu penyebab', style: AibsType.micro),
+              Text(
+                'Belum tentu penyebab',
+                style: context.aibsText(AibsType.micro),
+              ),
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
@@ -297,7 +303,7 @@ class _SummaryPageState extends State<SummaryPage> {
           AibsCard(
             child: Text(
               '? $unknownCount bahan belum diketahui',
-              style: AibsType.bodyStrong,
+              style: context.aibsText(AibsType.bodyStrong),
             ),
           ),
         ],
@@ -401,13 +407,17 @@ class _StatTile extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: AibsSpace.s4),
       padding: const EdgeInsets.all(AibsSpace.s12),
       decoration: BoxDecoration(
-        color: AibsColors.primarySoft,
+        color: context.aibsColor(AibsColors.primarySoft),
         borderRadius: BorderRadius.circular(AibsRadius.md),
       ),
       child: Column(
         children: [
-          Text(value, style: AibsType.title),
-          Text(label, style: AibsType.small, textAlign: TextAlign.center),
+          Text(value, style: context.aibsText(AibsType.title)),
+          Text(
+            label,
+            style: context.aibsText(AibsType.small),
+            textAlign: TextAlign.center,
+          ),
         ],
       ),
     );
@@ -438,8 +448,8 @@ class _SummaryDayStrip extends StatelessWidget {
               height: AibsSpace.s20,
               decoration: BoxDecoration(
                 color: activeDays.contains(end.subtract(Duration(days: index)))
-                    ? AibsColors.primary
-                    : AibsColors.unknownSoft,
+                    ? context.aibsColor(AibsColors.primary)
+                    : context.aibsColor(AibsColors.unknownSoft),
                 shape: BoxShape.circle,
               ),
             ),
@@ -476,7 +486,7 @@ class _PatternDetailPage extends StatelessWidget {
           for (final entry in entries) ...[
             Text(
               '${entry.date.day} ${_month(entry.date.month)}',
-              style: AibsType.caption,
+              style: context.aibsText(AibsType.caption),
             ),
             const SizedBox(height: AibsSpace.s8),
             AibsCard(
@@ -618,7 +628,10 @@ class _ConsultationSummaryPageState extends State<_ConsultationSummaryPage> {
             ),
           ),
           const SizedBox(height: AibsSpace.s16),
-          Text('Gejala & makanan sebelumnya', style: AibsType.sectionTitle),
+          Text(
+            'Gejala & makanan sebelumnya',
+            style: context.aibsText(AibsType.sectionTitle),
+          ),
           ExpansionTile(
             title: const Text('Hasil pengecekan awal'),
             children: [
@@ -638,7 +651,10 @@ class _ConsultationSummaryPageState extends State<_ConsultationSummaryPage> {
               ),
             ),
           const SizedBox(height: AibsSpace.s16),
-          Text('Pertanyaan buat dokter', style: AibsType.sectionTitle),
+          Text(
+            'Pertanyaan buat dokter',
+            style: context.aibsText(AibsType.sectionTitle),
+          ),
           for (final question in _questions)
             ListTile(
               contentPadding: EdgeInsets.zero,
@@ -691,8 +707,8 @@ class _ConsultationSummaryPageState extends State<_ConsultationSummaryPage> {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: AibsType.small),
-        Text(value, style: AibsType.bodyStrong),
+        Text(label, style: context.aibsText(AibsType.small)),
+        Text(value, style: context.aibsText(AibsType.bodyStrong)),
       ],
     ),
   );
@@ -714,8 +730,11 @@ class _SeverityDot extends StatelessWidget {
   @override
   Widget build(BuildContext context) => CircleAvatar(
     radius: 20,
-    backgroundColor: AibsColors.primarySoft,
-    child: Text(value?.toString() ?? '?', style: AibsType.bodyStrong),
+    backgroundColor: context.aibsColor(AibsColors.primarySoft),
+    child: Text(
+      value?.toString() ?? '?',
+      style: context.aibsText(AibsType.bodyStrong),
+    ),
   );
 }
 

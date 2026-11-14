@@ -170,7 +170,7 @@ class _CameraFlowPageState extends State<CameraFlowPage> {
       child: Scaffold(
         backgroundColor: _step == _CameraStep.camera
             ? AibsColors.ink
-            : AibsColors.surface,
+            : context.aibsColor(AibsColors.surface),
         body: SafeArea(
           child: AnimatedSwitcher(
             duration: MediaQuery.disableAnimationsOf(context)
@@ -206,7 +206,9 @@ class _CameraFlowPageState extends State<CameraFlowPage> {
         Text(
           'Foto dari atas, semua lauk kelihatan',
           textAlign: TextAlign.center,
-          style: AibsType.bodyStrong.copyWith(color: AibsColors.onPrimary),
+          style: context
+              .aibsText(AibsType.bodyStrong)
+              .copyWith(color: AibsColors.onPrimary),
         ),
         const Spacer(),
         Padding(
@@ -227,14 +229,18 @@ class _CameraFlowPageState extends State<CameraFlowPage> {
                     : () => _pickPhoto(ImageSource.gallery),
                 child: Text(
                   'Pilih dari galeri',
-                  style: AibsType.label.copyWith(color: AibsColors.onPrimary),
+                  style: context
+                      .aibsText(AibsType.label)
+                      .copyWith(color: AibsColors.onPrimary),
                 ),
               ),
               TextButton(
                 onPressed: _openManual,
                 child: Text(
                   'Isi manual',
-                  style: AibsType.label.copyWith(color: AibsColors.onPrimary),
+                  style: context
+                      .aibsText(AibsType.label)
+                      .copyWith(color: AibsColors.onPrimary),
                 ),
               ),
             ],
@@ -300,7 +306,7 @@ class _CameraFlowPageState extends State<CameraFlowPage> {
           const Spacer(),
           const Koala(KoalaMood.mikir, size: AibsSize.koalaHelp),
           const SizedBox(height: AibsSpace.s20),
-          Text('Lagi baca fotomu', style: AibsType.title),
+          Text('Lagi baca fotomu', style: context.aibsText(AibsType.title)),
           const SizedBox(height: AibsSpace.s20),
           const CircularProgressIndicator(),
           const Spacer(),
@@ -327,10 +333,11 @@ class _CameraFlowPageState extends State<CameraFlowPage> {
           const SizedBox(height: AibsSpace.s16),
           Text(
             'Fotonya belum bisa dibaca',
-            style: AibsType.title,
+            style: context.aibsText(AibsType.title),
             textAlign: TextAlign.center,
           ),
-          if (_photoError != null) Text(_photoError!, style: AibsType.caption),
+          if (_photoError != null)
+            Text(_photoError!, style: context.aibsText(AibsType.caption)),
           const Spacer(),
           AibsSecondaryButton(label: 'Isi manual', onPressed: _openManual),
           const SizedBox(height: AibsSpace.s10),
@@ -363,7 +370,12 @@ class _CameraFlowPageState extends State<CameraFlowPage> {
               const SizedBox(height: AibsSpace.s20),
               Row(
                 children: [
-                  Expanded(child: Text('Bahan', style: AibsType.sectionTitle)),
+                  Expanded(
+                    child: Text(
+                      'Bahan',
+                      style: context.aibsText(AibsType.sectionTitle),
+                    ),
+                  ),
                   TextButton(
                     onPressed: _addIngredient,
                     child: const Text('Tambah bahan'),
@@ -399,7 +411,7 @@ class _CameraFlowPageState extends State<CameraFlowPage> {
                       const SizedBox(height: AibsSpace.s8),
                       Text(
                         'Belum ada bahan yang ditambahkan.',
-                        style: AibsType.caption,
+                        style: context.aibsText(AibsType.caption),
                       ),
                     ],
                   ],
@@ -442,7 +454,10 @@ class _CameraFlowPageState extends State<CameraFlowPage> {
           child: ListView(
             padding: const EdgeInsets.all(AibsSpace.s20),
             children: [
-              Text('Saus ini kira-kira apa?', style: AibsType.title),
+              Text(
+                'Saus ini kira-kira apa?',
+                style: context.aibsText(AibsType.title),
+              ),
               const SizedBox(height: AibsSpace.s16),
               for (final choice in choices)
                 _RadioOption(
@@ -451,7 +466,10 @@ class _CameraFlowPageState extends State<CameraFlowPage> {
                   onTap: () => setState(() => _clarification = choice),
                 ),
               const SizedBox(height: AibsSpace.s16),
-              Text('Bumbu lain di saus', style: AibsType.sectionTitle),
+              Text(
+                'Bumbu lain di saus',
+                style: context.aibsText(AibsType.sectionTitle),
+              ),
               const SizedBox(height: AibsSpace.s8),
               AibsChoiceChip(
                 label: 'Bawang putih',
@@ -506,7 +524,7 @@ class _CameraFlowPageState extends State<CameraFlowPage> {
                 _foodController.text.trim().isEmpty
                     ? 'Makanan dari foto'
                     : _foodController.text.trim(),
-                style: AibsType.titleDetail,
+                style: context.aibsText(AibsType.titleDetail),
               ),
               const SizedBox(height: AibsSpace.s16),
               VerdictCard(
@@ -581,15 +599,24 @@ class _CameraFlowPageState extends State<CameraFlowPage> {
         const SizedBox(height: AibsSpace.s24),
         const Center(child: Koala(KoalaMood.senang, size: 160)),
         const SizedBox(height: AibsSpace.s12),
-        Text('Tersimpan', style: AibsType.title, textAlign: TextAlign.center),
+        Text(
+          'Tersimpan',
+          style: context.aibsText(AibsType.title),
+          textAlign: TextAlign.center,
+        ),
         if (meal != null) ...[
           const SizedBox(height: AibsSpace.s16),
           AibsCard(
             child: Row(
               children: [
-                Text(meal.time, style: AibsType.bodyStrong),
+                Text(meal.time, style: context.aibsText(AibsType.bodyStrong)),
                 const SizedBox(width: AibsSpace.s12),
-                Expanded(child: Text(meal.name, style: AibsType.bodyStrong)),
+                Expanded(
+                  child: Text(
+                    meal.name,
+                    style: context.aibsText(AibsType.bodyStrong),
+                  ),
+                ),
               ],
             ),
           ),
@@ -731,7 +758,10 @@ class _CameraFlowPageState extends State<CameraFlowPage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('Kapan dimakan?', style: AibsType.sheetTitle),
+                Text(
+                  'Kapan dimakan?',
+                  style: context.aibsText(AibsType.sheetTitle),
+                ),
                 ExpansionTile(
                   title: const Text('Tinjau bahan & porsi'),
                   children: [
@@ -823,16 +853,22 @@ class _PhotoTopBar extends StatelessWidget {
             onPressed: onBack ?? () => Navigator.pop(context),
             icon: Icon(
               Icons.close,
-              color: light ? AibsColors.onPrimary : AibsColors.ink,
+              color: light
+                  ? AibsColors.onPrimary
+                  : context.aibsColor(AibsColors.ink),
             ),
           ),
           Expanded(
             child: Text(
               title,
               textAlign: TextAlign.center,
-              style: AibsType.verdict.copyWith(
-                color: light ? AibsColors.onPrimary : AibsColors.ink,
-              ),
+              style: context
+                  .aibsText(AibsType.verdict)
+                  .copyWith(
+                    color: light
+                        ? AibsColors.onPrimary
+                        : context.aibsColor(AibsColors.ink),
+                  ),
             ),
           ),
           const SizedBox(width: AibsSize.backButton),
@@ -853,7 +889,9 @@ class _EditableIngredient extends StatelessWidget {
       children: [
         const StatusDot(CheckStatus.unknown),
         const SizedBox(width: AibsSpace.s10),
-        Expanded(child: Text(name, style: AibsType.bodyStrong)),
+        Expanded(
+          child: Text(name, style: context.aibsText(AibsType.bodyStrong)),
+        ),
         IconButton(
           tooltip: 'Hapus $name',
           onPressed: onRemove,
@@ -875,16 +913,22 @@ class _UnknownIngredientRow extends StatelessWidget {
         vertical: AibsSpace.s8,
       ),
       decoration: BoxDecoration(
-        color: AibsColors.unknownSoft,
+        color: context.aibsColor(AibsColors.unknownSoft),
         borderRadius: BorderRadius.circular(AibsRadius.lg),
         border: Border.all(color: AibsColors.unknown, width: 2),
       ),
       child: Row(
         children: [
-          const Icon(Icons.help_outline, color: AibsColors.inkMuted),
+          Icon(
+            Icons.help_outline,
+            color: context.aibsColor(AibsColors.inkMuted),
+          ),
           const SizedBox(width: AibsSpace.s8),
           Expanded(
-            child: Text('Saus · belum jelas', style: AibsType.bodyStrong),
+            child: Text(
+              'Saus · belum jelas',
+              style: context.aibsText(AibsType.bodyStrong),
+            ),
           ),
         ],
       ),
@@ -907,7 +951,7 @@ class _RadioOption extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: AibsSpace.s10),
       child: Material(
-        color: AibsColors.card,
+        color: context.aibsColor(AibsColors.card),
         borderRadius: BorderRadius.circular(AibsRadius.lg),
         child: InkWell(
           onTap: onTap,
@@ -920,10 +964,10 @@ class _RadioOption extends StatelessWidget {
                   selected
                       ? Icons.radio_button_checked
                       : Icons.radio_button_unchecked,
-                  color: AibsColors.primary,
+                  color: context.aibsColor(AibsColors.primary),
                 ),
                 const SizedBox(width: AibsSpace.s10),
-                Text(label, style: AibsType.bodyStrong),
+                Text(label, style: context.aibsText(AibsType.bodyStrong)),
               ],
             ),
           ),
@@ -1064,7 +1108,9 @@ class JournalPageState extends State<JournalPage> {
       children: [
         Row(
           children: [
-            Expanded(child: Text('Jurnal', style: AibsType.title)),
+            Expanded(
+              child: Text('Jurnal', style: context.aibsText(AibsType.title)),
+            ),
             TextButton(
               onPressed: widget.onOpenSummary,
               child: const Text('Ringkasan'),
@@ -1087,7 +1133,7 @@ class JournalPageState extends State<JournalPage> {
               child: Text(
                 '${_weekday(_selectedDate.weekday)} · ${_selectedDate.day} ${_month(_selectedDate.month)}',
                 textAlign: TextAlign.center,
-                style: AibsType.bodyStrong,
+                style: context.aibsText(AibsType.bodyStrong),
               ),
             ),
             IconButton(
@@ -1131,7 +1177,10 @@ class JournalPageState extends State<JournalPage> {
               children: [
                 const Koala(KoalaMood.mikir, size: 150),
                 const SizedBox(height: AibsSpace.s8),
-                Text('Belum ada catatan', style: AibsType.verdict),
+                Text(
+                  'Belum ada catatan',
+                  style: context.aibsText(AibsType.verdict),
+                ),
                 const SizedBox(height: AibsSpace.s12),
                 AibsPrimaryButton(
                   label: 'Catat sekarang',
@@ -1144,18 +1193,27 @@ class JournalPageState extends State<JournalPage> {
           AibsCard(
             padding: AibsSpace.s12,
             child: Material(
-              color: AibsColors.card,
+              color: context.aibsColor(AibsColors.card),
               borderRadius: BorderRadius.circular(AibsRadius.lg),
               child: Column(
                 children: [
                   for (final record in records)
                     ListTile(
                       contentPadding: EdgeInsets.zero,
-                      leading: Text(record.time, style: AibsType.small),
-                      title: Text(record.title, style: AibsType.bodyStrong),
+                      leading: Text(
+                        record.time,
+                        style: context.aibsText(AibsType.small),
+                      ),
+                      title: Text(
+                        record.title,
+                        style: context.aibsText(AibsType.bodyStrong),
+                      ),
                       subtitle: record.subtitle == null
                           ? null
-                          : Text(record.subtitle!, style: AibsType.caption),
+                          : Text(
+                              record.subtitle!,
+                              style: context.aibsText(AibsType.caption),
+                            ),
                       trailing: record.meal != null
                           ? StatusBadge(record.meal!.status)
                           : record.symptom != null
@@ -1197,7 +1255,10 @@ class JournalPageState extends State<JournalPage> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Mau catat apa?', style: AibsType.sheetTitle),
+              Text(
+                'Mau catat apa?',
+                style: context.aibsText(AibsType.sheetTitle),
+              ),
               const SizedBox(height: AibsSpace.s14),
               if (widget.aiEnabled && _storyDraft != null)
                 _RecordOption(
@@ -1429,8 +1490,8 @@ class _RecordOption extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListTile(
       onTap: onTap,
-      leading: Icon(icon, color: AibsColors.primaryStrong),
-      title: Text(label, style: AibsType.bodyStrong),
+      leading: Icon(icon, color: context.aibsColor(AibsColors.primaryStrong)),
+      title: Text(label, style: context.aibsText(AibsType.bodyStrong)),
       trailing: const Icon(Icons.chevron_right),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AibsRadius.lg),
@@ -1549,9 +1610,11 @@ class _StoryEntryPageState extends State<_StoryEntryPage> {
                   if (_error != null)
                     Text(
                       _error!,
-                      style: AibsType.caption.copyWith(
-                        color: AibsColors.badInk,
-                      ),
+                      style: context
+                          .aibsText(AibsType.caption)
+                          .copyWith(
+                            color: context.aibsColor(AibsColors.badInk),
+                          ),
                     ),
                   TextButton(
                     onPressed: _saving
@@ -1623,7 +1686,9 @@ class _StoryEntryPageState extends State<_StoryEntryPage> {
                                   children: [
                                     Text(
                                       'Cek sebelum simpan',
-                                      style: AibsType.sheetTitle,
+                                      style: context.aibsText(
+                                        AibsType.sheetTitle,
+                                      ),
                                     ),
                                     const SizedBox(height: AibsSpace.s12),
                                     AibsCard(
@@ -1702,7 +1767,10 @@ class _StoryEntryPageState extends State<_StoryEntryPage> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Ceritamu belum disimpan', style: AibsType.sheetTitle),
+              Text(
+                'Ceritamu belum disimpan',
+                style: context.aibsText(AibsType.sheetTitle),
+              ),
               const SizedBox(height: AibsSpace.s12),
               AibsPrimaryButton(
                 label: 'Lanjut isi',
@@ -1750,7 +1818,9 @@ class _StoryEntryPageState extends State<_StoryEntryPage> {
                   },
                   child: Text(
                     'Buang draft',
-                    style: AibsType.label.copyWith(color: AibsColors.badInk),
+                    style: context
+                        .aibsText(AibsType.label)
+                        .copyWith(color: context.aibsColor(AibsColors.badInk)),
                   ),
                 ),
               ),
@@ -1862,7 +1932,10 @@ class _SymptomEntryPageState extends State<SymptomEntryPage> {
               child: ListView(
                 padding: const EdgeInsets.all(AibsSpace.s20),
                 children: [
-                  Text('Apa yang kamu rasain?', style: AibsType.sectionTitle),
+                  Text(
+                    'Apa yang kamu rasain?',
+                    style: context.aibsText(AibsType.sectionTitle),
+                  ),
                   const SizedBox(height: AibsSpace.s12),
                   Wrap(
                     spacing: AibsSpace.s8,
@@ -1881,7 +1954,10 @@ class _SymptomEntryPageState extends State<SymptomEntryPage> {
                     ],
                   ),
                   const SizedBox(height: AibsSpace.s20),
-                  Text('Seberapa ganggu?', style: AibsType.sectionTitle),
+                  Text(
+                    'Seberapa ganggu?',
+                    style: context.aibsText(AibsType.sectionTitle),
+                  ),
                   if (_selected.contains('Lainnya'))
                     TextField(
                       controller: _otherController,
@@ -1919,7 +1995,7 @@ class _SymptomEntryPageState extends State<SymptomEntryPage> {
                   AibsCard(
                     child: Text(
                       '$_severity · ${_severityLabel(_severity)}',
-                      style: AibsType.bodyStrong,
+                      style: context.aibsText(AibsType.bodyStrong),
                     ),
                   ),
                   const SizedBox(height: AibsSpace.s16),
@@ -1950,7 +2026,7 @@ class _SymptomEntryPageState extends State<SymptomEntryPage> {
                       },
                     ),
                   ),
-                  Text('Stres', style: AibsType.caption),
+                  Text('Stres', style: context.aibsText(AibsType.caption)),
                   const SizedBox(height: AibsSpace.s8),
                   Wrap(
                     spacing: AibsSpace.s8,
@@ -1970,7 +2046,10 @@ class _SymptomEntryPageState extends State<SymptomEntryPage> {
                   ),
                   if (widget.meals.isNotEmpty) ...[
                     const SizedBox(height: AibsSpace.s16),
-                    Text('Hubungkan makanan', style: AibsType.caption),
+                    Text(
+                      'Hubungkan makanan',
+                      style: context.aibsText(AibsType.caption),
+                    ),
                     DropdownButtonFormField<String>(
                       isExpanded: true,
                       initialValue: _linkedMeal,
@@ -2095,19 +2174,26 @@ class _ScaleDot extends StatelessWidget {
           height: size,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: selected ? null : AibsColors.card,
+            color: selected ? null : context.aibsColor(AibsColors.card),
             gradient: selected ? AibsGradients.brand : null,
             shape: BoxShape.circle,
             border: selected
                 ? null
-                : Border.all(color: AibsColors.line, width: 2),
+                : Border.all(
+                    color: context.aibsColor(AibsColors.line),
+                    width: 2,
+                  ),
             boxShadow: selected ? AibsShadows.glow : null,
           ),
           child: Text(
             '$value',
-            style: AibsType.button.copyWith(
-              color: selected ? AibsColors.onPrimary : AibsColors.inkMuted,
-            ),
+            style: context
+                .aibsText(AibsType.button)
+                .copyWith(
+                  color: selected
+                      ? AibsColors.onPrimary
+                      : context.aibsColor(AibsColors.inkMuted),
+                ),
           ),
         ),
       ),
@@ -2122,8 +2208,11 @@ class _SeverityDot extends StatelessWidget {
   @override
   Widget build(BuildContext context) => CircleAvatar(
     radius: 20,
-    backgroundColor: AibsColors.primarySoft,
-    child: Text(value?.toString() ?? '?', style: AibsType.bodyStrong),
+    backgroundColor: context.aibsColor(AibsColors.primarySoft),
+    child: Text(
+      value?.toString() ?? '?',
+      style: context.aibsText(AibsType.bodyStrong),
+    ),
   );
 }
 
@@ -2149,12 +2238,17 @@ class _JournalDetailPage extends StatelessWidget {
                 : symptom != null
                 ? 'Gejala · ${record.time}'
                 : 'Cerita · ${record.time}',
-            style: AibsType.label,
+            style: context.aibsText(AibsType.label),
           ),
           const SizedBox(height: AibsSpace.s8),
-          Text(record.title, style: AibsType.titleDetail),
+          Text(record.title, style: context.aibsText(AibsType.titleDetail)),
           if (story != null)
-            AibsCard(child: Text(story.text, style: AibsType.bodyStrong))
+            AibsCard(
+              child: Text(
+                story.text,
+                style: context.aibsText(AibsType.bodyStrong),
+              ),
+            )
           else if (meal != null) ...[
             const SizedBox(height: AibsSpace.s12),
             StatusBadge(meal.status),
@@ -2163,7 +2257,7 @@ class _JournalDetailPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Bahan', style: AibsType.sectionTitle),
+                  Text('Bahan', style: context.aibsText(AibsType.sectionTitle)),
                   const SizedBox(height: AibsSpace.s8),
                   for (final ingredient in meal.ingredients) Text(ingredient),
                 ],
@@ -2171,7 +2265,7 @@ class _JournalDetailPage extends StatelessWidget {
             ),
             if (meal.note != null) ...[
               const SizedBox(height: AibsSpace.s12),
-              Text(meal.note!, style: AibsType.caption),
+              Text(meal.note!, style: context.aibsText(AibsType.caption)),
             ],
           ] else ...[
             const SizedBox(height: AibsSpace.s12),
@@ -2179,16 +2273,19 @@ class _JournalDetailPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Seberapa ganggu?', style: AibsType.caption),
+                  Text(
+                    'Seberapa ganggu?',
+                    style: context.aibsText(AibsType.caption),
+                  ),
                   Text(
                     'Skala ${symptom!.severity ?? 'belum diisi'}',
-                    style: AibsType.bodyStrong,
+                    style: context.aibsText(AibsType.bodyStrong),
                   ),
                   if (symptom.mealName != null) ...[
                     const SizedBox(height: AibsSpace.s12),
                     Text(
                       'Setelah ${symptom.mealName}',
-                      style: AibsType.bodyStrong,
+                      style: context.aibsText(AibsType.bodyStrong),
                     ),
                     const Text('Belum tentu penyebab'),
                   ],

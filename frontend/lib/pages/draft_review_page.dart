@@ -163,7 +163,7 @@ class _DraftReviewPageState extends State<DraftReviewPage> {
                         padding: const EdgeInsets.only(top: AibsSpace.s12),
                         child: Text(
                           question.toString(),
-                          style: AibsType.caption,
+                          style: context.aibsText(AibsType.caption),
                         ),
                       ),
                     for (var i = 0; i < foods.length; i++) ...[
@@ -173,7 +173,7 @@ class _DraftReviewPageState extends State<DraftReviewPage> {
                           Expanded(
                             child: Text(
                               'Makanan ${i + 1}',
-                              style: AibsType.sectionTitle,
+                              style: context.aibsText(AibsType.sectionTitle),
                             ),
                           ),
                           IconButton(
@@ -215,7 +215,7 @@ class _DraftReviewPageState extends State<DraftReviewPage> {
                           Expanded(
                             child: Text(
                               'Gejala ${i + 1}',
-                              style: AibsType.sectionTitle,
+                              style: context.aibsText(AibsType.sectionTitle),
                             ),
                           ),
                           IconButton(
@@ -297,7 +297,9 @@ class _DraftReviewPageState extends State<DraftReviewPage> {
                 padding: const EdgeInsets.all(AibsSpace.s16),
                 child: Text(
                   _error!,
-                  style: AibsType.caption.copyWith(color: AibsColors.badInk),
+                  style: context
+                      .aibsText(AibsType.caption)
+                      .copyWith(color: context.aibsColor(AibsColors.badInk)),
                 ),
               ),
             if (widget.review.commitPending && !_busy)
@@ -305,7 +307,7 @@ class _DraftReviewPageState extends State<DraftReviewPage> {
                 padding: const EdgeInsets.all(AibsSpace.s12),
                 child: Text(
                   'Status simpan belum diterima. Coba simpan lagi untuk memeriksa.',
-                  style: AibsType.caption,
+                  style: context.aibsText(AibsType.caption),
                 ),
               ),
             SafeArea(

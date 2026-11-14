@@ -99,7 +99,7 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
     }
 
     return Scaffold(
-      backgroundColor: AibsColors.surface,
+      backgroundColor: context.aibsColor(AibsColors.surface),
       body: SafeArea(
         child: Column(
           children: [
@@ -129,7 +129,9 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
                 ),
                 child: Text(
                   _error!,
-                  style: AibsType.caption.copyWith(color: AibsColors.badInk),
+                  style: context
+                      .aibsText(AibsType.caption)
+                      .copyWith(color: context.aibsColor(AibsColors.badInk)),
                 ),
               ),
             _buildActions(),
@@ -179,9 +181,9 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
               Container(
                 width: 240,
                 height: 240,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  gradient: AibsGradients.hero,
+                  gradient: context.aibsGradient(AibsGradients.hero),
                 ),
               ),
               const Koala(KoalaMood.senang, size: AibsSize.koalaWelcome),
@@ -198,23 +200,23 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
           ),
         ),
         const SizedBox(height: AibsSpace.s16),
-        Text('AIBS', style: AibsType.label),
+        Text('AIBS', style: context.aibsText(AibsType.label)),
         const SizedBox(height: AibsSpace.s8),
         Text(
           'Makan tenang,\nperut senang',
           textAlign: TextAlign.center,
-          style: AibsType.display,
+          style: context.aibsText(AibsType.display),
         ),
         const SizedBox(height: AibsSpace.s12),
         Text(
           'Pilih makan sesuai arahan dokter, catat gejala dengan mudah.',
           textAlign: TextAlign.center,
-          style: AibsType.body,
+          style: context.aibsText(AibsType.body),
         ),
         const SizedBox(height: AibsSpace.s8),
         Text(
           'Bukan pengganti saran dokter.',
-          style: AibsType.micro,
+          style: context.aibsText(AibsType.micro),
           textAlign: TextAlign.center,
         ),
       ],
@@ -225,7 +227,7 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Pilih profil demo', style: AibsType.title),
+        Text('Pilih profil demo', style: context.aibsText(AibsType.title)),
         const SizedBox(height: AibsSpace.s20),
         _DemoProfileCard(
           name: 'Nadia, 21',
@@ -248,9 +250,9 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Masuk ke AIBS', style: AibsType.title),
+        Text('Masuk ke AIBS', style: context.aibsText(AibsType.title)),
         const SizedBox(height: AibsSpace.s20),
-        Text('Email', style: AibsType.caption),
+        Text('Email', style: context.aibsText(AibsType.caption)),
         const SizedBox(height: AibsSpace.s8),
         TextField(
           controller: _emailController,
@@ -267,9 +269,12 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Masukkan kode', style: AibsType.title),
+        Text('Masukkan kode', style: context.aibsText(AibsType.title)),
         const SizedBox(height: AibsSpace.s8),
-        Text(_emailController.text.trim(), style: AibsType.label),
+        Text(
+          _emailController.text.trim(),
+          style: context.aibsText(AibsType.label),
+        ),
         const SizedBox(height: AibsSpace.s24),
         Row(
           children: [
@@ -291,7 +296,7 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
                   autofillHints: index == 0
                       ? const [AutofillHints.oneTimeCode]
                       : null,
-                  style: AibsType.title,
+                  style: context.aibsText(AibsType.title),
                   decoration: const InputDecoration(
                     counterText: '',
                     contentPadding: EdgeInsets.zero,
@@ -352,7 +357,7 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Pakai bantuan AI?', style: AibsType.title),
+        Text('Pakai bantuan AI?', style: context.aibsText(AibsType.title)),
         const SizedBox(height: AibsSpace.s20),
         _ConsentCard(
           title: 'Pakai AI',
@@ -372,7 +377,7 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
         const SizedBox(height: AibsSpace.s16),
         Text(
           'Bisa diubah kapan saja di Profil › Privasi.',
-          style: AibsType.micro,
+          style: context.aibsText(AibsType.micro),
         ),
       ],
     );
@@ -527,7 +532,7 @@ class _DemoProfileCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AibsColors.card,
+      color: context.aibsColor(AibsColors.card),
       borderRadius: BorderRadius.circular(AibsRadius.xl),
       child: InkWell(
         onTap: onTap,
@@ -549,9 +554,9 @@ class _DemoProfileCard extends StatelessWidget {
                     ),
                     child: Text(
                       name.substring(0, 1),
-                      style: AibsType.title.copyWith(
-                        color: AibsColors.onPrimary,
-                      ),
+                      style: context
+                          .aibsText(AibsType.title)
+                          .copyWith(color: AibsColors.onPrimary),
                     ),
                   ),
                   const SizedBox(width: AibsSpace.s12),
@@ -559,12 +564,15 @@ class _DemoProfileCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(name, style: AibsType.verdict),
-                        Text(role, style: AibsType.caption),
+                        Text(name, style: context.aibsText(AibsType.verdict)),
+                        Text(role, style: context.aibsText(AibsType.caption)),
                       ],
                     ),
                   ),
-                  const Icon(Icons.chevron_right, color: AibsColors.inkMuted),
+                  Icon(
+                    Icons.chevron_right,
+                    color: context.aibsColor(AibsColors.inkMuted),
+                  ),
                 ],
               ),
               const SizedBox(height: AibsSpace.s12),
@@ -575,7 +583,7 @@ class _DemoProfileCard extends StatelessWidget {
                   for (final detail in details)
                     DecoratedBox(
                       decoration: BoxDecoration(
-                        color: AibsColors.primarySoft,
+                        color: context.aibsColor(AibsColors.primarySoft),
                         borderRadius: BorderRadius.circular(AibsRadius.pill),
                       ),
                       child: Padding(
@@ -583,7 +591,10 @@ class _DemoProfileCard extends StatelessWidget {
                           horizontal: AibsSpace.s10,
                           vertical: AibsSpace.s6,
                         ),
-                        child: Text(detail, style: AibsType.small),
+                        child: Text(
+                          detail,
+                          style: context.aibsText(AibsType.small),
+                        ),
                       ),
                     ),
                 ],
@@ -614,7 +625,9 @@ class _ConsentCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: selected ? AibsColors.primarySoft : AibsColors.card,
+      color: selected
+          ? context.aibsColor(AibsColors.primarySoft)
+          : context.aibsColor(AibsColors.card),
       borderRadius: BorderRadius.circular(AibsRadius.xl),
       child: InkWell(
         onTap: onTap,
@@ -623,19 +636,26 @@ class _ConsentCard extends StatelessWidget {
           padding: const EdgeInsets.all(AibsSpace.s16),
           child: Row(
             children: [
-              Icon(icon, color: AibsColors.primaryStrong, size: 28),
+              Icon(
+                icon,
+                color: context.aibsColor(AibsColors.primaryStrong),
+                size: 28,
+              ),
               const SizedBox(width: AibsSpace.s12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, style: AibsType.option),
-                    Text(subtitle, style: AibsType.caption),
+                    Text(title, style: context.aibsText(AibsType.option)),
+                    Text(subtitle, style: context.aibsText(AibsType.caption)),
                   ],
                 ),
               ),
               if (selected)
-                const Icon(Icons.check_circle, color: AibsColors.primary),
+                Icon(
+                  Icons.check_circle,
+                  color: context.aibsColor(AibsColors.primary),
+                ),
             ],
           ),
         ),

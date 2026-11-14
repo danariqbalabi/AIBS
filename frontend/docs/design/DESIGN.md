@@ -270,3 +270,7 @@ Casual Indonesian ("kamu"), short. Buttons are verbs. Never diagnose, never blam
 - **SVGs:** `flutter_svg` for the koala, icons, and illustrations.
 - **Food photos:** the prototype uses gradient + bowl placeholders. In the app, real photos go in the same slot (cover) with the gradient as the loading/fallback background.
 - **Font:** bundle Nunito static TTFs 600/700/800 under `fonts:` with family `Nunito`. `google_fonts` also works but needs network on first load.
+
+## Streak dan tema malam (permintaan pengguna, 14 November 2026)
+
+Palet gelap dan pilihan Profil → Tampilan serta indikator streak dijelaskan di [panduan fitur](../../../docs/streak-night-mode.md). Warna status tetap khusus hasil penilaian; kartu streak memakai warna brand.

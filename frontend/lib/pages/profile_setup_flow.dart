@@ -462,7 +462,7 @@ class _ProfileSetupFlowState extends State<ProfileSetupFlow> {
       if (mounted) _persistProgress();
     });
     return Scaffold(
-      backgroundColor: AibsColors.surface,
+      backgroundColor: context.aibsColor(AibsColors.surface),
       body: SafeArea(
         child: Column(
           children: [
@@ -492,7 +492,9 @@ class _ProfileSetupFlowState extends State<ProfileSetupFlow> {
                 ),
                 child: Text(
                   _formError!,
-                  style: AibsType.caption.copyWith(color: AibsColors.badInk),
+                  style: context
+                      .aibsText(AibsType.caption)
+                      .copyWith(color: context.aibsColor(AibsColors.badInk)),
                 ),
               ),
             _buildActions(),
@@ -611,11 +613,13 @@ class _ProfileSetupFlowState extends State<ProfileSetupFlow> {
         if (counter != null) ...[
           Text(
             counter,
-            style: AibsType.label.copyWith(color: AibsColors.primaryStrong),
+            style: context
+                .aibsText(AibsType.label)
+                .copyWith(color: context.aibsColor(AibsColors.primaryStrong)),
           ),
           const SizedBox(height: AibsSpace.s8),
         ],
-        Text(title, style: AibsType.title),
+        Text(title, style: context.aibsText(AibsType.title)),
         const SizedBox(height: AibsSpace.s20),
         for (final option in options) ...[
           _OptionCard(label: option, onTap: () => onSelected(option)),
@@ -670,13 +674,15 @@ class _ProfileSetupFlowState extends State<ProfileSetupFlow> {
         const SizedBox(height: AibsSpace.s24),
         Text(
           'AIBS dibuat untuk usia 18+',
-          style: AibsType.title,
+          style: context.aibsText(AibsType.title),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: AibsSpace.s12),
         Text(
           'Ajak orang tua atau dokter buat bantu atur makanmu.',
-          style: AibsType.body.copyWith(color: AibsColors.inkMuted),
+          style: context
+              .aibsText(AibsType.body)
+              .copyWith(color: context.aibsColor(AibsColors.inkMuted)),
           textAlign: TextAlign.center,
         ),
       ],
@@ -695,7 +701,7 @@ class _ProfileSetupFlowState extends State<ProfileSetupFlow> {
         const SizedBox(height: AibsSpace.s16),
         Text(
           'Periksa ke dokter dulu, ya',
-          style: AibsType.title,
+          style: context.aibsText(AibsType.title),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: AibsSpace.s20),
@@ -716,7 +722,9 @@ class _ProfileSetupFlowState extends State<ProfileSetupFlow> {
         const SizedBox(height: AibsSpace.s12),
         Text(
           'Teks ini perlu ditinjau tenaga medis.',
-          style: AibsType.micro.copyWith(color: AibsColors.inkMuted),
+          style: context
+              .aibsText(AibsType.micro)
+              .copyWith(color: context.aibsColor(AibsColors.inkMuted)),
           textAlign: TextAlign.center,
         ),
       ],
@@ -728,7 +736,7 @@ class _ProfileSetupFlowState extends State<ProfileSetupFlow> {
       children: [
         const Koala(KoalaMood.mikir, size: AibsSize.koalaHelp),
         const SizedBox(height: AibsSpace.s20),
-        Text('Lagi cek jawabanmu', style: AibsType.title),
+        Text('Lagi cek jawabanmu', style: context.aibsText(AibsType.title)),
         const SizedBox(height: AibsSpace.s20),
         const CircularProgressIndicator(),
       ],
@@ -742,13 +750,15 @@ class _ProfileSetupFlowState extends State<ProfileSetupFlow> {
         const SizedBox(height: AibsSpace.s20),
         Text(
           'Pengecekan belum selesai',
-          style: AibsType.title,
+          style: context.aibsText(AibsType.title),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: AibsSpace.s12),
         Text(
           _assessmentError ?? 'Coba lagi nanti.',
-          style: AibsType.body.copyWith(color: AibsColors.inkMuted),
+          style: context
+              .aibsText(AibsType.body)
+              .copyWith(color: context.aibsColor(AibsColors.inkMuted)),
           textAlign: TextAlign.center,
         ),
       ],
@@ -773,7 +783,7 @@ class _ProfileSetupFlowState extends State<ProfileSetupFlow> {
           detail: assessment?.reasons.isNotEmpty == true
               ? assessment!.reasons.first
               : null,
-          gradient: AibsGradients.hero,
+          gradient: context.aibsGradient(AibsGradients.hero),
           koalaSize: AibsSize.verdictKoala,
         ),
         const SizedBox(height: AibsSpace.s20),
@@ -793,7 +803,9 @@ class _ProfileSetupFlowState extends State<ProfileSetupFlow> {
         const SizedBox(height: AibsSpace.s12),
         Text(
           'Bukan diagnosis. Pastikan ke dokter.',
-          style: AibsType.micro.copyWith(color: AibsColors.inkMuted),
+          style: context
+              .aibsText(AibsType.micro)
+              .copyWith(color: context.aibsColor(AibsColors.inkMuted)),
         ),
         const SizedBox(height: AibsSpace.s8),
         TextButton(
@@ -808,7 +820,9 @@ class _ProfileSetupFlowState extends State<ProfileSetupFlow> {
             padding: const EdgeInsets.only(top: AibsSpace.s8),
             child: Text(
               'Bawa jawaban ini saat konsultasi.',
-              style: AibsType.caption.copyWith(color: AibsColors.inkMuted),
+              style: context
+                  .aibsText(AibsType.caption)
+                  .copyWith(color: context.aibsColor(AibsColors.inkMuted)),
             ),
           ),
         const SizedBox(height: AibsSpace.s12),
@@ -818,7 +832,9 @@ class _ProfileSetupFlowState extends State<ProfileSetupFlow> {
 
   Widget _criterionRow(String label, List<bool?> criteria, int index) {
     final value = index < criteria.length ? criteria[index] : null;
-    final color = value == true ? AibsColors.primary : AibsColors.unknownSoft;
+    final color = value == true
+        ? context.aibsColor(AibsColors.primary)
+        : context.aibsColor(AibsColors.unknownSoft);
     return Row(
       children: [
         Container(
@@ -828,16 +844,20 @@ class _ProfileSetupFlowState extends State<ProfileSetupFlow> {
           child: Center(
             child: Text(
               value == true ? '✓' : '–',
-              style: AibsType.caption.copyWith(
-                color: value == true
-                    ? AibsColors.onPrimary
-                    : AibsColors.inkMuted,
-              ),
+              style: context
+                  .aibsText(AibsType.caption)
+                  .copyWith(
+                    color: value == true
+                        ? AibsColors.onPrimary
+                        : context.aibsColor(AibsColors.inkMuted),
+                  ),
             ),
           ),
         ),
         const SizedBox(width: AibsSpace.s12),
-        Expanded(child: Text(label, style: AibsType.bodyStrong)),
+        Expanded(
+          child: Text(label, style: context.aibsText(AibsType.bodyStrong)),
+        ),
       ],
     );
   }
@@ -885,7 +905,7 @@ class _ProfileSetupFlowState extends State<ProfileSetupFlow> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Low FODMAP fase apa?', style: AibsType.title),
+        Text('Low FODMAP fase apa?', style: context.aibsText(AibsType.title)),
         const SizedBox(height: AibsSpace.s20),
         for (final phase in phases) ...[
           _OptionCard(
@@ -906,7 +926,10 @@ class _ProfileSetupFlowState extends State<ProfileSetupFlow> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Bahan apa yang dihindari?', style: AibsType.title),
+        Text(
+          'Bahan apa yang dihindari?',
+          style: context.aibsText(AibsType.title),
+        ),
         const SizedBox(height: AibsSpace.s20),
         _addTextField(
           controller: _avoidController,
@@ -942,13 +965,18 @@ class _ProfileSetupFlowState extends State<ProfileSetupFlow> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Ada batas porsi?', style: AibsType.title),
+        Text('Ada batas porsi?', style: context.aibsText(AibsType.title)),
         const SizedBox(height: AibsSpace.s20),
         for (final ingredient in _portionLimits.keys) ...[
           AibsCard(
             child: Row(
               children: [
-                Expanded(child: Text(ingredient, style: AibsType.bodyStrong)),
+                Expanded(
+                  child: Text(
+                    ingredient,
+                    style: context.aibsText(AibsType.bodyStrong),
+                  ),
+                ),
                 IconButton(
                   tooltip: 'Kurangi $ingredient',
                   onPressed: () => _changePortion(ingredient, -1),
@@ -958,7 +986,7 @@ class _ProfileSetupFlowState extends State<ProfileSetupFlow> {
                   (_portionLimits[ingredient] ?? 0) == 0
                       ? 'Tidak ada'
                       : '${_portionLimits[ingredient]} porsi',
-                  style: AibsType.caption,
+                  style: context.aibsText(AibsType.caption),
                 ),
                 IconButton(
                   tooltip: 'Tambah $ingredient',
@@ -978,7 +1006,7 @@ class _ProfileSetupFlowState extends State<ProfileSetupFlow> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Punya alergi makanan?', style: AibsType.title),
+        Text('Punya alergi makanan?', style: context.aibsText(AibsType.title)),
         const SizedBox(height: AibsSpace.s20),
         Wrap(
           spacing: AibsSpace.s8,
@@ -1020,7 +1048,10 @@ class _ProfileSetupFlowState extends State<ProfileSetupFlow> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Ada yang bikin perutmu nggak nyaman?', style: AibsType.title),
+        Text(
+          'Ada yang bikin perutmu nggak nyaman?',
+          style: context.aibsText(AibsType.title),
+        ),
         const SizedBox(height: AibsSpace.s20),
         Wrap(
           spacing: AibsSpace.s8,
@@ -1062,7 +1093,7 @@ class _ProfileSetupFlowState extends State<ProfileSetupFlow> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Budget sekali makan?', style: AibsType.title),
+        Text('Budget sekali makan?', style: context.aibsText(AibsType.title)),
         const SizedBox(height: AibsSpace.s20),
         for (final option in options) ...[
           _OptionCard(
@@ -1111,7 +1142,7 @@ class _ProfileSetupFlowState extends State<ProfileSetupFlow> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Ada preferensi lain?', style: AibsType.title),
+        Text('Ada preferensi lain?', style: context.aibsText(AibsType.title)),
         const SizedBox(height: AibsSpace.s20),
         Wrap(
           spacing: AibsSpace.s8,
@@ -1133,7 +1164,7 @@ class _ProfileSetupFlowState extends State<ProfileSetupFlow> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Udah bener?', style: AibsType.title),
+        Text('Udah bener?', style: context.aibsText(AibsType.title)),
         const SizedBox(height: AibsSpace.s20),
         AibsCard(
           padding: AibsSpace.s8,
@@ -1196,14 +1227,21 @@ class _ProfileSetupFlowState extends State<ProfileSetupFlow> {
                 children: [
                   Text(
                     category,
-                    style: AibsType.small.copyWith(color: AibsColors.inkMuted),
+                    style: context
+                        .aibsText(AibsType.small)
+                        .copyWith(
+                          color: context.aibsColor(AibsColors.inkMuted),
+                        ),
                   ),
                   const SizedBox(height: AibsSpace.s2),
-                  Text(value, style: AibsType.bodyStrong),
+                  Text(value, style: context.aibsText(AibsType.bodyStrong)),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: AibsColors.inkMuted),
+            Icon(
+              Icons.chevron_right,
+              color: context.aibsColor(AibsColors.inkMuted),
+            ),
           ],
         ),
       ),
@@ -1775,7 +1813,7 @@ class _OptionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AibsColors.card,
+      color: context.aibsColor(AibsColors.card),
       borderRadius: BorderRadius.circular(AibsRadius.lg),
       child: InkWell(
         onTap: onTap,
@@ -1786,7 +1824,9 @@ class _OptionCard extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(AibsRadius.lg),
             border: Border.all(
-              color: selected ? AibsColors.primary : AibsColors.line,
+              color: selected
+                  ? context.aibsColor(AibsColors.primary)
+                  : context.aibsColor(AibsColors.line),
               width: selected ? AibsSpace.s2 : 1,
             ),
             boxShadow: AibsShadows.card,
@@ -1798,14 +1838,16 @@ class _OptionCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(label, style: AibsType.option),
+                    Text(label, style: context.aibsText(AibsType.option)),
                     if (detail != null) ...[
                       const SizedBox(height: AibsSpace.s4),
                       Text(
                         detail!,
-                        style: AibsType.caption.copyWith(
-                          color: AibsColors.inkMuted,
-                        ),
+                        style: context
+                            .aibsText(AibsType.caption)
+                            .copyWith(
+                              color: context.aibsColor(AibsColors.inkMuted),
+                            ),
                       ),
                     ],
                   ],
@@ -1813,7 +1855,9 @@ class _OptionCard extends StatelessWidget {
               ),
               Icon(
                 selected ? Icons.radio_button_checked : Icons.chevron_right,
-                color: selected ? AibsColors.primary : AibsColors.inkMuted,
+                color: selected
+                    ? context.aibsColor(AibsColors.primary)
+                    : context.aibsColor(AibsColors.inkMuted),
               ),
             ],
           ),
@@ -1842,14 +1886,16 @@ class _HelpStep extends StatelessWidget {
         Container(
           width: AibsSize.helpStepCircle,
           height: AibsSize.helpStepCircle,
-          decoration: const BoxDecoration(
-            color: AibsColors.badSoft,
+          decoration: BoxDecoration(
+            color: context.aibsColor(AibsColors.badSoft),
             shape: BoxShape.circle,
           ),
           child: Center(
             child: Text(
               '$number',
-              style: AibsType.bodyStrong.copyWith(color: AibsColors.badInk),
+              style: context
+                  .aibsText(AibsType.bodyStrong)
+                  .copyWith(color: context.aibsColor(AibsColors.badInk)),
             ),
           ),
         ),
@@ -1858,12 +1904,14 @@ class _HelpStep extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: AibsType.bodyStrong),
+              Text(title, style: context.aibsText(AibsType.bodyStrong)),
               if (detail != null) ...[
                 const SizedBox(height: AibsSpace.s4),
                 Text(
                   detail!,
-                  style: AibsType.caption.copyWith(color: AibsColors.inkMuted),
+                  style: context
+                      .aibsText(AibsType.caption)
+                      .copyWith(color: context.aibsColor(AibsColors.inkMuted)),
                 ),
               ],
             ],

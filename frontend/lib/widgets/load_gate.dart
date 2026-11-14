@@ -30,7 +30,11 @@ class LoadGate extends StatelessWidget {
                 const CircularProgressIndicator(),
                 const SizedBox(height: AibsSpace.s20),
               ],
-              Text(message, textAlign: TextAlign.center, style: AibsType.body),
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: context.aibsText(AibsType.body),
+              ),
               if (!busy) ...[
                 const SizedBox(height: AibsSpace.s20),
                 AibsSecondaryButton(label: 'Coba lagi', onPressed: onRetry),

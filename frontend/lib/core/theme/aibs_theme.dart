@@ -7,6 +7,75 @@ import 'package:flutter/material.dart';
 import 'aibs_tokens.dart';
 
 abstract final class AibsTheme {
+  static ThemeData get dark {
+    final base = light;
+    final scheme = base.colorScheme.copyWith(
+      brightness: Brightness.dark,
+      primary: AibsDarkColors.primary,
+      onPrimary: AibsDarkColors.surface,
+      primaryContainer: AibsDarkColors.primarySoft,
+      onPrimaryContainer: AibsDarkColors.primaryStrong,
+      secondary: AibsDarkColors.primaryStrong,
+      surface: AibsDarkColors.surface,
+      onSurface: AibsDarkColors.ink,
+      onSurfaceVariant: AibsDarkColors.inkMuted,
+      outline: AibsDarkColors.line,
+      outlineVariant: AibsDarkColors.line,
+      error: AibsDarkColors.badInk,
+      errorContainer: AibsDarkColors.badSoft,
+      onErrorContainer: AibsDarkColors.badInk,
+      surfaceContainerLowest: AibsDarkColors.card,
+      surfaceContainerLow: AibsDarkColors.card,
+      surfaceContainer: AibsDarkColors.card,
+      surfaceContainerHigh: AibsDarkColors.card,
+      surfaceContainerHighest: AibsDarkColors.unknownSoft,
+      scrim: AibsDarkColors.scrim,
+    );
+    return base.copyWith(
+      colorScheme: scheme,
+      textTheme: base.textTheme.apply(
+        bodyColor: AibsDarkColors.ink,
+        displayColor: AibsDarkColors.ink,
+      ),
+      scaffoldBackgroundColor: AibsDarkColors.surface,
+      iconTheme: const IconThemeData(color: AibsDarkColors.inkMuted),
+      dividerColor: AibsDarkColors.line,
+      appBarTheme: base.appBarTheme.copyWith(
+        foregroundColor: AibsDarkColors.ink,
+      ),
+      cardTheme: base.cardTheme.copyWith(color: AibsDarkColors.card),
+      bottomSheetTheme: base.bottomSheetTheme.copyWith(
+        backgroundColor: AibsDarkColors.card,
+        dragHandleColor: AibsDarkColors.line,
+        modalBarrierColor: AibsDarkColors.scrim,
+      ),
+      dialogTheme: base.dialogTheme.copyWith(
+        backgroundColor: AibsDarkColors.card,
+        barrierColor: AibsDarkColors.scrim,
+      ),
+      inputDecorationTheme: base.inputDecorationTheme.copyWith(
+        fillColor: AibsDarkColors.card,
+        hintStyle: AibsType.option.copyWith(color: AibsDarkColors.inkMuted),
+        labelStyle: AibsType.caption.copyWith(color: AibsDarkColors.inkMuted),
+        border: const OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(AibsRadius.bubble)),
+          borderSide: BorderSide(color: AibsDarkColors.line, width: 2),
+        ),
+        enabledBorder: const OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(AibsRadius.bubble)),
+          borderSide: BorderSide(color: AibsDarkColors.line, width: 2),
+        ),
+      ),
+      switchTheme: base.switchTheme.copyWith(
+        trackColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected)
+              ? AibsColors.primary
+              : AibsDarkColors.trackOff,
+        ),
+      ),
+    );
+  }
+
   static ThemeData get light {
     const scheme = ColorScheme(
       brightness: Brightness.light,

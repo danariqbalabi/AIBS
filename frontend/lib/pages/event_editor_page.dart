@@ -72,7 +72,9 @@ class _EventEditorPageState extends State<EventEditorPage> {
               padding: const EdgeInsets.all(AibsSpace.s16),
               child: Text(
                 _error!,
-                style: AibsType.caption.copyWith(color: AibsColors.badInk),
+                style: context
+                    .aibsText(AibsType.caption)
+                    .copyWith(color: context.aibsColor(AibsColors.badInk)),
               ),
             ),
           SafeArea(

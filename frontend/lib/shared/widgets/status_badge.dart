@@ -74,10 +74,15 @@ class StatusBadge extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
         decoration: BoxDecoration(
-          color: status.soft,
+          color: context.aibsColor(status.soft),
           borderRadius: BorderRadius.circular(AibsRadius.pill),
         ),
-        child: Text(label, style: AibsType.badge.copyWith(color: status.ink)),
+        child: Text(
+          label,
+          style: context
+              .aibsText(AibsType.badge)
+              .copyWith(color: context.aibsColor(status.ink)),
+        ),
       ),
     );
   }
@@ -108,10 +113,12 @@ class StatusGroupHeader extends StatelessWidget {
             const SizedBox(width: AibsSpace.s8),
             Text(
               status.groupLabel,
-              style: AibsType.caption.copyWith(
-                color: status.ink,
-                fontWeight: AibsType.w800,
-              ),
+              style: context
+                  .aibsText(AibsType.caption)
+                  .copyWith(
+                    color: context.aibsColor(status.ink),
+                    fontWeight: AibsType.w800,
+                  ),
             ),
           ],
         ),
@@ -139,10 +146,9 @@ class StatusDot extends StatelessWidget {
         decoration: BoxDecoration(color: status.color, shape: BoxShape.circle),
         child: Text(
           status.symbol,
-          style: AibsType.badge.copyWith(
-            color: AibsColors.onPrimary,
-            fontSize: size * 0.5,
-          ),
+          style: context
+              .aibsText(AibsType.badge)
+              .copyWith(color: AibsColors.onPrimary, fontSize: size * 0.5),
         ),
       ),
     );
