@@ -29,6 +29,11 @@ data-behavior source of truth. Nunito is bundled locally for offline rendering.
   implemented.
 - Demo menu/catalog and summary data are illustrative, not medical guidance.
 
+Nunito is bundled locally as a variable font and licensed under the SIL Open
+Font License in `assets/fonts/OFL.txt`. The theme maps its 600, 700, and 800
+styles to the variable font's `wght` axis, so rendering does not require a
+network connection.
+
 ## Run
 
 ```powershell

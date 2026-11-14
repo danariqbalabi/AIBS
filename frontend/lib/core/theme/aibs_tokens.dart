@@ -123,8 +123,13 @@ abstract final class AibsSize {
   static const navIcon = 22.0;
   static const menuSliderCard = 176.0;
   static const menuSliderImage = 104.0;
+  static const menuArtworkIcon = 44.0;
+  static const homeSliderHeight = 260.0;
+  static const homeGlow = 280.0;
   static const seeAllCard = 120.0;
+  static const logTime = 48.0;
   static const thumb = 72.0;
+  static const dayDot = 32.0;
   static const scaleDot = 44.0;
   static const scaleDotOn = 54.0;
 }
@@ -192,13 +197,14 @@ abstract final class AibsType {
   static TextStyle _t(
     double size,
     double line,
-    FontWeight w, [
+    FontWeight weight, [
     Color color = AibsColors.ink,
   ]) => TextStyle(
     fontFamily: family,
     fontSize: size,
     height: line / size,
-    fontWeight: w,
+    fontWeight: weight,
+    fontVariations: [FontVariation('wght', weight.value.toDouble())],
     color: color,
   );
 
