@@ -3,6 +3,7 @@ import 'dart:async';
 import '../data/app_services.dart';
 import '../data/profile_repository.dart';
 import '../data/theme_preferences.dart';
+import '../widgets/theme_toggle.dart';
 import '../widgets/unsaved_guard.dart';
 
 import 'package:flutter/material.dart';
@@ -837,53 +838,7 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
         const SizedBox(height: AibsSpace.s12),
         if (themePreferences != null) ...[
-          AibsCard(
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'Tampilan',
-                    style: context.aibsText(AibsType.bodyStrong),
-                  ),
-                ),
-                DropdownButton<ThemeMode>(
-                  value: themePreferences.mode,
-                  onChanged: themePreferences.saving
-                      ? null
-                      : (value) async {
-                          if (value == null) return;
-                          try {
-                            await themePreferences.setMode(value);
-                          } catch (_) {
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Pilihan tampilan belum tersimpan. Coba lagi.',
-                                  ),
-                                ),
-                              );
-                            }
-                          }
-                        },
-                  items: const [
-                    DropdownMenuItem(
-                      value: ThemeMode.system,
-                      child: Text('Ikuti perangkat'),
-                    ),
-                    DropdownMenuItem(
-                      value: ThemeMode.light,
-                      child: Text('Terang'),
-                    ),
-                    DropdownMenuItem(
-                      value: ThemeMode.dark,
-                      child: Text('Gelap'),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
+          ThemeToggleCard(preferences: themePreferences),
           const SizedBox(height: AibsSpace.s12),
         ],
         _ProfileSection(
