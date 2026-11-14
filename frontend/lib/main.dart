@@ -17,6 +17,7 @@ import 'pages/summary_pages.dart';
 import 'theme/aibs_theme.dart';
 import 'widgets/aibs_tab_bar.dart';
 import 'widgets/load_gate.dart';
+import 'widgets/record_card_form.dart';
 import 'pages/link_email_sheet.dart';
 import 'pages/draft_review_page.dart';
 import 'data/photo_picker.dart';
@@ -209,30 +210,50 @@ class _AibsAppState extends State<AibsApp> {
 
   @override
   Widget build(BuildContext context) {
-    return ThemeSettings(
-      preferences: _themePreferences,
-      child: MaterialApp(
-        title: 'AIBS',
-        scaffoldMessengerKey: contextForMessages,
-        navigatorKey: navigatorKey,
-        debugShowCheckedModeBanner: false,
-        theme: AibsTheme.light,
-        darkTheme: AibsTheme.dark,
-        themeMode: _themePreferences.mode,
-        builder: (context, child) => ColoredBox(
-          color: context.aibsColor(AibsColors.line),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(
-                maxWidth: AibsSize.mobileViewport,
-              ),
-              child: LayoutBuilder(
-                builder: (context, constraints) => MediaQuery(
-                  data: MediaQuery.of(context)
-                      .copyWith(size: constraints.biggest),
-                  child: ClipRect(child: child ?? const SizedBox.shrink()),
-                ),
-              ),
+    return MaterialApp(
+      title: 'AIBS',
+      scaffoldMessengerKey: contextForMessages,
+      navigatorKey: navigatorKey,
+      debugShowCheckedModeBanner: false,
+      theme: AibsTheme.light,
+      builder: (context, child) => IngredientCatalogScope(
+        items: () => widget.services?.profiles.ingredients ?? const [],
+        child: child ?? const SizedBox.shrink(),
+      ),
+      home: (_restoring || _restoreError != null)
+          ? LoadGate(
+              busy: _restoring,
+              message: _restoreError ?? 'Memulihkan sesi...',
+              onRetry: () => _restore(gate: true),
+              onLogout: _logout,
+            )
+          : _onboardingComplete
+          ? AibsHomeShell(
+              services: widget.services,
+              profile: _profile,
+              onProfileSaved: _saveProfile,
+              onDataDeleted: () => _logout(dataDeleted: true),
+              onLinkEmail: widget.services?.identity.isAnonymous == true
+                  ? _linkEmail
+                  : null,
+              onLogout: _logout,
+            )
+          : OnboardingFlow(
+              initialProgress:
+                  widget.services?.profiles.onboardingProgress ?? const {},
+              sessionEmail: widget.services?.identity.email ?? '',
+              onProgress: widget.services?.profiles.saveProgress,
+              onComplete: _complete,
+              onAssess: widget.services?.profiles.assess,
+              onDemo: widget.services == null ? null : _demo,
+              onSendCode: widget.services?.sendCode,
+              onVerifyCode: widget.services == null
+                  ? null
+                  : (email, code) async {
+                      await widget.services!.verifyCode(email, code);
+                      return _restore();
+                    },
+              onConsent: widget.services?.profiles.ensureConsent,
             ),
           ),
         ),
