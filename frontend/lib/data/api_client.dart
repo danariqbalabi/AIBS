@@ -30,6 +30,7 @@ class ApiClient {
     String path, {
     Map<String, dynamic>? body,
     String? idempotencyKey,
+    Duration timeout = const Duration(seconds: 20),
   }) async {
     for (var attempt = 0; attempt < 2; attempt++) {
       final token = await accessToken();
@@ -49,8 +50,8 @@ class ApiClient {
       http.Response response;
       try {
         response = await http.Response.fromStream(
-          await _client.send(request).timeout(const Duration(seconds: 20)),
-        ).timeout(const Duration(seconds: 20));
+          await _client.send(request).timeout(timeout),
+        ).timeout(timeout);
       } on TimeoutException {
         throw const ApiFailure(
           'Koneksi terlalu lama. Input kamu tetap tersedia.',

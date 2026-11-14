@@ -6,6 +6,7 @@ import '../core/demo_data.dart';
 import '../shared/widgets/status_badge.dart';
 import 'api_client.dart';
 import 'profile_repository.dart';
+import 'draft_review.dart';
 
 const symptomCodes = {
   'Nyeri perut': 'pain',
@@ -383,6 +384,20 @@ class RecordsRepository {
         'content': {'story': story.text},
       },
     );
+  }
+
+  Future<DraftReview> analyzeStory(String text, String requestId) async {
+    final result = await api.request(
+      'POST',
+      '/api/v1/analysis/journal',
+      body: {
+        'request_id': requestId,
+        'text': text,
+        'reference_date': dateLabel(DateTime.now()),
+      },
+      timeout: const Duration(seconds: 120),
+    );
+    return DraftReview(api, result['draft'] as Map<String, dynamic>);
   }
 
   Future<void> saveNoSymptoms() async {

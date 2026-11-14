@@ -18,6 +18,7 @@ import 'theme/aibs_theme.dart';
 import 'widgets/aibs_tab_bar.dart';
 import 'widgets/load_gate.dart';
 import 'pages/link_email_sheet.dart';
+import 'pages/draft_review_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -384,6 +385,7 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
               ),
               onAddSymptom: _addSymptom,
               onAddStory: _addStory,
+              onAnalyzeStory: _records == null ? null : _reviewStory,
               onDeleteMeal: _deleteMeal,
               onDeleteSymptom: _records == null ? null : _deleteSymptom,
               onEditEvent: _records == null ? null : _editEvent,
@@ -612,6 +614,22 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
       return;
     }
     setState(() => _stories.add(story));
+  }
+
+  Future<bool> _reviewStory(String text, String requestId) async {
+    final review = await _records!.analyzeStory(text, requestId);
+    if (!mounted) return false;
+    final saved = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => DraftReviewPage(
+          review: review,
+          meals: _meals,
+          ingredientId: widget.services!.profiles.ingredientId,
+        ),
+      ),
+    );
+    if (saved == true) await _reload();
+    return saved == true;
   }
 
   Future<void> _updateShoppingItems(List<String> items) async {

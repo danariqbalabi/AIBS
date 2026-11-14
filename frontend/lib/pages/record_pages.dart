@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:uuid/uuid.dart';
 
 import '../data/app_services.dart';
+import '../data/api_client.dart';
 import '../data/records_repository.dart';
 import 'event_editor_page.dart';
 
@@ -774,6 +775,7 @@ class JournalPage extends StatefulWidget {
     this.onDeleteSymptom,
     this.onEditEvent,
     this.ingredientId,
+    this.onAnalyzeStory,
     super.key,
   });
 
@@ -789,6 +791,7 @@ class JournalPage extends StatefulWidget {
   final Future<void> Function(AibsSymptomLog)? onDeleteSymptom;
   final Future<void> Function(Map<String, dynamic>)? onEditEvent;
   final String? Function(String)? ingredientId;
+  final Future<bool> Function(String, String)? onAnalyzeStory;
 
   @override
   State<JournalPage> createState() => _JournalPageState();
@@ -1037,6 +1040,7 @@ class _JournalPageState extends State<JournalPage> {
       MaterialPageRoute<bool>(
         builder: (_) => _StoryEntryPage(
           initialText: initialText ?? '',
+          onReview: widget.aiEnabled ? widget.onAnalyzeStory : null,
           onDraftChanged: (draft) => setState(() => _storyDraft = draft),
           onSave: (text) async {
             await widget.onAddStory(
@@ -1212,10 +1216,12 @@ class _StoryEntryPage extends StatefulWidget {
     required this.initialText,
     required this.onDraftChanged,
     required this.onSave,
+    this.onReview,
   });
   final String initialText;
   final ValueChanged<String?> onDraftChanged;
   final FutureOr<void> Function(String) onSave;
+  final Future<bool> Function(String, String)? onReview;
 
   @override
   State<_StoryEntryPage> createState() => _StoryEntryPageState();
@@ -1223,6 +1229,39 @@ class _StoryEntryPage extends StatefulWidget {
 
 class _StoryEntryPageState extends State<_StoryEntryPage> {
   bool _saving = false;
+  String? _analysisRequest;
+  String? _analysisText;
+  String? _error;
+
+  Future<void> _review() async {
+    if (_saving || _controller.text.trim().isEmpty) return;
+    final text = _controller.text.trim();
+    if (_analysisText != text) {
+      _analysisText = text;
+      _analysisRequest = const Uuid().v4();
+    }
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+    try {
+      final saved = await widget.onReview!(text, _analysisRequest!);
+      if (saved && mounted) {
+        widget.onDraftChanged(null);
+        _controller.clear();
+        setState(() {});
+        Navigator.pop(context);
+      }
+    } catch (error) {
+      if (error is ApiFailure && error.code == 'analysis_already_attempted') {
+        _analysisText = null;
+      }
+      if (mounted) setState(() => _error = AppServices.message(error));
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
   late final TextEditingController _controller = TextEditingController(
     text: widget.initialText,
   );
@@ -1257,6 +1296,7 @@ class _StoryEntryPageState extends State<_StoryEntryPage> {
                 children: [
                   TextField(
                     controller: _controller,
+                    enabled: !_saving,
                     minLines: 5,
                     maxLines: 9,
                     onChanged: (_) => setState(() {}),
@@ -1266,6 +1306,13 @@ class _StoryEntryPageState extends State<_StoryEntryPage> {
                     ),
                   ),
                   const SizedBox(height: AibsSpace.s12),
+                  if (_error != null)
+                    Text(
+                      _error!,
+                      style: AibsType.caption.copyWith(
+                        color: AibsColors.badInk,
+                      ),
+                    ),
                   TextButton(
                     onPressed: () => Navigator.pop(context),
                     child: const Text('Isi manual aja'),
@@ -1278,68 +1325,81 @@ class _StoryEntryPageState extends State<_StoryEntryPage> {
               child: Padding(
                 padding: AibsSpace.bottomActions,
                 child: AibsPrimaryButton(
-                  label: 'Cek sebelum simpan',
-                  onPressed: () {
-                    if (_controller.text.trim().isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Tulis cerita dulu.')),
-                      );
-                      return;
-                    }
-                    showModalBottomSheet<void>(
-                      context: context,
-                      isScrollControlled: true,
-                      builder: (sheetContext) => SafeArea(
-                        top: false,
-                        child: Padding(
-                          padding: const EdgeInsets.all(AibsSpace.s20),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Cek sebelum simpan',
-                                style: AibsType.sheetTitle,
+                  label: _saving ? 'Memproses...' : 'Cek sebelum simpan',
+                  onPressed: _saving
+                      ? null
+                      : () {
+                          if (widget.onReview != null) {
+                            _review();
+                            return;
+                          }
+                          if (_controller.text.trim().isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Tulis cerita dulu.'),
                               ),
-                              const SizedBox(height: AibsSpace.s12),
-                              AibsCard(child: Text(_controller.text.trim())),
-                              const SizedBox(height: AibsSpace.s12),
-                              AibsPrimaryButton(
-                                label: 'Simpan semua',
-                                onPressed: () async {
-                                  if (_saving) return;
-                                  _saving = true;
-                                  try {
-                                    await widget.onSave(
-                                      _controller.text.trim(),
-                                    );
-                                  } catch (error) {
-                                    if (context.mounted) {
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                            SnackBar(
-                                              content: Text(
-                                                AppServices.message(error),
-                                              ),
-                                            ),
+                            );
+                            return;
+                          }
+                          showModalBottomSheet<void>(
+                            context: context,
+                            isScrollControlled: true,
+                            builder: (sheetContext) => SafeArea(
+                              top: false,
+                              child: Padding(
+                                padding: const EdgeInsets.all(AibsSpace.s20),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Cek sebelum simpan',
+                                      style: AibsType.sheetTitle,
+                                    ),
+                                    const SizedBox(height: AibsSpace.s12),
+                                    AibsCard(
+                                      child: Text(_controller.text.trim()),
+                                    ),
+                                    const SizedBox(height: AibsSpace.s12),
+                                    AibsPrimaryButton(
+                                      label: 'Simpan semua',
+                                      onPressed: () async {
+                                        if (_saving) return;
+                                        _saving = true;
+                                        try {
+                                          await widget.onSave(
+                                            _controller.text.trim(),
                                           );
-                                    }
-                                    _saving = false;
-                                    return;
-                                  }
-                                  _saving = false;
-                                  if (sheetContext.mounted) {
-                                    Navigator.pop(sheetContext);
-                                  }
-                                  if (context.mounted) Navigator.pop(context);
-                                },
+                                        } catch (error) {
+                                          if (context.mounted) {
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  AppServices.message(error),
+                                                ),
+                                              ),
+                                            );
+                                          }
+                                          _saving = false;
+                                          return;
+                                        }
+                                        _saving = false;
+                                        if (sheetContext.mounted) {
+                                          Navigator.pop(sheetContext);
+                                        }
+                                        if (context.mounted) {
+                                          Navigator.pop(context);
+                                        }
+                                      },
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    );
-                  },
+                            ),
+                          );
+                        },
                 ),
               ),
             ),
