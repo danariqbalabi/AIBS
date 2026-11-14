@@ -32,7 +32,8 @@ class AibsMenuItem {
   final int? preparationMinutes;
 
   String get priceLabel => 'Rp${price ~/ 1000}.000';
-  String get meta => '$kind · $priceLabel · $reason';
+  String get meta =>
+      '$kind · $priceLabel${reason == 'Sesuai arahan yang tersimpan' || reason == 'Sesuai arahanmu' ? '' : ' · $reason'}';
 }
 
 const aibsDemoMenus = [

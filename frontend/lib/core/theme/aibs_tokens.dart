@@ -101,6 +101,8 @@ abstract final class AibsSpace {
 }
 
 abstract final class AibsSize {
+  static const menuHero = 144.0;
+  static const navigationClearance = 40.0;
   static const tapMin = 44.0;
   static const backButton = 44.0;
   static const button = 56.0;

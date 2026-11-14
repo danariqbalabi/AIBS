@@ -1,3 +1,5 @@
+import 'package:flutter/services.dart';
+
 import 'dart:async';
 
 import '../data/app_services.dart';
@@ -47,10 +49,16 @@ class MenuHomePage extends StatefulWidget {
   final FutureOr<void> Function(AibsMealPlan) onPlanSaved;
 
   @override
-  State<MenuHomePage> createState() => _MenuHomePageState();
+  MenuHomePageState createState() => MenuHomePageState();
 }
 
-class _MenuHomePageState extends State<MenuHomePage> {
+class MenuHomePageState extends State<MenuHomePage> {
+  bool _onlySuitable = false;
+  void showSuitable() => setState(() {
+    _onlySuitable = true;
+    _kind = 'Semua';
+    _searchController.clear();
+  });
   final _searchController = TextEditingController();
   String _kind = 'Semua';
   bool _withinBudget = true;
@@ -74,7 +82,11 @@ class _MenuHomePageState extends State<MenuHomePage> {
       final matchesTime =
           !_quickOnly ||
           (item.preparationMinutes != null && item.preparationMinutes! <= 15);
-      return matchesText && matchesKind && matchesBudget && matchesTime;
+      return matchesText &&
+          matchesKind &&
+          matchesBudget &&
+          matchesTime &&
+          (!_onlySuitable || item.status == CheckStatus.ok);
     }).toList();
 
     return ListView(
@@ -143,6 +155,12 @@ class _MenuHomePageState extends State<MenuHomePage> {
               ),
             const SizedBox(height: AibsSpace.s12),
           ],
+        if (_onlySuitable)
+          TextButton.icon(
+            onPressed: () => setState(() => _onlySuitable = false),
+            icon: const Icon(Icons.close),
+            label: const Text('Tampilkan semua status'),
+          ),
         if (filtered.isEmpty)
           const AibsCard(child: Text('Menu belum ditemukan.')),
       ],
@@ -159,6 +177,10 @@ class _MenuHomePageState extends State<MenuHomePage> {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => MenuDetailPage(
+          onFindAlternatives: () {
+            Navigator.of(context).pop();
+            showSuitable();
+          },
           onCheckMenu: widget.onCheckMenu,
           ingredientId: widget.ingredientId,
           item: item,
@@ -319,11 +341,13 @@ class MenuDetailPage extends StatefulWidget {
     required this.onAddShopping,
     required this.onStartMealRecord,
     required this.onPlanSaved,
+    this.onFindAlternatives,
     this.onCheckMenu,
     this.ingredientId,
   });
 
   final AibsMenuItem item;
+  final VoidCallback? onFindAlternatives;
   final FutureOr<void> Function(AibsMenuItem) onAddShopping;
   final ValueChanged<AibsMenuItem> onStartMealRecord;
   final FutureOr<void> Function(AibsMealPlan) onPlanSaved;
@@ -364,7 +388,7 @@ class _MenuDetailPageState extends State<MenuDetailPage> {
           Stack(
             children: [
               Container(
-                height: 260,
+                height: AibsSize.menuHero,
                 width: double.infinity,
                 decoration: BoxDecoration(
                   gradient: AibsGradients.food(AibsColors.foodBlue),
@@ -438,6 +462,21 @@ class _MenuDetailPageState extends State<MenuDetailPage> {
                   ),
                 ),
                 const SizedBox(height: AibsSpace.s20),
+                if (item.kind == 'Beli')
+                  TextButton.icon(
+                    onPressed: () async {
+                      await Clipboard.setData(
+                        ClipboardData(text: item.orderTips.join('\n')),
+                      );
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Cara pesan disalin')),
+                        );
+                      }
+                    },
+                    icon: const Icon(Icons.copy),
+                    label: const Text('Salin cara pesan'),
+                  ),
                 Text('Bahan', style: AibsType.sectionTitle),
                 if (widget.onCheckMenu != null)
                   TextButton(
@@ -460,25 +499,26 @@ class _MenuDetailPageState extends State<MenuDetailPage> {
                   ),
                 ),
                 const SizedBox(height: AibsSpace.s12),
-                AibsSecondaryButton(
-                  label: 'Masukkan ke checklist belanja',
-                  onPressed: () async {
-                    try {
-                      await widget.onAddShopping(item);
-                    } catch (error) {
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(AppServices.message(error))),
-                        );
+                if (item.kind == 'Masak')
+                  AibsSecondaryButton(
+                    label: 'Masukkan ke checklist belanja',
+                    onPressed: () async {
+                      try {
+                        await widget.onAddShopping(item);
+                      } catch (error) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(AppServices.message(error))),
+                          );
+                        }
+                        return;
                       }
-                      return;
-                    }
-                    if (!context.mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Bahan ditambahkan')),
-                    );
-                  },
-                ),
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Bahan ditambahkan')),
+                      );
+                    },
+                  ),
               ],
             ),
           ),
@@ -496,29 +536,67 @@ class _MenuDetailPageState extends State<MenuDetailPage> {
                 boxShadow: AibsShadows.bar,
                 borderRadius: AibsRadius.sheetTop,
               ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: AibsSecondaryButton(
-                      label: 'Jadwalkan',
-                      onPressed: () => _schedule(context),
+              child: item.status == CheckStatus.bad
+                  ? Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        AibsPrimaryButton(
+                          label: 'Lihat pilihan sesuai',
+                          onPressed:
+                              widget.onFindAlternatives ??
+                              () => Navigator.pop(context),
+                        ),
+                        TextButton(
+                          onPressed: _confirmConsumed,
+                          child: const Text('Tetap catat'),
+                        ),
+                      ],
+                    )
+                  : Row(
+                      children: [
+                        Expanded(
+                          child: AibsSecondaryButton(
+                            label: 'Jadwalkan',
+                            onPressed: () => _schedule(context),
+                          ),
+                        ),
+                        const SizedBox(width: AibsSpace.s10),
+                        Expanded(
+                          child: AibsPrimaryButton(
+                            label: 'Sudah dimakan',
+                            onPressed: () => widget.onStartMealRecord(item),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(width: AibsSpace.s10),
-                  Expanded(
-                    flex: 2,
-                    child: AibsPrimaryButton(
-                      label: 'Sudah dimakan',
-                      onPressed: () => widget.onStartMealRecord(item),
-                    ),
-                  ),
-                ],
-              ),
             ),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _confirmConsumed() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: const Text('Makanan ini tidak sesuai arahanmu'),
+        content: Text(
+          '${item.reason}\n\nKalau sudah dimakan, kamu tetap bisa mencatatnya.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(c, false),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(c, true),
+            child: const Text('Sudah dimakan'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && mounted) widget.onStartMealRecord(item);
   }
 
   Future<void> _schedule(BuildContext context) async {
@@ -742,7 +820,9 @@ class _ScheduleSheetState extends State<_ScheduleSheet> {
                 title: const Text('Jam'),
                 trailing: TextButton(
                   onPressed: _pickTime,
-                  child: Text(_time.format(context)),
+                  child: Text(
+                    '${_time.hour.toString().padLeft(2, '0')}.${_time.minute.toString().padLeft(2, '0')}',
+                  ),
                 ),
               ),
               AibsPrimaryButton(
@@ -754,7 +834,8 @@ class _ScheduleSheetState extends State<_ScheduleSheet> {
                     menu: widget.menu,
                     day: _day,
                     meal: _meal,
-                    time: _time.format(context),
+                    time:
+                        '${_time.hour.toString().padLeft(2, '0')}.${_time.minute.toString().padLeft(2, '0')}',
                     scheduledAt: DateTime(
                       _anchor.year,
                       _anchor.month,

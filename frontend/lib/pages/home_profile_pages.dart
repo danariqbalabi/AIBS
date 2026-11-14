@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import '../data/app_services.dart';
+import '../data/profile_repository.dart';
+import '../widgets/unsaved_guard.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -83,10 +85,7 @@ class TodayPage extends StatelessWidget {
         ),
         const SizedBox(height: AibsSpace.s24),
         if (!hasDiet)
-          _DietPrompt(
-            onOpenProfile: onOpenProfile,
-            onOpenJournal: onOpenJournal,
-          )
+          _DietPrompt(onOpenProfile: onOpenProfile, onOpenJournal: onOpenCamera)
         else if (!hasMeals && visiblePlans.isEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AibsSpace.s20),
@@ -732,10 +731,12 @@ class _ProfilePageState extends State<ProfilePage> {
           title: 'Alergi',
           value: allergies,
           detail: 'Bisa kamu ubah kapan saja',
+          onTap: () => _openPreferences(allergiesOnly: true),
         ),
         const SizedBox(height: 12),
         _ProfileSection(
           title: 'Budget & preferensi',
+          onTap: () => _openPreferences(allergiesOnly: false),
           value: budget,
           detail: [
             spicy,
@@ -771,6 +772,28 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  Future<void> _openPreferences({required bool allergiesOnly}) async {
+    final updated = await Navigator.of(context).push<ProfileSetupAnswers>(
+      MaterialPageRoute(
+        builder: (_) => _EditPreferencesPage(
+          profile: _profile ?? _demoProfile,
+          allergiesOnly: allergiesOnly,
+          onSave: widget.onProfileSaved,
+        ),
+      ),
+    );
+    if (updated == null || !mounted) return;
+    setState(
+      () => _profile =
+          widget.profile != null &&
+              widget.profile!.serverVersion != updated.serverVersion
+          ? widget.profile
+          : updated,
+    );
+    ScaffoldMessenger.of(context)
+        .showSnackBar(const SnackBar(content: Text('Perubahan tersimpan')));
+  }
+
   Future<void> _openEdit() async {
     final updated = await Navigator.of(context).push<ProfileSetupAnswers>(
       MaterialPageRoute(
@@ -788,10 +811,15 @@ class _ProfilePageState extends State<ProfilePage> {
       return;
     }
     if (!mounted) return;
-    setState(() => _profile = updated);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Perubahan tersimpan untuk sesi ini')),
+    setState(
+      () => _profile =
+          widget.profile != null &&
+              widget.profile!.serverVersion != updated.serverVersion
+          ? widget.profile
+          : updated,
     );
+    ScaffoldMessenger.of(context)
+        .showSnackBar(const SnackBar(content: Text('Perubahan tersimpan')));
   }
 
   Future<void> _openPrivacy() async {
@@ -830,7 +858,13 @@ class _ProfilePageState extends State<ProfilePage> {
       return;
     }
     if (!mounted) return;
-    setState(() => _profile = updated);
+    setState(
+      () => _profile =
+          widget.profile != null &&
+              widget.profile!.serverVersion != updated.serverVersion
+          ? widget.profile
+          : updated,
+    );
   }
 
   void _openScreening() {
@@ -1406,4 +1440,181 @@ class _ConfirmProfileDialog extends StatelessWidget {
       ],
     );
   }
+}
+
+class _EditPreferencesPage extends StatefulWidget {
+  const _EditPreferencesPage({
+    required this.profile,
+    required this.allergiesOnly,
+    this.onSave,
+  });
+  final ProfileSetupAnswers profile;
+  final bool allergiesOnly;
+  final FutureOr<void> Function(ProfileSetupAnswers)? onSave;
+  @override
+  State<_EditPreferencesPage> createState() => _EditPreferencesPageState();
+}
+
+class _EditPreferencesPageState extends State<_EditPreferencesPage> {
+  final _exit = GlobalKey<UnsavedGuardState>();
+  final _form = GlobalKey<FormState>();
+  late final _allergies = TextEditingController(
+    text: widget.profile.allergies.join(', '),
+  );
+  late final _budget = TextEditingController(
+    text: widget.profile.budget?.replaceAll(RegExp(r'[^0-9]'), '') ?? '',
+  );
+  late String? _spicy = widget.profile.spicy;
+  late final Set<String> _preferences = widget.profile.preferences.toSet();
+  bool _saving = false;
+  bool _dirty = false;
+  @override
+  void dispose() {
+    _allergies.dispose();
+    _budget.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    if (_saving || !_form.currentState!.validate()) return;
+    final allergies = _allergies.text
+        .split(',')
+        .map((x) => x.trim())
+        .where((x) => x.isNotEmpty)
+        .toSet()
+        .toList();
+    if (widget.allergiesOnly &&
+        widget.profile.allergies.any((x) => !allergies.contains(x))) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (c) => AlertDialog(
+          title: const Text('Hapus alergi dari profil?'),
+          content: const Text(
+            'Penilaian makanan berikutnya akan memakai daftar alergi yang baru.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(c, false),
+              child: const Text('Batal'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(c, true),
+              child: const Text('Ya, ubah'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true || !mounted) return;
+    }
+    final profile = widget.profile;
+    final updated = profile.copyWithDietProfile(
+      dietType: profile.dietType,
+      dietPhase: profile.dietPhase,
+      avoidedIngredients: profile.avoidedIngredients,
+      portionLimits: profile.portionLimits,
+      allergies: widget.allergiesOnly ? allergies : null,
+      budget: widget.allergiesOnly ? null : 'Rp${_budget.text.trim()}',
+      spicy: widget.allergiesOnly ? null : _spicy,
+      preferences: widget.allergiesOnly ? null : _preferences.toList(),
+    );
+    setState(() => _saving = true);
+    try {
+      await widget.onSave?.call(updated);
+      if (mounted) await _exit.currentState!.leave(updated);
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(AppServices.message(error))));
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => UnsavedGuard(
+    key: _exit,
+    isDirty: () => _dirty,
+    busy: () => _saving,
+    child: Scaffold(
+      appBar: AppBar(
+        title: Text(widget.allergiesOnly ? 'Alergi' : 'Budget & preferensi'),
+      ),
+      body: SafeArea(
+        child: Form(
+          key: _form,
+          child: ListView(
+            padding: const EdgeInsets.all(AibsSpace.s20),
+            children: [
+              if (widget.allergiesOnly)
+                TextFormField(
+                  controller: _allergies,
+                  maxLength: 300,
+                  decoration: const InputDecoration(
+                    labelText: 'Daftar alergi',
+                    hintText: 'Contoh: udang, kacang',
+                  ),
+                  onChanged: (_) => _dirty = true,
+                )
+              else ...[
+                TextFormField(
+                  controller: _budget,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  decoration: const InputDecoration(
+                    labelText: 'Budget sekali makan',
+                    prefixText: 'Rp ',
+                  ),
+                  validator: (x) =>
+                      (int.tryParse(x ?? '') ?? 0) > 0 &&
+                          (int.tryParse(x ?? '') ?? 0) <= 10000000
+                      ? null
+                      : 'Isi budget antara Rp1 dan Rp10.000.000',
+                  onChanged: (_) => _dirty = true,
+                ),
+                const SizedBox(height: AibsSpace.s20),
+                DropdownButtonFormField<String>(
+                  initialValue: _spicy,
+                  decoration: const InputDecoration(labelText: 'Tingkat pedas'),
+                  items: [
+                    for (final value in spicyCodes.keys)
+                      DropdownMenuItem(value: value, child: Text(value)),
+                  ],
+                  onChanged: (value) => setState(() {
+                    _spicy = value;
+                    _dirty = true;
+                  }),
+                ),
+                const SizedBox(height: AibsSpace.s20),
+                Text('Preferensi', style: AibsType.sectionTitle),
+                const SizedBox(height: AibsSpace.s12),
+                Wrap(
+                  spacing: AibsSpace.s8,
+                  runSpacing: AibsSpace.s8,
+                  children: [
+                    for (final value in preferenceCodes.keys)
+                      AibsChoiceChip(
+                        label: value,
+                        selected: _preferences.contains(value),
+                        onTap: () => setState(() {
+                          _dirty = true;
+                          if (!_preferences.remove(value)) {
+                            _preferences.add(value);
+                          }
+                        }),
+                      ),
+                  ],
+                ),
+              ],
+              const SizedBox(height: AibsSpace.s24),
+              AibsPrimaryButton(
+                label: _saving ? 'Menyimpan…' : 'Simpan perubahan',
+                onPressed: _saving ? null : _save,
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
 }
