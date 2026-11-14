@@ -1,5 +1,7 @@
 # Deploy demo AIBS ke Render Free
 
+**Panduan historis:** pengguna beralih ke Vercel karena verifikasi kartu Render gagal. Gunakan [panduan Vercel](vercel-deployment.md) untuk deployment sekarang. Docker/Render tetap tersedia sebagai alternatif.
+
 Konfigurasi repo ada di `render.yaml`. Backend memakai Docker, satu instance Free, dan Supabase untuk database/storage. Frontend Flutter tetap dapat dijalankan di Chrome atau dibangun menjadi APK. Deployment belum dilakukan sampai pemilik menghubungkan akun Render.
 
 ## Langkah pemilik akun

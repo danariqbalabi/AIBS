@@ -1,6 +1,6 @@
 # Integrasi FE–BE dan pengujian AIBS
 
-Status 14 November 2026. Implementasi fitur sudah masuk `main` melalui PR #31–#33 yang digabung pemilik. Branch `feat/app-completion` mengumpulkan perubahan berikutnya; PR #34 menambahkan pemeriksaan Flutter/web/APK. Desain aplikasi dipertahankan. Backend HTTPS belum dipublikasikan karena akun Render masih disiapkan.
+Status 14 November 2026. Implementasi fitur sudah masuk `main` melalui PR #31–#33; pemeriksaan Flutter/web/APK masuk melalui PR #35. Target hosting beralih ke **Vercel Hobby** setelah verifikasi kartu Render gagal. Branch `feat/vercel-deployment` memuat adaptasi backend dan Flutter Web. Desain dipertahankan; deployment publik belum dinyatakan berhasil. Ikuti [panduan Vercel](vercel-deployment.md).
 
 ## Jalankan lokal
 
@@ -25,7 +25,7 @@ flutter pub get
 flutter run -d chrome --web-port 5173 --dart-define-from-file=config/local.json
 ```
 
-Backend lokal sudah direstart dengan kode terbaru saat pengujian. Jika Flutter masih terbuka, lakukan hot restart dengan `R`. Perubahan dart-define memerlukan stop/run ulang; perubahan `.env` memerlukan restart backend. Pastikan `/ready` menghasilkan 200. Panduan hosting dan APK ada di [render-deployment.md](render-deployment.md).
+Jika Flutter masih terbuka, lakukan hot restart dengan `R`. Perubahan dart-define memerlukan stop/run ulang; perubahan `.env` memerlukan restart backend. Pastikan `/ready` menghasilkan 200. Panduan hosting ada di [vercel-deployment.md](vercel-deployment.md).
 
 ## Alur yang terhubung
 
@@ -43,7 +43,7 @@ Backend lokal sudah direstart dengan kode terbaru saat pengujian. Jika Flutter m
 | Ringkasan | Periode dan kelengkapan mengikuti backend; PDF konsultasi memuat catatan dan pertanyaan pengguna, tanpa klaim penyebab |
 | Privasi | ZIP data/foto akun sendiri; hapus data aplikasi dengan konfirmasi; preferensi simpan foto dan masa berlaku foto sementara |
 
-Foto sementara berlaku 24 jam. Akses/analisis ditolak setelah kedaluwarsa; pembersih berjalan setiap 15 menit ketika backend aktif. Render Free yang tidur bisa menunda penghapusan fisik sampai proses aktif kembali. Mematikan simpan foto menghapus foto milik akun tersebut dan mempertahankan isi catatan. Hapus semua data menghapus data aplikasi dan foto; identitas login Supabase tetap ada.
+Foto sementara berlaku 24 jam; akses/analisis ditolak setelah kedaluwarsa. Pada Vercel Hobby, cron harian dan pembersihan terbatas saat upload menggantikan worker permanen; penghapusan fisik dapat tertunda sampai jadwal berikutnya atau retry bila ada kegagalan/backlog. Mematikan simpan foto menghapus foto milik akun tersebut dan mempertahankan isi catatan. Hapus semua data menghapus data aplikasi dan foto; identitas login Supabase tetap ada.
 
 ## Bukti pengujian
 
@@ -75,7 +75,7 @@ Menghapus browser storage, mengganti origin/port, atau memakai profil Chrome bar
 
 ## Yang masih membutuhkan tindakan luar repo
 
-- Akun Render dan koneksi GitHub pemilik; isi environment variables langsung di dashboard, deploy, lalu gunakan URL HTTPS pada Flutter.
+- Dua project Vercel dan koneksi GitHub pemilik; isi environment variables langsung di dashboard, deploy backend/frontend, lalu daftarkan origin frontend pada CORS backend. Jangan menaruh secret backend di frontend.
 - SMTP dan template OTP/Change email Supabase serta inbox untuk pengujian login nyata.
 - HP Android atau emulator. Build lokal pertama kehabisan memori JVM; heap Gradle kini dibatasi dan CI menyiapkan build APK. Build yang berhasil tetap perlu tes kamera, login, dan persistensi di perangkat.
 - `frontend/ios` belum tersedia; iOS belum dibangun/diuji. Default `AibsApp()` tanpa services hanya fixture tes UI, bukan fallback produksi.

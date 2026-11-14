@@ -1,6 +1,6 @@
 # Backend AIBS
 
-FastAPI/Pydantic, SQLAlchemy/psycopg dan Alembic, Supabase Auth/Storage serta adapter Gemini. Endpoint fitur sudah tersedia dan diuji otomatis; integrasi provider nyata dan Flutter belum diverifikasi. Lihat [status tahap dan PR](../docs/backend-progress.md).
+FastAPI/Pydantic, SQLAlchemy/psycopg dan Alembic, Supabase Auth/Storage serta adapter Gemini. Integrasi Flutter/provider nyata telah diuji dengan data sintetis; lihat [status integrasi](../docs/frontend-backend-integration.md). Target deployment sekarang [Vercel Hobby](../docs/vercel-deployment.md).
 
 Jalankan dari direktori `backend/` dengan [uv](https://docs.astral.sh/uv/):
 
@@ -29,6 +29,9 @@ Liveness: `http://127.0.0.1:8000/health`; database readiness: `/ready`; Swagger:
 | `STORAGE_BUCKET` | Default aibs-food-photos; harus privat |
 | `GEMINI_API_KEY`, `GEMINI_MODEL` | Server saja, untuk analisis; tidak ada ID model default yang ditebak |
 | `AI_DAILY_LIMIT` | Default 20 percobaan per owner per hari UTC |
+| `RUNTIME_MODE` | server untuk Uvicorn lokal; serverless untuk Vercel tanpa worker permanen |
+| `MAX_PHOTO_BYTES` | 4000000 pada Vercel agar multipart di bawah batas platform |
+| `CRON_SECRET` | Secret server untuk endpoint pembersihan terjadwal Vercel |
 
 Login email OTP langsung dari Flutter ke Supabase Auth. Akun biasa diinisialisasi dengan `POST /api/v1/me/profile`, lalu consent/profil/assessment. Demo menggunakan anonymous Auth subject baru -> `POST /api/v1/demo/sessions` dengan template nadia/raka. Token harus asymmetric ES256/RS256; service-role token tidak diterima sebagai user. [Panduan Auth](../docs/auth.md).
 
@@ -36,7 +39,7 @@ Manual: POST draft -> review PATCH versi terbaru -> POST `/drafts/{id}/commit` d
 
 AI: opt-in -> upload media jika foto -> POST analysis dengan request_id -> review draft yang sama. Review/edit/simpan tidak memanggil AI. [Kontrak](../docs/api/README.md), [media](../docs/media.md), [AI](../docs/ai-integration.md), dan [database](../docs/database.md).
 
-Android emulator standar: `http://10.0.2.2:8000`; perangkat fisik: alamat LAN komputer. Hosting demo memakai HTTPS. Source Flutter belum ada pada branch ini.
+Android emulator standar: `http://10.0.2.2:8000`; perangkat fisik: alamat LAN komputer. Hosting demo memakai HTTPS. Vercel memuat `index.py:app`; migrasi dilakukan dengan `uv run python -m app.migrate` dari lingkungan rilis tepercaya, bukan dari request/build preview.
 
 Pemeriksaan dari `backend/`:
 

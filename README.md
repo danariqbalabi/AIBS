@@ -4,7 +4,7 @@ Pendamping pemilihan menu dan pencatatan makanan/gejala untuk orang dewasa denga
 
 **LOGICODIX 2026 · Mobile Android · Inclusive Health & Well-being**
 
-**Status:** alur manual Flutter sudah dihubungkan ke FastAPI dan Supabase Auth/DB untuk pengujian lokal, tanpa perombakan desain. Kamera/NLP frontend, APK/iOS dan deployment HTTPS masih pending. Katalog, profil demo dan aturan merupakan data sintetis. Lihat [status integrasi dan cara tes](docs/frontend-backend-integration.md).
+**Status:** Flutter terhubung ke FastAPI/Supabase untuk catatan, NLP/foto dengan review, draft, privasi dan ekspor. Build web/APK debug berhasil di CI; OTP inbox, pengujian perangkat dan deployment publik belum selesai. Target hosting sekarang [Vercel Hobby](docs/vercel-deployment.md), menggantikan Render. Katalog, profil demo dan aturan merupakan data sintetis. Lihat [status integrasi dan cara tes](docs/frontend-backend-integration.md).
 
 - [Setup backend](backend/README.md)
 - [Status tahap, branch, dan PR](docs/backend-progress.md)
@@ -173,7 +173,7 @@ uv run pytest
 
 Tahap 15 lokal: **71 passed, 2 skipped**. [CI tahap pengujian](https://github.com/danariqbalabi/AIBS/actions/runs/42751323377) lulus dengan PostgreSQL disposable dan matrix Python 3.12/3.13; dua tes PostgreSQL-only yang skip lokal dijalankan di CI. Mencakup rollback setelah insert, concurrency, ownership, consent, quota, input invalid, waktu/negasi dan perubahan dashboard.
 
-Smoke provider nyata, kualitas model, autentikasi Flutter, APK, deployment publik dan video belum dibuktikan. Pemeriksaan clone bersih dan langkah rilis ada di [panduan release](docs/backend-release.md).
+Smoke Supabase Auth/DB/Storage dan Gemini nyata berhasil dengan data sintetis, termasuk negasi, review dan replay commit. Build web/APK debug berhasil di CI. Evaluasi kualitas model, OTP inbox, pengujian perangkat, deployment publik dan video masih perlu diselesaikan. Pemeriksaan clone bersih dan langkah rilis ada di [panduan release](docs/backend-release.md).
 
 ## AI, sumber, atribusi dan batasan
 

@@ -866,7 +866,7 @@ class _PrivacyPageState extends State<_PrivacyPage> {
                   SwitchListTile(
                     title: const Text('Simpan foto makanan'),
                     subtitle: const Text(
-                      'Saat dimatikan, foto sementara dihapus setelah 24 jam saat layanan aktif.',
+                      'Foto sementara kedaluwarsa setelah 24 jam. Penghapusan fisik mengikuti jadwal pembersihan layanan.',
                     ),
                     value: _savePhoto,
                     onChanged: (value) => setState(() => _savePhoto = value),

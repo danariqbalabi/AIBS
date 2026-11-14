@@ -13,14 +13,15 @@ Integrasi dikumpulkan di branch `feat/app-completion`. Setiap fitur dikerjakan p
 | Ekspor, hapus data, retensi foto | feat/data-privacy | ZIP data/foto sendiri, PDF konsultasi, hapus data aplikasi, preferensi foto/TTL; 87 tes backend dan 41 tes Flutter lulus |
 | Render Free dan APK Android | chore/demo-deployment | Blueprint siap; deployment menunggu akun Render. APK debug berhasil dibangun di CI, tes perangkat belum tersedia |
 | CI Flutter/web/APK | chore/flutter-release-checks | Format/analyze/test/build web/build APK dan upload artifact berhasil pada run 43563381257 |
+| Migrasi Vercel | feat/vercel-deployment | Entrypoint ASGI, pool serverless, cron terproteksi, kompresi foto, build Flutter Web dan panduan dua project; belum deploy publik |
 
 Pengujian email nyata memerlukan SMTP/template serta akses inbox pengguna. Kredensial SMTP dimasukkan langsung ke dashboard Supabase, tidak ke chat atau Git. Untuk menghubungkan akun anonymous ke email, template **Change email** harus memuat `{{ .Token }}` juga, selain template Magic link or OTP. Proses mempertahankan subject UUID; tidak menggabungkan akun lain atau memindahkan catatan lama secara otomatis.
 
-Hosting yang dipilih pengguna: Render Free. Akun Render dan koneksi GitHub harus disiapkan pemilik akun. Basis data/foto tetap Supabase; tidak menaruh data permanen pada filesystem Render. Layanan gratis tidur setelah idle; frontend perlu menampilkan proses pemulihan/retry dengan benar. [Batas Render](https://render.com/docs/free).
+Hosting terbaru yang dipilih pengguna: **Vercel Hobby**, menggantikan Render setelah kartu ditolak. Basis data, Auth dan foto tetap Supabase. Backend dan Flutter Web menjadi dua project Vercel. Ikuti [panduan Vercel](vercel-deployment.md); konfigurasi Render di repo adalah alternatif historis.
 
 Android SDK tersedia, tetapi belum ada device/emulator terkonfigurasi saat mulai. Build APK dapat diperiksa lebih dulu; pengujian perangkat tidak boleh diklaim selesai sebelum benar-benar dijalankan.
 
-Foto sementara memiliki TTL 24 jam. Akses/analisis ditolak setelah kedaluwarsa; worker membersihkan setiap 15 menit saat proses backend aktif. Saat Render Free tidur, objek mungkin tetap ada sampai proses aktif kembali. Mematikan simpan foto menghapus foto milik akun tersebut; isi catatan tetap ada. Hapus semua data menghapus data aplikasi dan foto, bukan identitas login Supabase. ZIP ekspor memuat data sensitif; simpan sesuai kebutuhan pengguna.
+Foto sementara memiliki TTL akses 24 jam. Pada Vercel, cron harian dan pembersihan terbatas saat upload menggantikan worker 15 menit; penghapusan fisik bisa tertunda sampai jadwal berikutnya atau retry bila storage gagal/backlog. Mematikan simpan foto menghapus foto milik akun tersebut; isi catatan tetap ada. Hapus semua data menghapus data aplikasi dan foto, bukan identitas login Supabase. ZIP ekspor memuat data sensitif; simpan sesuai kebutuhan pengguna.
 
 Build Android pertama gagal karena kehabisan memori JVM (konfigurasi template meminta heap 8 GB). Percobaan kedua dihentikan saat mesin kekurangan RAM. APK belum boleh dinyatakan siap sampai build berhasil dan pengujian perangkat dilakukan.
 

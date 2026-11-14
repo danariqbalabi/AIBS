@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 
 import 'api_client.dart';
+import 'photo_upload.dart';
 
 class PhotoPicker {
   static XFile? _recovered;
@@ -30,6 +31,6 @@ class PhotoPicker {
     if (await file.length() > 5 * 1024 * 1024) {
       throw const ApiFailure('Gunakan foto maksimal 5 MB.');
     }
-    return file.readAsBytes();
+    return compute(preparePhotoUpload, await file.readAsBytes());
   }
 }

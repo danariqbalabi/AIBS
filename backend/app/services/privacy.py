@@ -1,4 +1,5 @@
 import json
+import time
 from datetime import UTC, datetime
 from tempfile import SpooledTemporaryFile
 from zipfile import ZIP_DEFLATED, ZipFile
@@ -27,17 +28,36 @@ def remove_photos(db, owner, storage):
     db.flush()
 
 
-def cleanup_expired(engine, storage):
+def cleanup_expired(engine, storage, *, owner=None, limit=100, budget_seconds=80):
+    from app.core.errors import ApiError
+
+    deadline = time.monotonic() + budget_seconds
     with Session(engine) as db:
-        rows = db.scalars(
-            select(Media)
-            .where(Media.expires_at <= datetime.now(UTC))
-            .limit(10)
-            .with_for_update(skip_locked=True)
-        ).all()
-        for row in rows:
-            detach_photo(db, row, storage)
-        db.commit()
+        query = select(Media.id).where(Media.expires_at <= datetime.now(UTC))
+        if owner is not None:
+            query = query.where(Media.owner_id == owner)
+        ids = db.scalars(query.order_by(Media.expires_at, Media.id).limit(limit)).all()
+    deleted, failed = 0, 0
+    for media_id in ids:
+        if time.monotonic() >= deadline:
+            break
+        # Separate transactions let a failed storage object retry without blocking other rows.
+        with Session(engine) as db:
+            row = db.scalar(
+                select(Media)
+                .where(Media.id == media_id, Media.expires_at <= datetime.now(UTC))
+                .with_for_update(skip_locked=True)
+            )
+            if row is None:
+                continue
+            try:
+                detach_photo(db, row, storage)
+                db.commit()
+                deleted += 1
+            except ApiError:
+                db.rollback()
+                failed += 1
+    return {"deleted": deleted, "failed": failed, "batch_full": len(ids) == limit}
 
 
 def export_data(db, owner, storage):

@@ -17,8 +17,13 @@ class Settings(BaseSettings):
     gemini_api_key: SecretStr | None = None
     gemini_model: str | None = Field(default=None, pattern=r"^[A-Za-z0-9_.-]+$")
     ai_daily_limit: int = Field(default=20, ge=1, le=100)
+    runtime_mode: Literal["server", "serverless"] = "server"
+    cron_secret: SecretStr | None = Field(default=None, min_length=16)
+    max_photo_bytes: int = Field(default=5 * 1024 * 1024, ge=1024, le=5 * 1024 * 1024)
 
-    @field_validator("supabase_service_role_key", "gemini_api_key", "gemini_model", mode="before")
+    @field_validator(
+        "supabase_service_role_key", "gemini_api_key", "gemini_model", "cron_secret", mode="before"
+    )
     @classmethod
     def empty_optional_config(cls, value):
         return None if value == "" else value

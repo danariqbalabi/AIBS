@@ -41,7 +41,12 @@ jobs:
       - run: dart format --output=none --set-exit-if-changed lib test
       - run: flutter analyze
       - run: flutter test --concurrency=2
-      - run: flutter build web --release
+      - name: Build web using Vercel build script
+        env:
+          API_BASE_URL: https://backend.example
+          SUPABASE_URL: https://example.supabase.co
+          SUPABASE_PUBLISHABLE_KEY: sb_publishable_compile_check
+        run: AIBS_FLUTTER_BIN="$FLUTTER_ROOT/bin/flutter" bash scripts/vercel-build.sh
 
   android:
     needs: checks
