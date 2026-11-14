@@ -7,6 +7,7 @@ import '../shared/widgets/status_badge.dart';
 import 'api_client.dart';
 import 'profile_repository.dart';
 import 'draft_review.dart';
+import 'photo_upload.dart';
 
 const symptomCodes = {
   'Nyeri perut': 'pain',
@@ -423,6 +424,9 @@ class RecordsRepository {
     String requestId,
     bool consumed,
   ) async {
+    if (bytes.length > maxUploadPhotoBytes) {
+      throw const ApiFailure('Perkecil foto lalu coba lagi.');
+    }
     if (profiles.consent['ai'] != true) {
       throw const ApiFailure('Bantuan AI dimatikan. Kamu bisa isi manual.');
     }
