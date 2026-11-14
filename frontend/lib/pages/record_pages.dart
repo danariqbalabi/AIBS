@@ -345,7 +345,7 @@ class _CameraFlowPageState extends State<CameraFlowPage> {
       children: [
         _PhotoTopBar(
           title: 'Isi manual',
-          onBack: () => setState(() => _step = _CameraStep.camera),
+          onBack: () => Navigator.maybePop(context),
         ),
         Expanded(
           child: ListView(
@@ -942,6 +942,7 @@ class JournalPage extends StatefulWidget {
     required this.onAddStory,
     required this.onDeleteMeal,
     required this.onOpenSummary,
+    this.onOpenCapture,
     this.onDeleteSymptom,
     this.onEditEvent,
     this.ingredientId,
@@ -957,6 +958,7 @@ class JournalPage extends StatefulWidget {
   final List<AibsMealLog> meals;
   final List<AibsSymptomLog> symptoms;
   final List<AibsStoryLog> stories;
+  final VoidCallback? onOpenCapture;
   final bool aiEnabled;
   final VoidCallback onAddMeal;
   final FutureOr<void> Function(AibsSymptomLog) onAddSymptom;
@@ -975,12 +977,13 @@ class JournalPage extends StatefulWidget {
   final String? evidenceSymptom;
 
   @override
-  State<JournalPage> createState() => _JournalPageState();
+  JournalPageState createState() => JournalPageState();
 }
 
 enum _JournalFilter { all, meals, symptoms }
 
-class _JournalPageState extends State<JournalPage> {
+class JournalPageState extends State<JournalPage> {
+  void openStory() => _openStory(context);
   DateTime _selectedDate = DateTime.now();
   _JournalFilter _filter = _JournalFilter.all;
   String? _storyDraft;
@@ -1172,6 +1175,10 @@ class _JournalPageState extends State<JournalPage> {
   }
 
   Future<void> _openRecordOptions(BuildContext context) async {
+    if (widget.onOpenCapture != null) {
+      widget.onOpenCapture!();
+      return;
+    }
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -1759,8 +1766,10 @@ class SymptomEntryPage extends StatefulWidget {
     required this.meals,
     required this.onSave,
     this.onSaveDraft,
+    this.initialMealId,
   });
   final List<AibsMealLog> meals;
+  final String? initialMealId;
   final FutureOr<void> Function(AibsSymptomLog) onSave;
   final Future<void> Function(List<Map<String, dynamic>>, String)? onSaveDraft;
 
@@ -1790,6 +1799,16 @@ class _SymptomEntryPageState extends State<SymptomEntryPage> {
   TimeOfDay _time = TimeOfDay.now();
   bool _saving = false;
   final _requestId = const Uuid().v4();
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.meals.any(
+      (meal) => meal.id == widget.initialMealId && meal.id != null,
+    )) {
+      _linkedMeal = widget.initialMealId;
+    }
+  }
 
   List<Map<String, dynamic>> _draftSymptoms() => [
     for (final name in _selected)
@@ -1951,6 +1970,7 @@ class _SymptomEntryPageState extends State<SymptomEntryPage> {
                     const SizedBox(height: AibsSpace.s16),
                     Text('Hubungkan makanan', style: AibsType.caption),
                     DropdownButtonFormField<String>(
+                      isExpanded: true,
                       initialValue: _linkedMeal,
                       items: [
                         const DropdownMenuItem(
@@ -1960,7 +1980,11 @@ class _SymptomEntryPageState extends State<SymptomEntryPage> {
                         for (final meal in widget.meals)
                           DropdownMenuItem(
                             value: meal.id ?? meal.name,
-                            child: Text(meal.name),
+                            child: Text(
+                              '${meal.name} · ${meal.time}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                       ],
                       onChanged: (value) => setState(() => _linkedMeal = value),

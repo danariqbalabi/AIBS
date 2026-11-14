@@ -256,6 +256,8 @@ class AibsHomeShell extends StatefulWidget {
 
 class _AibsHomeShellState extends State<AibsHomeShell> {
   int _selectedIndex = 0;
+  final _journalKey = GlobalKey<JournalPageState>();
+  final _menuKey = GlobalKey<MenuHomePageState>();
   DateTime? _evidenceDate;
   String? _evidenceSymptom;
   RecordsRepository? _records;
@@ -379,6 +381,7 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
                 onOpenMenuItem: _openMenuItem,
               ),
               MenuHomePage(
+                key: _menuKey,
                 onCheckMenu: _records?.checkCard,
                 ingredientId: widget.services?.profiles.ingredientId,
                 onShoppingQuantity: _records?.changeShoppingQuantity,
@@ -395,6 +398,8 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
                 onPlanSaved: _savePlan,
               ),
               JournalPage(
+                key: _journalKey,
+                onOpenCapture: _showCameraIntent,
                 onManualStory: _records == null ? null : _reviewManualStory,
                 onSaveSymptomDraft: _records?.saveSymptomDraft,
                 evidenceDate: _evidenceDate,
@@ -496,6 +501,7 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
   }
 
   void _showCameraIntent() {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -515,7 +521,7 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
               Row(
                 children: [
                   Expanded(
-                    child: Text('Foto buat apa?', style: AibsType.sheetTitle),
+                    child: Text('Mau catat apa?', style: AibsType.sheetTitle),
                   ),
                   IconButton(
                     tooltip: 'Tutup',
@@ -526,35 +532,49 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
               ),
               const SizedBox(height: AibsSpace.s12),
               _CameraIntentCard(
-                title: 'Cek sebelum makan',
+                title: 'Cek makanan',
                 subtitle: 'Sesuai arahanku nggak?',
                 icon: 'camera.svg',
                 highlighted: true,
                 onTap: () {
                   Navigator.pop(sheetContext);
-                  _openCamera(intent: MealIntent.check);
+                  _openCamera(
+                    intent: MealIntent.check,
+                    initialManualEntry: widget.profile?.aiEnabled == false,
+                  );
                 },
               ),
               const SizedBox(height: AibsSpace.s10),
               _CameraIntentCard(
-                title: 'Sudah dimakan',
-                subtitle: 'Langsung catat',
+                title: 'Catat makan',
+                subtitle: 'Isi nama dan bahan makanan',
                 icon: 'check.svg',
                 onTap: () {
                   Navigator.pop(sheetContext);
-                  _openCamera(intent: MealIntent.eaten);
+                  _openCamera(
+                    intent: MealIntent.eaten,
+                    initialManualEntry: true,
+                  );
                 },
               ),
-              Align(
-                alignment: Alignment.center,
-                child: TextButton(
+              const SizedBox(height: AibsSpace.s10),
+              _CameraIntentCard(
+                title: 'Catat gejala',
+                subtitle: 'Catat kondisi perutmu',
+                icon: 'check.svg',
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  _openSymptomEntry();
+                },
+              ),
+              if (widget.profile?.aiEnabled ?? true)
+                TextButton(
                   onPressed: () {
                     Navigator.pop(sheetContext);
-                    _openCamera(initialManualEntry: true);
+                    _journalKey.currentState?.openStory();
                   },
-                  child: const Text('Isi manual'),
+                  child: const Text('Tulis cerita'),
                 ),
-              ),
             ],
           ),
         ),
@@ -568,10 +588,14 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
     String? foodName,
     List<String> ingredients = const [],
   }) {
+    String? savedMealId;
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => CameraFlowPage(
-          onFindAlternatives: () => setState(() => _selectedIndex = 1),
+          onFindAlternatives: () {
+            setState(() => _selectedIndex = 1);
+            _menuKey.currentState?.showSuitable();
+          },
           onSaveDraft: _records?.saveManualDraft,
           ingredientId: widget.services?.profiles.ingredientId,
           intent: intent,
@@ -579,10 +603,12 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
           initialManualEntry: initialManualEntry,
           initialFoodName: foodName,
           initialIngredients: ingredients,
-          onSaved: _addMeal,
+          onSaved: (meal) async {
+            savedMealId = await _addMeal(meal);
+          },
           onCheckFood: _records?.checkFood,
           onReviewPhoto: _records == null ? null : _reviewPhoto,
-          onAddSymptom: _openSymptomEntry,
+          onAddSymptom: () => _openSymptomEntry(initialMealId: savedMealId),
           onFinish: () => setState(() => _selectedIndex = 0),
         ),
       ),
@@ -593,6 +619,11 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => MenuDetailPage(
+          onFindAlternatives: () {
+            Navigator.of(context).popUntil((route) => route.isFirst);
+            setState(() => _selectedIndex = 1);
+            _menuKey.currentState?.showSuitable();
+          },
           onCheckMenu: _records?.checkCard,
           ingredientId: widget.services?.profiles.ingredientId,
           item: item,
@@ -625,16 +656,17 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
     }
   }
 
-  Future<void> _addMeal(AibsMealLog meal) async {
+  Future<String?> _addMeal(AibsMealLog meal) async {
     if (_records != null) {
-      await _records!.saveMeal(meal);
+      final id = await _records!.saveMeal(meal);
       await _reload();
-      return;
+      return id;
     }
     setState(() {
       _meals.add(meal);
       _didNoSymptomCheckin = false;
     });
+    return meal.id;
   }
 
   Future<void> _addSymptom(AibsSymptomLog symptom) async {
@@ -797,11 +829,12 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
     );
   }
 
-  void _openSymptomEntry() {
+  void _openSymptomEntry({String? initialMealId}) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => SymptomEntryPage(
           meals: _meals,
+          initialMealId: initialMealId,
           onSave: _addSymptom,
           onSaveDraft: _records?.saveSymptomDraft,
         ),

@@ -29,7 +29,10 @@ void main() {
           commits++;
           keys.add(request.headers['Idempotency-Key']);
           if (commits == 1) throw http.ClientException('lost response');
-          return http.Response('{"persistence_status":"saved"}', 200);
+          return http.Response(
+            '{"persistence_status":"saved","food_event_ids":["food-saved"]}',
+            200,
+          );
         }),
       );
       final repo = RecordsRepository(api, ProfileRepository(api));
@@ -40,8 +43,8 @@ void main() {
         requestId: 'save-one',
       );
       await expectLater(repo.saveMeal(meal), throwsA(isA<ApiFailure>()));
-      await repo.saveMeal(meal);
-      await repo.saveMeal(meal);
+      expect(await repo.saveMeal(meal), 'food-saved');
+      expect(await repo.saveMeal(meal), 'food-saved');
       expect(drafts, 1);
       expect(commits, 2);
       expect(keys, ['save-one', 'save-one']);

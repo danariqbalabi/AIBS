@@ -32,7 +32,9 @@ void main() {
     expect(find.text('Hai, Nadia'), findsOneWidget);
     expect(find.text('Nasi ayam bakar kecap'), findsWidgets);
 
-    await tester.tap(find.byTooltip('Foto makanan'));
+    await tester.tap(find.byTooltip('Tambah catatan'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Cek makanan'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Isi manual'));
     await tester.pumpAndSettle();

@@ -157,17 +157,13 @@ class _CameraButton extends StatelessWidget {
         boxShadow: AibsShadows.camera,
       ),
       child: IconButton(
-        tooltip: 'Foto makanan',
+        tooltip: 'Tambah catatan',
         onPressed: onPressed,
         padding: EdgeInsets.zero,
-        icon: SvgPicture.asset(
-          'assets/icons/camera.svg',
-          width: 26,
-          height: 26,
-          colorFilter: const ColorFilter.mode(
-            AibsColors.onPrimary,
-            BlendMode.srcIn,
-          ),
+        icon: const Icon(
+          Icons.add,
+          size: AibsSize.navIcon,
+          color: AibsColors.onPrimary,
         ),
       ),
     );

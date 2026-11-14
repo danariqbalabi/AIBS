@@ -310,7 +310,10 @@ class RecordsRepository {
           if (amount != null) 'unit': amount[2],
         };
       }).toList();
-  Future<void> _saveContent(String key, Map<String, dynamic> content) async {
+  Future<Map<String, dynamic>> _saveContent(
+    String key,
+    Map<String, dynamic> content,
+  ) async {
     final signature = jsonEncode(content);
     var pending = _pending[key];
     if (pending != null && pending['signature'] != signature) {
@@ -340,19 +343,23 @@ class RecordsRepository {
       pending = {...draft, 'signature': signature};
       _pending[key] = pending;
     }
-    if (pending['committed'] == true) return;
-    await api.request(
+    if (pending['committed'] == true) {
+      return Map<String, dynamic>.from(pending['result'] as Map);
+    }
+    final result = await api.request(
       'POST',
       '/api/v1/drafts/${pending['id']}/commit',
       body: {'version': pending['version'], 'confirmed': true},
       idempotencyKey: key,
     );
+    pending['result'] = result;
     pending['committed'] = true;
+    return result;
   }
 
-  Future<void> saveMeal(AibsMealLog meal) async {
+  Future<String?> saveMeal(AibsMealLog meal) async {
     final ingredients = ingredientsFor(meal.ingredients);
-    await _saveContent(meal.requestId ?? const Uuid().v4(), {
+    final result = await _saveContent(meal.requestId ?? const Uuid().v4(), {
       'foods': [
         {
           ...?meal.serverPayload,
@@ -370,6 +377,7 @@ class RecordsRepository {
         },
       ],
     });
+    return (result['food_event_ids'] as List?)?.firstOrNull as String?;
   }
 
   Future<Map<String, dynamic>> checkFood(
