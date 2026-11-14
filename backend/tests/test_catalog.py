@@ -1,8 +1,29 @@
+from sqlalchemy import event
 from sqlalchemy.orm import Session
 
 from app.models.entities import Menu
 from seeds.catalog import seed_catalog, stable_id
 from tests.test_assessment import ANSWERS
+
+
+def test_menu_list_loads_all_ingredients_in_one_query(account, db_engine):
+    client, _ = account
+    with Session(db_engine) as db, db.begin():
+        seed_catalog(db)
+    statements = []
+
+    def collect(conn, cursor, statement, parameters, context, executemany):
+        if statement.lstrip().upper().startswith("SELECT"):
+            statements.append(statement.lower())
+
+    event.listen(db_engine, "before_cursor_execute", collect)
+    try:
+        response = client.get("/api/v1/menus")
+    finally:
+        event.remove(db_engine, "before_cursor_execute", collect)
+    assert response.status_code == 200
+    assert len(response.json()["items"]) > 1
+    assert len([sql for sql in statements if "from menu_ingredients" in sql]) == 1
 
 
 def configure(client, allergy="shrimp", avoid="garlic", budget=25000):

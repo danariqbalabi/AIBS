@@ -95,6 +95,37 @@ AppServices servicesFor(
 }
 
 void main() {
+  test('concurrent demo requests reuse one bootstrap and identity', () async {
+    final entered = Completer<void>();
+    final release = Completer<void>();
+    var bootstraps = 0;
+    final identity = TestIdentity()..hasSession = false;
+    final api = ApiClient(
+      baseUrl: 'https://example.test',
+      accessToken: () async => 'test',
+      client: MockClient((request) async {
+        if (request.url.path.endsWith('/demo/sessions')) {
+          bootstraps++;
+          entered.complete();
+          await release.future;
+          return http.Response('{"isolated":true}', 200);
+        }
+        return answer(request);
+      }),
+    );
+    final services = AppServices(api, null, identity: identity);
+    final first = services.openDemo('nadia');
+    await entered.future;
+    final second = services.openDemo('nadia');
+    await expectLater(services.openDemo('raka'), throwsA(isA<ApiFailure>()));
+    release.complete();
+    final values = await Future.wait([first, second]);
+    expect(bootstraps, 1);
+    expect(identity.newSessions, 1);
+    expect(identical(values[0], values[1]), true);
+    api.close();
+  });
+
   testWidgets(
     'refresh waits for the existing identity instead of offering a fresh demo',
     (tester) async {
