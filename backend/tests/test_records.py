@@ -81,3 +81,32 @@ def test_profile_change_requires_review_before_commit(account):
     profile = client.get("/api/v1/me/profile").json()
     client.patch("/api/v1/me/profile", json={"version": profile["version"], "display_name": "Baru"})
     assert save(client, draft).status_code == 409
+
+
+def test_same_draft_future_food_link_rolls_back_and_can_be_corrected(account, db_engine):
+    client, _ = account
+    payload = journal_payload()
+    for card, hour in (
+        (payload["content"]["foods"][0], "22"),
+        (payload["content"]["symptoms"][0], "09"),
+    ):
+        card["time"] = {
+            "date": "2026-11-10",
+            "precision": "exact",
+            "confirmed": True,
+            "occurred_at": f"2026-11-10T{hour}:00:00+07:00",
+        }
+    draft = client.post("/api/v1/drafts", json=payload).json()
+    response = save(client, draft, key="chronology")
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "invalid_food_link"
+    with Session(db_engine) as db:
+        assert db.scalar(select(func.count()).select_from(FoodEvent)) == 0
+        assert db.scalar(select(func.count()).select_from(SymptomEvent)) == 0
+        assert db.scalar(select(func.count()).select_from(RecordBatch)) == 0
+        assert db.scalar(select(func.count()).select_from(IdempotencyRequest)) == 0
+    payload["content"]["foods"][0]["time"]["occurred_at"] = "2026-11-10T08:00:00+07:00"
+    updated = client.patch(
+        f"/api/v1/drafts/{draft['id']}", json={**payload, "version": draft["version"]}
+    ).json()
+    assert save(client, updated, key="chronology", version=updated["version"]).status_code == 200
