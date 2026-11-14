@@ -436,7 +436,15 @@
         "title": "Severity"
       },
       "time": {
-        "$ref": "#/$defs/EventTime"
+        "anyOf": [
+          {
+            "$ref": "#/$defs/EventTime"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
       },
       "bristol_type": {
         "anyOf": [
@@ -512,8 +520,7 @@
     },
     "required": [
       "code",
-      "present",
-      "time"
+      "present"
     ],
     "title": "SymptomCard",
     "type": "object"
@@ -761,7 +768,15 @@
             "title": "Severity"
           },
           "time": {
-            "$ref": "#/$defs/EventTime"
+            "anyOf": [
+              {
+                "$ref": "#/$defs/EventTime"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
           },
           "bristol_type": {
             "anyOf": [
@@ -837,8 +852,7 @@
         },
         "required": [
           "code",
-          "present",
-          "time"
+          "present"
         ],
         "title": "SymptomCard",
         "type": "object"
@@ -1174,7 +1188,15 @@
             "title": "Severity"
           },
           "time": {
-            "$ref": "#/$defs/EventTime"
+            "anyOf": [
+              {
+                "$ref": "#/$defs/EventTime"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
           },
           "bristol_type": {
             "anyOf": [
@@ -1250,8 +1272,7 @@
         },
         "required": [
           "code",
-          "present",
-          "time"
+          "present"
         ],
         "title": "SymptomCard",
         "type": "object"
@@ -1566,7 +1587,15 @@
             "title": "Severity"
           },
           "time": {
-            "$ref": "#/$defs/EventTime"
+            "anyOf": [
+              {
+                "$ref": "#/$defs/EventTime"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
           },
           "bristol_type": {
             "anyOf": [
@@ -1642,8 +1671,7 @@
         },
         "required": [
           "code",
-          "present",
-          "time"
+          "present"
         ],
         "title": "SymptomCard",
         "type": "object"
@@ -3416,7 +3444,15 @@
             "title": "Severity"
           },
           "time": {
-            "$ref": "#/$defs/EventTime"
+            "anyOf": [
+              {
+                "$ref": "#/$defs/EventTime"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
           },
           "bristol_type": {
             "anyOf": [
@@ -3492,8 +3528,7 @@
         },
         "required": [
           "code",
-          "present",
-          "time"
+          "present"
         ],
         "title": "SymptomCard",
         "type": "object"

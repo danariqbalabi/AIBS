@@ -5,7 +5,7 @@ import pytest
 from pydantic import SecretStr
 
 from app.core.errors import ApiError
-from app.integrations.gemini import Gemini
+from app.integrations.gemini import Gemini, parse_generated_draft
 from app.integrations.gemini_schema import draft_generation_schema
 from app.schemas.domain import DraftContent
 from tests.test_providers import http_mock
@@ -73,3 +73,55 @@ def test_adapter_sends_compatible_schema_but_rejects_invalid_quantity(settings, 
             text="ayam",
         )
     assert exc.value.code == "ai_invalid_output"
+
+
+@pytest.mark.parametrize("kind", ["foods", "symptoms"])
+def test_missing_period_is_reviewable_without_inventing_time(kind):
+    card = (
+        {"name": "Nasi", "consumed": True}
+        if kind == "foods"
+        else {
+            "code": "bloating",
+            "present": True,
+        }
+    )
+    card["time"] = {
+        "date": "2026-11-14",
+        "precision": "approximate",
+        "period": None,
+        "occurred_at": None,
+        "confirmed": False,
+    }
+    result = parse_generated_draft(json.dumps({kind: [card]}))
+    assert getattr(result, kind)[0].time is None
+    assert result.questions
+
+
+def test_unknown_time_does_not_hide_invalid_exact_time_or_quantity():
+    with pytest.raises(ValueError):
+        parse_generated_draft(
+            json.dumps(
+                {
+                    "foods": [
+                        {
+                            "name": "Nasi",
+                            "time": {"date": "2026-11-14", "precision": "exact"},
+                        }
+                    ]
+                }
+            )
+        )
+    with pytest.raises(ValueError):
+        parse_generated_draft(
+            json.dumps(
+                {
+                    "foods": [
+                        {
+                            "name": "Nasi",
+                            "time": None,
+                            "ingredients": [{"display_name": "Nasi", "quantity": 0, "unit": "g"}],
+                        }
+                    ]
+                }
+            )
+        )

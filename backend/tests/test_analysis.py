@@ -21,6 +21,44 @@ class FakeGemini:
         }
 
 
+def test_unknown_food_and_symptom_time_can_be_reviewed_but_not_committed(account):
+    client, _ = account
+
+    class UnknownTimeGemini:
+        def generate(self, *args, **kwargs):
+            return DraftContent.model_validate(
+                {
+                    "foods": [{"name": "Nasi dan ayam goreng", "consumed": True, "time": None}],
+                    "symptoms": [{"code": "bloating", "present": True, "time": None}],
+                }
+            ), {}
+
+    client.app.state.gemini = UnknownTimeGemini()
+    client.put("/api/v1/me/consents", json={"basic": True, "ai": True})
+    result = client.post(
+        "/api/v1/analysis/journal",
+        json={
+            "request_id": str(uuid4()),
+            "text": "hari ini makan nasi sama ayam goreng, kembung",
+            "reference_date": "2026-11-14",
+        },
+    )
+    assert result.status_code == 200
+    draft = result.json()["draft"]
+    assert draft["content"]["foods"][0]["time"] is None
+    assert draft["content"]["symptoms"][0]["time"] is None
+    commit = client.post(
+        f"/api/v1/drafts/{draft['id']}/commit",
+        json={
+            "version": draft["version"],
+            "confirmed": True,
+        },
+        headers={"Idempotency-Key": str(uuid4())},
+    )
+    assert commit.status_code == 422
+    assert commit.json()["error"]["code"] == "time_unconfirmed"
+
+
 def test_consent_revocation_blocks_ai_and_retry_does_not_call_model_twice(account):
     client, _ = account
     provider = FakeGemini()

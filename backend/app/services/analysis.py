@@ -44,7 +44,8 @@ def normalize(db, content, payload, feature):
             ingredient.ingredient_id = next(iter(matches)) if len(matches) == 1 else None
             ingredient.certainty = "candidate" if ingredient.ingredient_id else "unknown"
     for symptom in content.symptoms:
-        symptom.time.confirmed = False
+        if symptom.time:
+            symptom.time.confirmed = False
         symptom.linked_food_event_id = None
     if feature == "photo_to_draft":
         content.symptoms = []
