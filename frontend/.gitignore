@@ -49,3 +49,4 @@ app.*.map.json
 
 # Local client configuration (public key only; server secrets never belong here)
 /config/local.json
+/config/*.local.json

@@ -15,6 +15,10 @@ if context.is_offline_mode():
     )
     with context.begin_transaction():
         context.run_migrations()
+elif config.attributes.get("connection") is not None:
+    context.configure(connection=config.attributes["connection"], target_metadata=Base.metadata)
+    with context.begin_transaction():
+        context.run_migrations()
 else:
     engine = make_engine(settings)
     with engine.connect() as connection:

@@ -9,7 +9,7 @@ Integrasi dikumpulkan di branch `feat/app-completion`. Setiap fitur dikerjakan p
 | NLP cerita dan editor review | feat/journal-nlp | Berikutnya |
 | Kamera/galeri/analisis foto | feat/photo-analysis | Berikutnya |
 | Ekspor, hapus data, retensi foto | feat/data-privacy | Berikutnya |
-| Render Free dan APK Android | chore/demo-deployment | Berikutnya |
+| Render Free dan APK Android | chore/demo-deployment | Blueprint dan panduan disiapkan; deployment menunggu koneksi akun Render, APK menunggu build |
 
 Pengujian email nyata memerlukan SMTP/template serta akses inbox pengguna. Kredensial SMTP dimasukkan langsung ke dashboard Supabase, tidak ke chat atau Git. Untuk menghubungkan akun anonymous ke email, template **Change email** harus memuat `{{ .Token }}` juga, selain template Magic link or OTP. Proses mempertahankan subject UUID; tidak menggabungkan akun lain atau memindahkan catatan lama secara otomatis.
 
