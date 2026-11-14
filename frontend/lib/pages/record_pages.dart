@@ -1,12 +1,18 @@
 import 'dart:async';
+import 'dart:typed_data';
+
+import 'package:image_picker/image_picker.dart';
+
+import '../data/photo_picker.dart';
 
 import 'package:uuid/uuid.dart';
 
 import '../data/app_services.dart';
+import '../data/api_client.dart';
 import '../data/records_repository.dart';
+import 'event_editor_page.dart';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 import '../core/demo_data.dart';
 import '../core/theme/aibs_tokens.dart';
@@ -39,6 +45,7 @@ class CameraFlowPage extends StatefulWidget {
     this.initialFoodName,
     this.initialIngredients = const [],
     this.onCheckFood,
+    this.onReviewPhoto,
   });
 
   final FutureOr<void> Function(AibsMealLog) onSaved;
@@ -50,6 +57,7 @@ class CameraFlowPage extends StatefulWidget {
   final String? initialFoodName;
   final List<String> initialIngredients;
   final Future<Map<String, dynamic>> Function(List<String>, bool)? onCheckFood;
+  final Future<bool> Function(Uint8List, String, bool)? onReviewPhoto;
 
   @override
   State<CameraFlowPage> createState() => _CameraFlowPageState();
@@ -68,6 +76,32 @@ class _CameraFlowPageState extends State<CameraFlowPage> {
   bool _saving = false;
   bool _checking = false;
   Map<String, dynamic>? _evaluation;
+  Uint8List? _photo;
+  String _photoRequest = const Uuid().v4();
+  String? _photoError;
+  bool _picking = false;
+
+  Future<void> _pickPhoto(ImageSource source) async {
+    if (_picking) return;
+    setState(() => _picking = true);
+    try {
+      final bytes = await PhotoPicker.pick(source);
+      if (!mounted || bytes == null) return;
+      setState(() {
+        _photo = bytes;
+        _photoRequest = const Uuid().v4();
+        _photoError = null;
+        _step = _CameraStep.preview;
+      });
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(AppServices.message(error))));
+      }
+    } finally {
+      if (mounted) setState(() => _picking = false);
+    }
+  }
 
   @override
   void initState() {
@@ -135,11 +169,15 @@ class _CameraFlowPageState extends State<CameraFlowPage> {
               AibsPrimaryButton(
                 label: 'Ambil foto',
                 icon: Icons.camera_alt_outlined,
-                onPressed: () => setState(() => _step = _CameraStep.preview),
+                onPressed: _picking
+                    ? null
+                    : () => _pickPhoto(ImageSource.camera),
               ),
               const SizedBox(height: AibsSpace.s8),
               TextButton(
-                onPressed: () => setState(() => _step = _CameraStep.preview),
+                onPressed: _picking
+                    ? null
+                    : () => _pickPhoto(ImageSource.gallery),
                 child: Text(
                   'Pilih dari galeri',
                   style: AibsType.label.copyWith(color: AibsColors.onPrimary),
@@ -175,13 +213,10 @@ class _CameraFlowPageState extends State<CameraFlowPage> {
                 gradient: AibsGradients.food(AibsColors.foodBlue),
                 borderRadius: BorderRadius.circular(AibsRadius.xl),
               ),
-              child: Center(
-                child: SvgPicture.asset(
-                  'assets/illustrations/bowl.svg',
-                  width: 120,
-                  height: 120,
-                ),
-              ),
+              clipBehavior: Clip.antiAlias,
+              child: _photo == null
+                  ? const SizedBox.shrink()
+                  : Image.memory(_photo!, fit: BoxFit.contain),
             ),
           ),
         ),
@@ -248,13 +283,11 @@ class _CameraFlowPageState extends State<CameraFlowPage> {
             style: AibsType.title,
             textAlign: TextAlign.center,
           ),
+          if (_photoError != null) Text(_photoError!, style: AibsType.caption),
           const Spacer(),
           AibsSecondaryButton(label: 'Isi manual', onPressed: _openManual),
           const SizedBox(height: AibsSpace.s10),
-          AibsPrimaryButton(
-            label: 'Coba lagi',
-            onPressed: () => setState(() => _step = _CameraStep.camera),
-          ),
+          AibsPrimaryButton(label: 'Coba lagi', onPressed: _analyze),
         ],
       ),
     );
@@ -528,13 +561,35 @@ class _CameraFlowPageState extends State<CameraFlowPage> {
     );
   }
 
-  void _analyze() {
+  Future<void> _analyze() async {
+    if (!widget.aiEnabled || widget.onReviewPhoto == null || _photo == null) {
+      _openManual();
+      return;
+    }
     setState(() => _step = _CameraStep.processing);
-    Future<void>.delayed(const Duration(milliseconds: 450), () {
-      if (mounted && _step == _CameraStep.processing) {
-        setState(() => _step = _CameraStep.failed);
+    try {
+      final saved = await widget.onReviewPhoto!(
+        _photo!,
+        _photoRequest,
+        widget.intent == MealIntent.eaten,
+      );
+      if (!mounted) return;
+      if (saved) {
+        Navigator.pop(context);
+      } else {
+        setState(() => _step = _CameraStep.preview);
       }
-    });
+    } catch (error) {
+      if (error is ApiFailure && error.code == 'analysis_already_attempted') {
+        _photoRequest = const Uuid().v4();
+      }
+      if (mounted) {
+        setState(() {
+          _photoError = AppServices.message(error);
+          _step = _CameraStep.failed;
+        });
+      }
+    }
   }
 
   void _openManual() {
@@ -770,6 +825,10 @@ class JournalPage extends StatefulWidget {
     required this.onAddStory,
     required this.onDeleteMeal,
     required this.onOpenSummary,
+    this.onDeleteSymptom,
+    this.onEditEvent,
+    this.ingredientId,
+    this.onAnalyzeStory,
     super.key,
   });
 
@@ -782,6 +841,10 @@ class JournalPage extends StatefulWidget {
   final FutureOr<void> Function(AibsStoryLog) onAddStory;
   final FutureOr<void> Function(AibsMealLog) onDeleteMeal;
   final VoidCallback onOpenSummary;
+  final Future<void> Function(AibsSymptomLog)? onDeleteSymptom;
+  final Future<void> Function(Map<String, dynamic>)? onEditEvent;
+  final String? Function(String)? ingredientId;
+  final Future<bool> Function(String, String)? onAnalyzeStory;
 
   @override
   State<JournalPage> createState() => _JournalPageState();
@@ -1030,6 +1093,7 @@ class _JournalPageState extends State<JournalPage> {
       MaterialPageRoute<bool>(
         builder: (_) => _StoryEntryPage(
           initialText: initialText ?? '',
+          onReview: widget.aiEnabled ? widget.onAnalyzeStory : null,
           onDraftChanged: (draft) => setState(() => _storyDraft = draft),
           onSave: (text) async {
             await widget.onAddStory(
@@ -1063,25 +1127,62 @@ class _JournalPageState extends State<JournalPage> {
   }
 
   void _openRecordDetail(BuildContext context, _JournalRecord record) {
+    final canEdit =
+        widget.onEditEvent != null &&
+        (record.meal?.serverPayload != null ||
+            record.symptom?.serverPayload != null);
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => _JournalDetailPage(
           record: record,
-          onDelete: record.meal == null
+          onEdit: !canEdit
+              ? null
+              : () async {
+                  final payload = Map<String, dynamic>.from(
+                    record.meal?.serverPayload ??
+                        record.symptom!.serverPayload!,
+                  );
+                  if (record.symptom != null) {
+                    payload['linked_food_index'] = null;
+                    payload['linked_food_event_id'] = record.symptom!.mealId;
+                  }
+                  final updated = await Navigator.of(context).push<bool>(
+                    MaterialPageRoute(
+                      builder: (_) => EventEditorPage(
+                        event: {
+                          'id': record.meal?.id ?? record.symptom!.id,
+                          'kind': record.meal != null ? 'food' : 'symptom',
+                          'version':
+                              record.meal?.version ?? record.symptom!.version,
+                          'payload': payload,
+                        },
+                        meals: widget.meals,
+                        ingredientId: widget.ingredientId,
+                        onSave: widget.onEditEvent!,
+                      ),
+                    ),
+                  );
+                  if (updated == true && context.mounted) {
+                    Navigator.pop(context);
+                  }
+                },
+          onDelete:
+              record.meal == null &&
+                  (record.symptom == null || widget.onDeleteSymptom == null)
               ? null
               : () async {
                   final remove = await showDialog<bool>(
                     context: context,
-                    builder: (_) => AlertDialog(
+                    builder: (dialogContext) => AlertDialog(
                       title: const Text('Hapus catatan ini?'),
-                      content: Text(record.meal!.name),
+                      content: Text(record.title),
                       actions: [
                         TextButton(
-                          onPressed: () => Navigator.pop(context, false),
+                          onPressed: () => Navigator.pop(dialogContext, false),
                           child: const Text('Batal'),
                         ),
                         TextButton(
-                          onPressed: () => Navigator.pop(context, true),
+                          onPressed: () => Navigator.pop(dialogContext, true),
                           child: const Text('Hapus'),
                         ),
                       ],
@@ -1089,7 +1190,11 @@ class _JournalPageState extends State<JournalPage> {
                   );
                   if (remove != true || !context.mounted) return;
                   try {
-                    await widget.onDeleteMeal(record.meal!);
+                    if (record.meal != null) {
+                      await widget.onDeleteMeal(record.meal!);
+                    } else {
+                      await widget.onDeleteSymptom!(record.symptom!);
+                    }
                   } catch (error) {
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -1121,7 +1226,7 @@ class _JournalRecord {
   String? get subtitle => meal == null
       ? symptom == null
             ? story!.text
-            : 'Skala ${symptom!.severity} · stres ${symptom!.stress ?? 'belum diisi'}'
+            : 'Skala ${symptom!.severity ?? 'belum diisi'} · stres ${symptom!.stress ?? 'belum diisi'}'
       : meal!.note;
   String get time => meal?.time ?? symptom?.time ?? story!.time;
   DateTime get sortTime {
@@ -1164,10 +1269,12 @@ class _StoryEntryPage extends StatefulWidget {
     required this.initialText,
     required this.onDraftChanged,
     required this.onSave,
+    this.onReview,
   });
   final String initialText;
   final ValueChanged<String?> onDraftChanged;
   final FutureOr<void> Function(String) onSave;
+  final Future<bool> Function(String, String)? onReview;
 
   @override
   State<_StoryEntryPage> createState() => _StoryEntryPageState();
@@ -1175,6 +1282,39 @@ class _StoryEntryPage extends StatefulWidget {
 
 class _StoryEntryPageState extends State<_StoryEntryPage> {
   bool _saving = false;
+  String? _analysisRequest;
+  String? _analysisText;
+  String? _error;
+
+  Future<void> _review() async {
+    if (_saving || _controller.text.trim().isEmpty) return;
+    final text = _controller.text.trim();
+    if (_analysisText != text) {
+      _analysisText = text;
+      _analysisRequest = const Uuid().v4();
+    }
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+    try {
+      final saved = await widget.onReview!(text, _analysisRequest!);
+      if (saved && mounted) {
+        widget.onDraftChanged(null);
+        _controller.clear();
+        setState(() {});
+        Navigator.pop(context);
+      }
+    } catch (error) {
+      if (error is ApiFailure && error.code == 'analysis_already_attempted') {
+        _analysisText = null;
+      }
+      if (mounted) setState(() => _error = AppServices.message(error));
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
   late final TextEditingController _controller = TextEditingController(
     text: widget.initialText,
   );
@@ -1209,6 +1349,7 @@ class _StoryEntryPageState extends State<_StoryEntryPage> {
                 children: [
                   TextField(
                     controller: _controller,
+                    enabled: !_saving,
                     minLines: 5,
                     maxLines: 9,
                     onChanged: (_) => setState(() {}),
@@ -1218,6 +1359,13 @@ class _StoryEntryPageState extends State<_StoryEntryPage> {
                     ),
                   ),
                   const SizedBox(height: AibsSpace.s12),
+                  if (_error != null)
+                    Text(
+                      _error!,
+                      style: AibsType.caption.copyWith(
+                        color: AibsColors.badInk,
+                      ),
+                    ),
                   TextButton(
                     onPressed: () => Navigator.pop(context),
                     child: const Text('Isi manual aja'),
@@ -1230,68 +1378,81 @@ class _StoryEntryPageState extends State<_StoryEntryPage> {
               child: Padding(
                 padding: AibsSpace.bottomActions,
                 child: AibsPrimaryButton(
-                  label: 'Cek sebelum simpan',
-                  onPressed: () {
-                    if (_controller.text.trim().isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Tulis cerita dulu.')),
-                      );
-                      return;
-                    }
-                    showModalBottomSheet<void>(
-                      context: context,
-                      isScrollControlled: true,
-                      builder: (sheetContext) => SafeArea(
-                        top: false,
-                        child: Padding(
-                          padding: const EdgeInsets.all(AibsSpace.s20),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Cek sebelum simpan',
-                                style: AibsType.sheetTitle,
+                  label: _saving ? 'Memproses...' : 'Cek sebelum simpan',
+                  onPressed: _saving
+                      ? null
+                      : () {
+                          if (widget.onReview != null) {
+                            _review();
+                            return;
+                          }
+                          if (_controller.text.trim().isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Tulis cerita dulu.'),
                               ),
-                              const SizedBox(height: AibsSpace.s12),
-                              AibsCard(child: Text(_controller.text.trim())),
-                              const SizedBox(height: AibsSpace.s12),
-                              AibsPrimaryButton(
-                                label: 'Simpan semua',
-                                onPressed: () async {
-                                  if (_saving) return;
-                                  _saving = true;
-                                  try {
-                                    await widget.onSave(
-                                      _controller.text.trim(),
-                                    );
-                                  } catch (error) {
-                                    if (context.mounted) {
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                            SnackBar(
-                                              content: Text(
-                                                AppServices.message(error),
-                                              ),
-                                            ),
+                            );
+                            return;
+                          }
+                          showModalBottomSheet<void>(
+                            context: context,
+                            isScrollControlled: true,
+                            builder: (sheetContext) => SafeArea(
+                              top: false,
+                              child: Padding(
+                                padding: const EdgeInsets.all(AibsSpace.s20),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Cek sebelum simpan',
+                                      style: AibsType.sheetTitle,
+                                    ),
+                                    const SizedBox(height: AibsSpace.s12),
+                                    AibsCard(
+                                      child: Text(_controller.text.trim()),
+                                    ),
+                                    const SizedBox(height: AibsSpace.s12),
+                                    AibsPrimaryButton(
+                                      label: 'Simpan semua',
+                                      onPressed: () async {
+                                        if (_saving) return;
+                                        _saving = true;
+                                        try {
+                                          await widget.onSave(
+                                            _controller.text.trim(),
                                           );
-                                    }
-                                    _saving = false;
-                                    return;
-                                  }
-                                  _saving = false;
-                                  if (sheetContext.mounted) {
-                                    Navigator.pop(sheetContext);
-                                  }
-                                  if (context.mounted) Navigator.pop(context);
-                                },
+                                        } catch (error) {
+                                          if (context.mounted) {
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  AppServices.message(error),
+                                                ),
+                                              ),
+                                            );
+                                          }
+                                          _saving = false;
+                                          return;
+                                        }
+                                        _saving = false;
+                                        if (sheetContext.mounted) {
+                                          Navigator.pop(sheetContext);
+                                        }
+                                        if (context.mounted) {
+                                          Navigator.pop(context);
+                                        }
+                                      },
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    );
-                  },
+                            ),
+                          );
+                        },
                 ),
               ),
             ),
@@ -1612,20 +1773,21 @@ class _ScaleDot extends StatelessWidget {
 
 class _SeverityDot extends StatelessWidget {
   const _SeverityDot({required this.value});
-  final int value;
+  final int? value;
 
   @override
   Widget build(BuildContext context) => CircleAvatar(
     radius: 20,
     backgroundColor: AibsColors.primarySoft,
-    child: Text('$value', style: AibsType.bodyStrong),
+    child: Text(value?.toString() ?? '?', style: AibsType.bodyStrong),
   );
 }
 
 class _JournalDetailPage extends StatelessWidget {
-  const _JournalDetailPage({required this.record, this.onDelete});
+  const _JournalDetailPage({required this.record, this.onDelete, this.onEdit});
   final _JournalRecord record;
   final VoidCallback? onDelete;
+  final VoidCallback? onEdit;
 
   @override
   Widget build(BuildContext context) {
@@ -1667,10 +1829,6 @@ class _JournalDetailPage extends StatelessWidget {
               const SizedBox(height: AibsSpace.s12),
               Text(meal.note!, style: AibsType.caption),
             ],
-            if (onDelete != null) ...[
-              const SizedBox(height: AibsSpace.s20),
-              AibsSecondaryButton(label: 'Hapus', onPressed: onDelete!),
-            ],
           ] else ...[
             const SizedBox(height: AibsSpace.s12),
             AibsCard(
@@ -1679,7 +1837,7 @@ class _JournalDetailPage extends StatelessWidget {
                 children: [
                   Text('Seberapa ganggu?', style: AibsType.caption),
                   Text(
-                    'Skala ${symptom!.severity}',
+                    'Skala ${symptom!.severity ?? 'belum diisi'}',
                     style: AibsType.bodyStrong,
                   ),
                   if (symptom.mealName != null) ...[
@@ -1693,6 +1851,14 @@ class _JournalDetailPage extends StatelessWidget {
                 ],
               ),
             ),
+          ],
+          if (onEdit != null) ...[
+            const SizedBox(height: AibsSpace.s20),
+            AibsPrimaryButton(label: 'Edit', onPressed: onEdit),
+          ],
+          if (onDelete != null) ...[
+            const SizedBox(height: AibsSpace.s12),
+            AibsSecondaryButton(label: 'Hapus', onPressed: onDelete!),
           ],
         ],
       ),

@@ -6,7 +6,6 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'core/demo_data.dart';
 import 'data/app_services.dart';
 import 'data/records_repository.dart';
-import 'data/api_client.dart';
 import 'data/app_config.dart';
 import 'pages/home_profile_pages.dart';
 import 'pages/menu_flow.dart';
@@ -16,9 +15,17 @@ import 'pages/record_pages.dart';
 import 'pages/summary_pages.dart';
 import 'theme/aibs_theme.dart';
 import 'widgets/aibs_tab_bar.dart';
+import 'widgets/load_gate.dart';
+import 'pages/link_email_sheet.dart';
+import 'pages/draft_review_page.dart';
+import 'data/photo_picker.dart';
+import 'data/export_file.dart';
+
+import 'dart:typed_data';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await PhotoPicker.recover();
   final services = await AppServices.create(const AppConfig());
   runApp(AibsApp(services: services));
 }
@@ -37,11 +44,14 @@ class _AibsAppState extends State<AibsApp> {
   ProfileSetupAnswers? _profile;
   ProfileSetupAnswers? _savedProfile;
   bool _saving = false;
+  bool _restoring = false;
+  String? _restoreError;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _restore());
+    _restoring = widget.services?.identity.hasSession ?? false;
+    WidgetsBinding.instance.addPostFrameCallback((_) => _restore(gate: true));
   }
 
   void _error(Object error) {
@@ -52,14 +62,27 @@ class _AibsAppState extends State<AibsApp> {
   }
 
   final contextForMessages = GlobalKey<ScaffoldMessengerState>();
+  final navigatorKey = GlobalKey<NavigatorState>();
 
-  Future<bool> _restore() async {
+  Future<bool> _restore({bool gate = false}) async {
     final services = widget.services;
-    if (services?.auth?.auth.currentSession == null) return false;
+    if (services == null || !services.identity.hasSession) {
+      if (gate && mounted) {
+        setState(() {
+          _restoring = false;
+          _restoreError = null;
+        });
+      }
+      return false;
+    }
+    if (gate && mounted) {
+      setState(() {
+        _restoring = true;
+        _restoreError = null;
+      });
+    }
     try {
-      final profile = await services!.profiles.restore(
-        services.auth!.auth.currentUser?.email ?? '',
-      );
+      final profile = await services.profiles.restore(services.identity.email);
       if (!mounted || profile == null) return false;
       setState(() {
         _profile = profile;
@@ -67,24 +90,16 @@ class _AibsAppState extends State<AibsApp> {
       });
       return true;
     } catch (error) {
-      _error(error);
+      if (!gate) rethrow;
+      if (mounted) setState(() => _restoreError = AppServices.message(error));
       return false;
+    } finally {
+      if (gate && mounted) setState(() => _restoring = false);
     }
   }
 
   Future<ProfileSetupAnswers> _demo(String template) async {
-    final services = widget.services!;
-    final client = services.client;
-    final previous = client.auth.currentUser;
-    if (previous != null) await services.signOut();
-    await client.auth.signInAnonymously();
-    await services.api.request(
-      'POST',
-      '/api/v1/demo/sessions',
-      body: {'template': template},
-    );
-    final profile = await services.profiles.restore('');
-    if (profile == null) throw StateError('Demo profile missing');
+    final profile = await widget.services!.openDemo(template);
     _savedProfile = profile;
     return profile;
   }
@@ -116,7 +131,45 @@ class _AibsAppState extends State<AibsApp> {
     if (mounted) setState(() => _profile = saved);
   }
 
-  Future<void> _logout() async {
+  Future<void> _linkEmail() async {
+    final services = widget.services!;
+    await showModalBottomSheet<bool>(
+      context: navigatorKey.currentState!.overlay!.context,
+      isScrollControlled: true,
+      builder: (_) => LinkEmailSheet(
+        sendCode: services.beginEmailLink,
+        verifyCode: (email, code) async {
+          final profile = await services.confirmEmailLink(email, code);
+          if (mounted) setState(() => _profile = profile);
+        },
+      ),
+    );
+  }
+
+  Future<void> _logout({bool dataDeleted = false}) async {
+    if (!dataDeleted && widget.services?.identity.isAnonymous == true) {
+      final navigatorContext = navigatorKey.currentState!.overlay!.context;
+      final confirmed = await showDialog<bool>(
+        context: navigatorContext,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Keluar dari demo?'),
+          content: const Text(
+            'Catatan tersimpan untuk sesi demo ini. Setelah keluar, memilih Nadia atau Raka membuat sesi baru. Gunakan login email untuk akun yang bisa dimasuki kembali.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Batal'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Keluar'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true) return;
+    }
     try {
       await widget.services?.signOut();
       if (mounted) {
@@ -124,6 +177,7 @@ class _AibsAppState extends State<AibsApp> {
           _profile = null;
           _onboardingComplete = false;
           _savedProfile = null;
+          _restoreError = null;
         });
       }
     } catch (error) {
@@ -136,13 +190,25 @@ class _AibsAppState extends State<AibsApp> {
     return MaterialApp(
       title: 'AIBS',
       scaffoldMessengerKey: contextForMessages,
+      navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
       theme: AibsTheme.light,
-      home: _onboardingComplete
+      home: (_restoring || _restoreError != null)
+          ? LoadGate(
+              busy: _restoring,
+              message: _restoreError ?? 'Memulihkan sesi...',
+              onRetry: () => _restore(gate: true),
+              onLogout: _logout,
+            )
+          : _onboardingComplete
           ? AibsHomeShell(
               services: widget.services,
               profile: _profile,
               onProfileSaved: _saveProfile,
+              onDataDeleted: () => _logout(dataDeleted: true),
+              onLinkEmail: widget.services?.identity.isAnonymous == true
+                  ? _linkEmail
+                  : null,
               onLogout: _logout,
             )
           : OnboardingFlow(
@@ -167,14 +233,18 @@ class AibsHomeShell extends StatefulWidget {
     super.key,
     this.profile,
     this.services,
+    this.onLinkEmail,
     this.onProfileSaved,
     this.onLogout,
+    this.onDataDeleted,
   });
 
   final ProfileSetupAnswers? profile;
   final AppServices? services;
+  final VoidCallback? onLinkEmail;
   final FutureOr<void> Function(ProfileSetupAnswers)? onProfileSaved;
   final VoidCallback? onLogout;
+  final Future<void> Function()? onDataDeleted;
 
   @override
   State<AibsHomeShell> createState() => _AibsHomeShellState();
@@ -185,6 +255,9 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
   RecordsRepository? _records;
   List<AibsMenuItem>? _menus;
   bool _loading = false;
+  bool _hasLoaded = false;
+  bool _reloadAgain = false;
+  String? _loadError;
 
   @override
   void initState() {
@@ -207,12 +280,20 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
   }
 
   Future<void> _reload() async {
-    if (_records == null || _loading) return;
-    _loading = true;
+    if (_records == null) return;
+    if (_loading) {
+      _reloadAgain = true;
+      return;
+    }
+    setState(() {
+      _loading = true;
+      _loadError = null;
+    });
     try {
       await _records!.load();
       if (!mounted) return;
       setState(() {
+        _hasLoaded = true;
         _menus = _records!.menus;
         _meals
           ..clear()
@@ -231,11 +312,16 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
       });
     } catch (error) {
       if (mounted) {
+        setState(() => _loadError = AppServices.message(error));
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(AppServices.message(error))));
       }
     } finally {
-      _loading = false;
+      if (mounted) setState(() => _loading = false);
+    }
+    if (_reloadAgain && mounted) {
+      _reloadAgain = false;
+      await _reload();
     }
   }
 
@@ -253,6 +339,14 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
 
   @override
   Widget build(BuildContext context) {
+    if (_records != null && !_hasLoaded) {
+      return LoadGate(
+        busy: _loading || _loadError == null,
+        message: _loadError ?? 'Memuat catatan tersimpan...',
+        onRetry: _reload,
+        onLogout: widget.onLogout,
+      );
+    }
     return Scaffold(
       body: SafeArea(
         child: IndexedStack(
@@ -298,7 +392,11 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
               ),
               onAddSymptom: _addSymptom,
               onAddStory: _addStory,
+              onAnalyzeStory: _records == null ? null : _reviewStory,
               onDeleteMeal: _deleteMeal,
+              onDeleteSymptom: _records == null ? null : _deleteSymptom,
+              onEditEvent: _records == null ? null : _editEvent,
+              ingredientId: widget.services?.profiles.ingredientId,
               onOpenSummary: _openSummary,
             ),
             ProfilePage(
@@ -307,12 +405,27 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
               shoppingCount: _shoppingItems.length,
               onOpenShopping: _openShoppingList,
               onLogout: widget.onLogout,
+              onLinkEmail: widget.onLinkEmail,
+              onExportData: _records == null
+                  ? null
+                  : () async {
+                      final data = await widget.services!.api.download(
+                        '/api/v1/me/data/export',
+                      );
+                      await exportFile(
+                        data,
+                        'aibs-data.zip',
+                        'application/zip',
+                      );
+                    },
               onDeleteAll: _records == null
                   ? widget.onLogout
                   : () async {
-                      throw const ApiFailure(
-                        'Hapus semua data belum tersedia. Data kamu belum dihapus.',
+                      await widget.services!.api.request(
+                        'DELETE',
+                        '/api/v1/me/data?confirm=true',
                       );
+                      await widget.onDataDeleted?.call();
                     },
             ),
           ],
@@ -412,6 +525,7 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
           initialIngredients: ingredients,
           onSaved: _addMeal,
           onCheckFood: _records?.checkFood,
+          onReviewPhoto: _records == null ? null : _reviewPhoto,
           onAddSymptom: _openSymptomEntry,
           onFinish: () => setState(() => _selectedIndex = 0),
         ),
@@ -474,6 +588,16 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
     setState(() => _symptoms.add(symptom));
   }
 
+  Future<void> _editEvent(Map<String, dynamic> event) async {
+    await _records!.updateEvent(event);
+    await _reload();
+  }
+
+  Future<void> _deleteSymptom(AibsSymptomLog symptom) async {
+    await _records!.deleteSymptom(symptom);
+    await _reload();
+  }
+
   Future<void> _deleteMeal(AibsMealLog meal) async {
     if (_records != null) {
       await _records!.deleteMeal(meal);
@@ -512,6 +636,43 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
       return;
     }
     setState(() => _stories.add(story));
+  }
+
+  Future<bool> _reviewStory(String text, String requestId) async {
+    final review = await _records!.analyzeStory(text, requestId);
+    if (!mounted) return false;
+    final saved = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => DraftReviewPage(
+          review: review,
+          meals: _meals,
+          ingredientId: widget.services!.profiles.ingredientId,
+        ),
+      ),
+    );
+    if (saved == true) await _reload();
+    return saved == true;
+  }
+
+  Future<bool> _reviewPhoto(
+    Uint8List bytes,
+    String requestId,
+    bool consumed,
+  ) async {
+    final review = await _records!.analyzePhoto(bytes, requestId, consumed);
+    if (!mounted) return false;
+    final saved = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => DraftReviewPage(
+          review: review,
+          meals: _meals,
+          ingredientId: widget.services!.profiles.ingredientId,
+          onCheckFood: _records!.checkCard,
+        ),
+      ),
+    );
+    if (saved == true) await _reload();
+    return saved == true;
   }
 
   Future<void> _updateShoppingItems(List<String> items) async {

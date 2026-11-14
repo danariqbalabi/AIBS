@@ -7,10 +7,14 @@ from sqlalchemy import and_, delete, literal, or_, select, union_all
 
 from app.core.errors import ApiError
 from app.models.entities import EventLink, FoodEvent, SymptomEvent
-from app.schemas.domain import FoodCheckInput
+from app.schemas.domain import EventTime, FoodCheckInput
 from app.services.catalog import check_food
 from app.services.profiles import profile_for, require_basic, versioned_update
-from app.services.records import event_fields
+from app.services.records import (
+    event_fields,
+    validate_existing_food_link,
+    validate_food_precedes_symptom,
+)
 
 
 def find(db, owner, event_id):
@@ -124,13 +128,38 @@ def patch(db, owner, event_id, payload):
     card = payload.payload
     if card.time is None or not card.time.confirmed or (kind == "food" and not card.consumed):
         raise ApiError(422, "confirmation_required", "Konfirmasi isi dan waktu catatan.")
-    if kind == "symptom" and card.linked_food_index != row.payload.get("linked_food_index"):
+    if (
+        kind == "symptom"
+        and card.linked_food_index is not None
+        and card.linked_food_index != row.payload.get("linked_food_index")
+    ):
         raise ApiError(
             422, "link_change_unsupported", "Tautan batch tidak dapat diubah lewat edit ini."
         )
     profile = profile_for(db, owner)
+    linked_food = (
+        validate_existing_food_link(db, owner, card, profile) if kind == "symptom" else None
+    )
+    if kind == "symptom" and card.linked_food_index is not None:
+        for food in db.scalars(
+            select(FoodEvent)
+            .join(EventLink, EventLink.food_event_id == FoodEvent.id)
+            .where(EventLink.owner_id == owner, EventLink.symptom_event_id == row.id)
+        ):
+            validate_food_precedes_symptom(
+                EventTime.model_validate(food.payload["time"]), card.time, profile.timezone
+            )
     changes = event_fields(card, profile)
     if kind == "food":
+        linked_symptoms = db.scalars(
+            select(SymptomEvent)
+            .join(EventLink, EventLink.symptom_event_id == SymptomEvent.id)
+            .where(EventLink.owner_id == owner, EventLink.food_event_id == row.id)
+        )
+        for symptom in linked_symptoms:
+            validate_food_precedes_symptom(
+                card.time, EventTime.model_validate(symptom.payload["time"]), profile.timezone
+            )
         changes["evaluation"] = check_food(
             db,
             owner,
@@ -145,6 +174,14 @@ def patch(db, owner, event_id, payload):
             "diet": profile.diet,
         }
     versioned_update(db, row, payload.version, changes)
+    if kind == "symptom" and card.linked_food_index is None:
+        db.execute(
+            delete(EventLink).where(
+                EventLink.owner_id == owner, EventLink.symptom_event_id == row.id
+            )
+        )
+        if linked_food is not None:
+            db.add(EventLink(owner_id=owner, food_event_id=linked_food.id, symptom_event_id=row.id))
     db.commit()
     return view(db, kind, row)
 

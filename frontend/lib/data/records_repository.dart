@@ -6,6 +6,7 @@ import '../core/demo_data.dart';
 import '../shared/widgets/status_badge.dart';
 import 'api_client.dart';
 import 'profile_repository.dart';
+import 'draft_review.dart';
 
 const symptomCodes = {
   'Nyeri perut': 'pain',
@@ -15,6 +16,7 @@ const symptomCodes = {
   'Diare': 'diarrhea',
   'Sembelit': 'constipation',
   'BAB': 'bowel',
+  'Lainnya': 'other',
 };
 CheckStatus statusFor(Object? value) => switch (value) {
   'ok' => CheckStatus.ok,
@@ -149,6 +151,7 @@ class RecordsRepository {
         AibsMealLog(
           id: row['id'] as String,
           version: row['version'] as int,
+          serverPayload: Map<String, dynamic>.from(payload),
           name: payload['name'] as String,
           date: DateTime.parse(row['local_date'] as String),
           time: time(payload),
@@ -173,11 +176,15 @@ class RecordsRepository {
           id: row['id'] as String,
           version: row['version'] as int,
           name:
+              (payload['code'] == 'other'
+                  ? payload['label'] as String?
+                  : null) ??
               labelFor(symptomCodes, payload['code']) ??
               payload['code'].toString(),
           date: DateTime.parse(row['local_date'] as String),
           time: time(payload),
-          severity: payload['severity'] as int? ?? 1,
+          severity: payload['severity'] as int?,
+          serverPayload: Map<String, dynamic>.from(payload),
           note: payload['notes'] as String?,
           mealId: linked,
           mealName: nextMeals.where((m) => m.id == linked).firstOrNull?.name,
@@ -379,6 +386,67 @@ class RecordsRepository {
     );
   }
 
+  Future<DraftReview> analyzeStory(String text, String requestId) async {
+    final result = await api.request(
+      'POST',
+      '/api/v1/analysis/journal',
+      body: {
+        'request_id': requestId,
+        'text': text,
+        'reference_date': dateLabel(DateTime.now()),
+      },
+      timeout: const Duration(seconds: 120),
+    );
+    return DraftReview(api, result['draft'] as Map<String, dynamic>);
+  }
+
+  final _photoMedia = <String, String>{};
+  Future<DraftReview> analyzePhoto(
+    List<int> bytes,
+    String requestId,
+    bool consumed,
+  ) async {
+    if (profiles.consent['ai'] != true) {
+      throw const ApiFailure('Bantuan AI dimatikan. Kamu bisa isi manual.');
+    }
+    var mediaId = _photoMedia[requestId];
+    if (mediaId == null) {
+      final media = await api.request(
+        'POST',
+        '/api/v1/media',
+        fileBytes: bytes,
+        timeout: const Duration(seconds: 90),
+      );
+      mediaId = media['id'] as String;
+      _photoMedia[requestId] = mediaId;
+    }
+    final result = await api.request(
+      'POST',
+      '/api/v1/analysis/photo',
+      body: {
+        'request_id': requestId,
+        'media_id': mediaId,
+        'intent': consumed ? 'consumed' : 'before_meal',
+        'reference_date': dateLabel(DateTime.now()),
+      },
+      timeout: const Duration(seconds: 120),
+    );
+    return DraftReview(api, result['draft'] as Map<String, dynamic>);
+  }
+
+  Future<Map<String, dynamic>> checkCard(Map<String, dynamic> card) async {
+    final profile = await api.request('GET', '/api/v1/me/profile');
+    return api.request(
+      'POST',
+      '/api/v1/food-checks',
+      body: {
+        'profile_version': profile['version'],
+        'ingredients': card['ingredients'],
+        'ingredients_complete': card['ingredients_complete'] == true,
+      },
+    );
+  }
+
   Future<void> saveNoSymptoms() async {
     final food = meals
         .where((m) => dateLabel(m.date) == dateLabel(DateTime.now()))
@@ -405,6 +473,28 @@ class RecordsRepository {
     await api.request(
       'DELETE',
       '/api/v1/events/${meal.id}?version=${meal.version}',
+    );
+  }
+
+  Future<void> deleteSymptom(AibsSymptomLog symptom) async {
+    if (symptom.id == null || symptom.version == null) {
+      throw const ApiFailure('Muat ulang catatan terlebih dahulu.');
+    }
+    await api.request(
+      'DELETE',
+      '/api/v1/events/${symptom.id}?version=${symptom.version}',
+    );
+  }
+
+  Future<void> updateEvent(Map<String, dynamic> event) async {
+    await api.request(
+      'PATCH',
+      '/api/v1/events/${event['id']}',
+      body: {
+        'kind': event['kind'],
+        'version': event['version'],
+        'payload': event['payload'],
+      },
     );
   }
 

@@ -32,6 +32,7 @@ def image_bytes():
 
 def test_photo_is_private_owned_and_can_be_deleted(account):
     client, context = account
+    client.put("/api/v1/me/consents", json={"basic": True, "ai": True})
     storage = MemoryStorage()
     client.app.state.storage = storage
     response = client.post(
@@ -54,6 +55,7 @@ def test_photo_is_private_owned_and_can_be_deleted(account):
 
 def test_invalid_image_and_size_are_rejected_before_storage(account):
     client, _ = account
+    client.put("/api/v1/me/consents", json={"basic": True, "ai": True})
     storage = MemoryStorage()
     client.app.state.storage = storage
     assert (

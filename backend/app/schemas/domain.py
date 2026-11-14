@@ -61,7 +61,10 @@ class FoodCard(Contract):
 
 
 class SymptomCard(Contract):
-    code: Literal["pain", "bloating", "nausea", "vomiting", "diarrhea", "constipation", "bowel"]
+    code: Literal[
+        "pain", "bloating", "nausea", "vomiting", "diarrhea", "constipation", "bowel", "other"
+    ]
+    label: str | None = Field(default=None, min_length=1, max_length=100)
     present: bool
     severity: int | None = Field(default=None, ge=1, le=5)
     time: EventTime
@@ -140,6 +143,7 @@ class ProfilePatch(Contract):
     clinician_guidance: Answer | None = None
     timezone: str | None = Field(default=None, max_length=60)
     diet: DietProfile | None = None
+    save_photos: bool | None = None
 
     @field_validator("timezone")
     @classmethod

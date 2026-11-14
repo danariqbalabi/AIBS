@@ -43,9 +43,11 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+/android/.kotlin/
 
 # Widget Preview related
 .widget_preview/
 
 # Local client configuration (public key only; server secrets never belong here)
 /config/local.json
+/config/*.local.json

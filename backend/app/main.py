@@ -1,4 +1,6 @@
-from contextlib import asynccontextmanager
+import asyncio
+import logging
+from contextlib import asynccontextmanager, suppress
 from uuid import uuid4
 
 from fastapi import FastAPI, Request
@@ -12,6 +14,7 @@ from app.api.v1.drafts import router as draft_router
 from app.api.v1.history import router as history_router
 from app.api.v1.media import router as media_router
 from app.api.v1.planning import router as planning_router
+from app.api.v1.privacy import router as privacy_router
 from app.api.v1.profiles import router as profile_router
 from app.api.v1.summaries import router as summary_router
 from app.core.auth import JWTVerifier
@@ -20,6 +23,7 @@ from app.core.database import make_engine
 from app.core.errors import ApiError, install_error_handlers
 from app.integrations.gemini import Gemini
 from app.integrations.storage import SupabaseStorage
+from app.services.privacy import cleanup_expired
 
 
 def create_app(settings: Settings | None = None, *, engine=None) -> FastAPI:
@@ -28,7 +32,21 @@ def create_app(settings: Settings | None = None, *, engine=None) -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(app):
-        yield
+        async def retention():
+            while True:
+                try:
+                    await asyncio.to_thread(cleanup_expired, database_engine, app.state.storage)
+                except Exception:
+                    logging.getLogger(__name__).warning("Photo retention cleanup will retry")
+                await asyncio.sleep(900)
+
+        task = asyncio.create_task(retention())
+        try:
+            yield
+        finally:
+            task.cancel()
+            with suppress(asyncio.CancelledError):
+                await task
         if engine is None:
             database_engine.dispose()
 
@@ -41,6 +59,7 @@ def create_app(settings: Settings | None = None, *, engine=None) -> FastAPI:
     app.state.gemini = Gemini(settings)
     app.include_router(auth_router)
     app.include_router(profile_router)
+    app.include_router(privacy_router)
     app.include_router(catalog_router)
     app.include_router(draft_router)
     app.include_router(history_router)

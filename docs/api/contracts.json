@@ -395,10 +395,25 @@
           "vomiting",
           "diarrhea",
           "constipation",
-          "bowel"
+          "bowel",
+          "other"
         ],
         "title": "Code",
         "type": "string"
+      },
+      "label": {
+        "anyOf": [
+          {
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Label"
       },
       "present": {
         "title": "Present",
@@ -703,10 +718,25 @@
               "vomiting",
               "diarrhea",
               "constipation",
-              "bowel"
+              "bowel",
+              "other"
             ],
             "title": "Code",
             "type": "string"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Label"
           },
           "present": {
             "title": "Present",
@@ -1099,10 +1129,25 @@
               "vomiting",
               "diarrhea",
               "constipation",
-              "bowel"
+              "bowel",
+              "other"
             ],
             "title": "Code",
             "type": "string"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Label"
           },
           "present": {
             "title": "Present",
@@ -1474,10 +1519,25 @@
               "vomiting",
               "diarrhea",
               "constipation",
-              "bowel"
+              "bowel",
+              "other"
             ],
             "title": "Code",
             "type": "string"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Label"
           },
           "present": {
             "title": "Present",
@@ -2050,6 +2110,18 @@
           }
         ],
         "default": null
+      },
+      "save_photos": {
+        "anyOf": [
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Save Photos"
       }
     },
     "required": [
@@ -3095,10 +3167,25 @@
               "vomiting",
               "diarrhea",
               "constipation",
-              "bowel"
+              "bowel",
+              "other"
             ],
             "title": "Code",
             "type": "string"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Label"
           },
           "present": {
             "title": "Present",

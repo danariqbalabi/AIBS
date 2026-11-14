@@ -360,6 +360,71 @@
         ]
       }
     },
+    "/api/v1/me/data/export": {
+      "get": {
+        "tags": [
+          "privacy"
+        ],
+        "summary": "Export",
+        "operationId": "export_api_v1_me_data_export_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/me/data": {
+      "delete": {
+        "tags": [
+          "privacy"
+        ],
+        "summary": "Delete",
+        "operationId": "delete_api_v1_me_data_delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "confirm",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Confirm"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/ingredients": {
       "get": {
         "tags": [
@@ -3087,6 +3152,17 @@
                 "type": "null"
               }
             ]
+          },
+          "save_photos": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Save Photos"
           }
         },
         "additionalProperties": false,
@@ -3219,9 +3295,23 @@
               "vomiting",
               "diarrhea",
               "constipation",
-              "bowel"
+              "bowel",
+              "other"
             ],
             "title": "Code"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
           },
           "present": {
             "type": "boolean",

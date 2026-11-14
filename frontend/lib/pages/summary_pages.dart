@@ -6,6 +6,9 @@ import '../core/theme/aibs_tokens.dart';
 import '../shared/widgets/koala.dart';
 import '../widgets/aibs_widgets.dart';
 import 'profile_setup_flow.dart';
+import '../data/consultation_pdf.dart';
+import '../data/export_file.dart';
+import '../data/app_services.dart';
 
 class SummaryPage extends StatefulWidget {
   const SummaryPage({
@@ -330,6 +333,7 @@ class _SummaryPageState extends State<SummaryPage> {
           profile: widget.profile,
           meals: meals,
           symptoms: symptoms,
+          days: _period,
         ),
       ),
     );
@@ -421,7 +425,9 @@ class _PatternDetailPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('${entry.time} · $symptom · ${entry.severity}'),
+                  Text(
+                    '${entry.time} · $symptom · ${entry.severity ?? 'belum diisi'}',
+                  ),
                   if (entry.mealName != null) ...[
                     const SizedBox(height: AibsSpace.s8),
                     Text('Sebelum ${entry.mealName}'),
@@ -453,10 +459,12 @@ class _ConsultationSummaryPage extends StatefulWidget {
     required this.profile,
     required this.meals,
     required this.symptoms,
+    required this.days,
   });
   final ProfileSetupAnswers? profile;
   final List<AibsMealLog> meals;
   final List<AibsSymptomLog> symptoms;
+  final int days;
 
   @override
   State<_ConsultationSummaryPage> createState() =>
@@ -464,6 +472,28 @@ class _ConsultationSummaryPage extends StatefulWidget {
 }
 
 class _ConsultationSummaryPageState extends State<_ConsultationSummaryPage> {
+  bool _exporting = false;
+  Future<void> _export() async {
+    setState(() => _exporting = true);
+    try {
+      final bytes = await consultationPdf(
+        days: widget.days,
+        directive: widget.profile?.dietType ?? 'Belum diisi',
+        meals: widget.meals,
+        symptoms: widget.symptoms,
+        questions: _questions,
+      );
+      await exportFile(bytes, 'aibs-konsultasi.pdf', 'application/pdf');
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(AppServices.message(error))));
+      }
+    } finally {
+      if (mounted) setState(() => _exporting = false);
+    }
+  }
+
   final _questionController = TextEditingController();
   final _questions = <String>[
     'Apa yang perlu saya perhatikan dari catatan ini?',
@@ -493,7 +523,7 @@ class _ConsultationSummaryPageState extends State<_ConsultationSummaryPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _summaryRow('Periode', '7 hari terakhir'),
+                _summaryRow('Periode', '${widget.days} hari terakhir'),
                 _summaryRow('Arahan', profile?.dietType ?? 'Belum diisi'),
                 _summaryRow(
                   'Alergi',
@@ -544,9 +574,18 @@ class _ConsultationSummaryPageState extends State<_ConsultationSummaryPage> {
           ),
           const SizedBox(height: AibsSpace.s20),
           AibsPrimaryButton(
+            label: _exporting ? 'Menyiapkan PDF...' : 'Unduh / bagikan PDF',
+            onPressed: _exporting ? null : _export,
+          ),
+          const SizedBox(height: AibsSpace.s12),
+          AibsSecondaryButton(
             label: 'Salin ringkasan',
             onPressed: () async {
-              await Clipboard.setData(ClipboardData(text: summary.toString()));
+              await Clipboard.setData(
+                ClipboardData(
+                  text: '${summary.toString()}\n${_questions.join('\n')}',
+                ),
+              );
               if (!context.mounted) return;
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Ringkasan disalin')),
@@ -581,13 +620,13 @@ class _ConsultationSummaryPageState extends State<_ConsultationSummaryPage> {
 
 class _SeverityDot extends StatelessWidget {
   const _SeverityDot({required this.value});
-  final int value;
+  final int? value;
 
   @override
   Widget build(BuildContext context) => CircleAvatar(
     radius: 20,
     backgroundColor: AibsColors.primarySoft,
-    child: Text('$value', style: AibsType.bodyStrong),
+    child: Text(value?.toString() ?? '?', style: AibsType.bodyStrong),
   );
 }
 
