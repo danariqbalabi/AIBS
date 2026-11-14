@@ -28,6 +28,26 @@ class _CardCheckbox extends StatelessWidget {
   );
 }
 
+/// Supplies the server ingredient catalog to forms opened on any route.
+class IngredientCatalogScope extends InheritedWidget {
+  const IngredientCatalogScope({
+    super.key,
+    required this.items,
+    required super.child,
+  });
+  final List<Map<String, dynamic>> Function() items;
+
+  static List<Map<String, dynamic>> of(BuildContext context) =>
+      context
+          .getInheritedWidgetOfExactType<IngredientCatalogScope>()
+          ?.items() ??
+      const [];
+
+  @override
+  bool updateShouldNotify(IngredientCatalogScope oldWidget) =>
+      oldWidget.items != items;
+}
+
 /// Edits a copy of the server card; unknowns and negative observations stay explicit.
 class RecordCardForm extends StatefulWidget {
   const RecordCardForm({
@@ -51,6 +71,151 @@ class _RecordCardFormState extends State<RecordCardForm> {
   Map<String, dynamic> get card => widget.value;
   List<dynamic> get ingredients =>
       card.putIfAbsent('ingredients', () => []) as List;
+
+  /// Bumped when a row name is filled from the catalog so its field redraws.
+  final Map<Object, int> _nameRevision = {};
+
+  List<Map<String, dynamic>> get _catalog => IngredientCatalogScope.of(context);
+
+  String? _catalogName(Object? id) {
+    if (id == null) return null;
+    for (final item in _catalog) {
+      if (item['id'] == id) return item['name']?.toString();
+    }
+    return null;
+  }
+
+  String? _resolve(Map row) {
+    final name = row['display_name']?.toString().trim() ?? '';
+    final byName = name.isEmpty ? null : widget.ingredientId?.call(name);
+    return byName ?? row['ingredient_id'] as String?;
+  }
+
+  /// A confirmed ingredient must map to a catalog ID, otherwise the server
+  /// food check keeps asking for confirmation. When the typed name does not
+  /// match, the user picks the matching catalog ingredient instead of the
+  /// checkbox silently snapping back.
+  Future<void> _toggleConfirmed(Map row, bool? checked) async {
+    if (checked != true) {
+      setState(
+        () => row['certainty'] = row['ingredient_id'] == null
+            ? 'unknown'
+            : 'candidate',
+      );
+      return;
+    }
+    final name = row['display_name']?.toString().trim() ?? '';
+    final id = _resolve(row) ?? await _pickIngredient(name);
+    if (!mounted) return;
+    setState(() {
+      if (id == null) {
+        row['certainty'] = 'unknown';
+        return;
+      }
+      row['ingredient_id'] = id;
+      row['certainty'] = 'confirmed';
+      if (name.isEmpty) {
+        row['display_name'] = _catalogName(id) ?? '';
+        _nameRevision[row] = (_nameRevision[row] ?? 0) + 1;
+      }
+    });
+  }
+
+  Future<String?> _pickIngredient(String name) {
+    final catalog = _catalog;
+    if (catalog.isEmpty) {
+      return showDialog<String>(
+        context: context,
+        builder: (c) => AlertDialog(
+          title: const Text('Katalog bahan belum tersedia'),
+          content: const Text(
+            'Bahan hanya bisa dikonfirmasi jika cocok dengan katalog. '
+            'Muat ulang aplikasi lalu coba lagi.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(c),
+              child: const Text('Tutup'),
+            ),
+          ],
+        ),
+      );
+    }
+    var query = '';
+    return showDialog<String>(
+      context: context,
+      builder: (c) => StatefulBuilder(
+        builder: (c, setDialog) {
+          final needle = query.trim().toLowerCase();
+          final matches = catalog.where((item) {
+            if (needle.isEmpty) return true;
+            final names = [item['name'], ...(item['aliases'] as List? ?? [])];
+            return names.any(
+              (n) => n.toString().toLowerCase().contains(needle),
+            );
+          }).toList();
+          return AlertDialog(
+            title: Text(
+              name.isEmpty
+                  ? 'Pilih bahan dari katalog'
+                  : '"$name" belum ada di katalog',
+            ),
+            content: SizedBox(
+              width: double.maxFinite,
+              height: 360,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Pilih bahan katalog yang paling sesuai agar bisa '
+                    'dicek dengan profilmu.',
+                    style: AibsType.caption,
+                  ),
+                  const SizedBox(height: AibsSpace.s12),
+                  TextField(
+                    autofocus: true,
+                    decoration: const InputDecoration(
+                      labelText: 'Cari bahan',
+                      prefixIcon: Icon(Icons.search),
+                    ),
+                    onChanged: (v) => setDialog(() => query = v),
+                  ),
+                  const SizedBox(height: AibsSpace.s8),
+                  Expanded(
+                    child: matches.isEmpty
+                        ? const Center(child: Text('Tidak ada bahan cocok.'))
+                        : ListView(
+                            children: [
+                              for (final item in matches)
+                                ListTile(
+                                  title: Text(item['name'].toString()),
+                                  subtitle:
+                                      (item['aliases'] as List? ?? []).isEmpty
+                                      ? null
+                                      : Text(
+                                          (item['aliases'] as List).join(', '),
+                                        ),
+                                  onTap: () =>
+                                      Navigator.pop(c, item['id'] as String),
+                                ),
+                            ],
+                          ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(c),
+                child: const Text('Batal'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
@@ -80,15 +245,17 @@ class _RecordCardFormState extends State<RecordCardForm> {
                     children: [
                       Expanded(
                         child: TextFormField(
+                          key: ValueKey(_nameRevision[row] ?? 0),
                           initialValue: row['display_name']?.toString() ?? '',
                           decoration: const InputDecoration(
                             labelText: 'Nama bahan',
                           ),
-                          onChanged: (v) {
+                          // Renaming invalidates a previous confirmation.
+                          onChanged: (v) => setState(() {
                             row['display_name'] = v;
                             row['ingredient_id'] = widget.ingredientId?.call(v);
                             row['certainty'] = 'unknown';
-                          },
+                          }),
                         ),
                       ),
                       IconButton(
@@ -133,17 +300,21 @@ class _RecordCardFormState extends State<RecordCardForm> {
                     contentPadding: EdgeInsets.zero,
                     title: const Text('Bahan dikonfirmasi'),
                     value: row['certainty'] == 'confirmed',
-                    onChanged: (v) => setState(() {
-                      row['ingredient_id'] =
-                          widget.ingredientId?.call(
-                            row['display_name']?.toString() ?? '',
-                          ) ??
-                          row['ingredient_id'];
-                      row['certainty'] =
-                          v == true && row['ingredient_id'] != null
-                          ? 'confirmed'
-                          : 'unknown';
-                    }),
+                    onChanged: (v) => _toggleConfirmed(row as Map, v),
+                  ),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      row['certainty'] == 'confirmed'
+                          ? 'Cocok dengan katalog: '
+                                '${_catalogName(row['ingredient_id']) ?? row['display_name']}'
+                          : _resolve(row as Map) == null
+                          ? 'Belum cocok dengan katalog. Centang untuk memilih '
+                                'bahan yang sesuai.'
+                          : 'Saran: ${_catalogName(_resolve(row)) ?? 'bahan katalog'}. '
+                                'Centang jika sudah benar.',
+                      style: AibsType.caption,
+                    ),
                   ),
                 ],
               ),
