@@ -93,7 +93,7 @@ class SymptomCard(Contract):
     label: str | None = Field(default=None, min_length=1, max_length=100)
     present: bool
     severity: int | None = Field(default=None, ge=1, le=5)
-    time: EventTime
+    time: EventTime | None = None
     bristol_type: int | None = Field(default=None, ge=1, le=7)
     stress: Literal["low", "medium", "high", "unknown"] | None = None
     notes: str | None = Field(default=None, max_length=2000)

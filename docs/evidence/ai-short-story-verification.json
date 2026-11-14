@@ -1,0 +1,24 @@
+{
+  "tested_at": "2026-11-14T16:58:19.052310+00:00",
+  "prompt_version": "reviewed_draft_v2_unknown_time",
+  "environment": "local adapter calling configured Gemini provider; not production deployment",
+  "regression": "Short story with date but no time returned an incomplete approximate time object and failed validation.",
+  "cases": [
+    {
+      "synthetic_text": "hari ini makan nasi sama ayam goreng",
+      "passed": true,
+      "foods": 2,
+      "symptoms": 0,
+      "unknown_times": 2
+    },
+    {
+      "synthetic_text": "hari ini kembung",
+      "passed": true,
+      "foods": 0,
+      "symptoms": 1,
+      "unknown_times": 1
+    }
+  ],
+  "safety": "Unknown time stays null. Commit still requires a user-confirmed time. No automatic provider retry.",
+  "requires": "Deploy backend containing this fix."
+}

@@ -3500,7 +3500,14 @@
             "title": "Severity"
           },
           "time": {
-            "$ref": "#/components/schemas/EventTime"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EventTime"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "bristol_type": {
             "anyOf": [
@@ -3573,8 +3580,7 @@
         "type": "object",
         "required": [
           "code",
-          "present",
-          "time"
+          "present"
         ],
         "title": "SymptomCard"
       },
