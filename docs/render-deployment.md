@@ -43,6 +43,8 @@ File: `frontend/build/app/outputs/flutter-apk/app-debug.apk`. Ini APK demo untuk
 
 ## Verifikasi sebelum demo
 
+Workflow **Flutter** di GitHub Actions memeriksa format, analyze, test, build web, dan build APK debug ARM64. Artifact `aibs-android-debug` disimpan tujuh hari. Pada push/PR, APK hanya untuk pemeriksaan kompilasi dan belum diisi key client. Sesudah workflow ada di default branch, **Run workflow** dapat diberi `api_base_url` HTTPS Render dan `supabase_publishable_key` untuk APK demo yang terhubung. Kedua input ini publik; jangan memasukkan service-role atau secret key. [flutter-action](https://github.com/subosito/flutter-action).
+
 - Login akun email yang sama, tambah catatan, refresh, logout/login: catatan tetap ada.
 - Ubah dan hapus catatan; akun lain tidak dapat melihatnya.
 - Mode Tanpa AI tetap bisa isi manual; cerita/foto tidak dikirim ke AI.
