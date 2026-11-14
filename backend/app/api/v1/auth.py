@@ -14,7 +14,7 @@ router = APIRouter(prefix="/api/v1", tags=["sessions"])
 
 
 class DemoInput(Contract):
-    template: Literal["nadia", "raka"]
+    template: Literal["nadia", "raka", "manda"]
 
 
 @router.get("/me/session")

@@ -173,3 +173,10 @@ Every data screen has these states. The four shared UI statuses from the PRD tea
 ## Portion baseline
 
 1 porsi nasi ≈ 100 g ≈ 1 centong (DBMP, Daftar Bahan Makanan Penukar, Kemenkes). The UI currently says "porsi". Showing "1½ centong (±150 g)" is a pending design decision; don't change the unit without the designer.
+
+
+## Manda — demo dengan riwayat sintetis
+
+Pilihan ketiga ditambahkan atas permintaan pengguna: **Manda, 23**, arahan Low FODMAP, alergi udang, budget Rp25.000. Backend membuat 28 makanan, 14 gejala, dan 14 hubungan makanan–gejala selama 14 hari sampai hari bootstrap di zona waktu profil. Tanggal bergerak mengikuti hari sesi demo dibuat. Ringkasan 7/30 hari, grafik dan tampilan pola bisa dibuka langsung; data tidak merupakan bukti pemicu atau saran klinis. Catatan diberi penanda sintetis.
+
+Bootstrap hanya mengisi sesi anonim Manda yang baru dan transaksional. Membuka ulang sesi yang sama mempertahankan ID/riwayat tanpa menambah seed lagi. Tidak ada password bersama atau akun pasien. Untuk mencoba dari akun/demo lain, keluar dulu lalu **Coba Demo → Manda, 23**. Logout sesi anonim dapat menghilangkan akses sesi lama; gunakan akun asli untuk data pribadi. AI tetap nonaktif sampai pengguna menyetujui secara eksplisit. Frontend/backend harus sudah terdeploy dengan dukungan template `manda`.

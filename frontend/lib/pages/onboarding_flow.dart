@@ -230,6 +230,13 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
         Text('Pilih profil demo', style: context.aibsText(AibsType.title)),
         const SizedBox(height: AibsSpace.s20),
         _DemoProfileCard(
+          name: 'Manda, 23',
+          role: 'Riwayat 14 hari ? data sintetis',
+          details: const ['Low FODMAP', 'Makan & gejala', 'Coba ringkasan'],
+          onTap: () => _complete(_demoProfile('Manda', student: true)),
+        ),
+        const SizedBox(height: AibsSpace.s14),
+        _DemoProfileCard(
           name: 'Nadia, 21',
           role: 'Mahasiswi',
           details: const ['Low FODMAP', 'Alergi udang', 'Rp25rb'],
@@ -484,9 +491,7 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
     _perform(() async {
       final connected = widget.onDemo == null
           ? profile
-          : await widget.onDemo!(
-              profile.displayName.toLowerCase() == 'nadia' ? 'nadia' : 'raka',
-            );
+          : await widget.onDemo!(profile.displayName.toLowerCase());
       if (mounted) widget.onComplete(connected);
     });
   }

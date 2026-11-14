@@ -7,6 +7,30 @@ import 'package:aibs_app/pages/record_pages.dart';
 import 'package:aibs_app/theme/aibs_theme.dart';
 
 void main() {
+  testWidgets('Manda is selectable as a distinct backend demo template', (
+    tester,
+  ) async {
+    String? template;
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AibsTheme.light,
+        home: OnboardingFlow(
+          onComplete: (_) {},
+          onDemo: (value) async {
+            template = value;
+            throw Exception('synthetic stop');
+          },
+        ),
+      ),
+    );
+    await tester.tap(find.text('Coba Demo'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Manda, 23'));
+    await tester.pumpAndSettle();
+    expect(template, 'manda');
+    expect(find.text('Riwayat 14 hari ? data sintetis'), findsOneWidget);
+  });
+
   testWidgets('AI consent is kept when onboarding is deferred', (tester) async {
     ProfileSetupAnswers? saved;
     await tester.pumpWidget(
