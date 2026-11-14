@@ -14,6 +14,19 @@ from app.services.profiles import require_basic
 from app.services.records import payload_hash
 
 
+def discard_temporary_photo(db, media, storage):
+    """Remove an extracted temporary photo; expiry remains the retry fallback."""
+    if media is None or media.expires_at is None:
+        return
+    from app.services.privacy import detach_photo
+
+    try:
+        detach_photo(db, media, storage)
+        db.commit()
+    except ApiError:
+        db.rollback()
+
+
 def normalize(db, content, payload, feature):
     names = {}
     for ingredient in db.scalars(select(Ingredient)):
@@ -120,6 +133,7 @@ def run(db, owner, payload, feature, settings, provider, storage):
         attempt.status = "failed"
         attempt.latency_ms = int((time.monotonic() - started) * 1000)
         db.commit()
+        discard_temporary_photo(db, media, storage)
         raise
     draft = Draft(
         owner_id=owner,
@@ -136,4 +150,6 @@ def run(db, owner, payload, feature, settings, provider, storage):
     attempt.output_tokens = usage.get("output_tokens")
     attempt.latency_ms = int((time.monotonic() - started) * 1000)
     db.commit()
+    discard_temporary_photo(db, media, storage)
+    db.refresh(draft)
     return {"analysis_status": "needs_confirmation", "draft": view(draft)}

@@ -67,7 +67,7 @@ uv run alembic check
 
 Migrasi/seed memakai transaksi/advisory lock dan tidak mereset catatan. Preview yang memerlukan data terpisah harus memakai database/project Supabase terpisah.
 
-Foto sementara tetap kedaluwarsa setelah **24 jam**, lalu ditolak untuk akses/analisis. Vercel Hobby membatasi cron sekali sehari: `/api/internal/retention` dijadwalkan pada jam 03 UTC (sekitar 10–11 WIB). Upload juga meminta pembersihan terbatas untuk pemilik akun tersebut. Penghapusan fisik dapat tertunda sampai cron berikutnya; kegagalan storage atau backlog membutuhkan retry berikutnya. Foto dengan preferensi simpan aktif tidak ikut dibersihkan. Mematikan preferensi atau menghapus data aplikasi tetap menghapus foto melalui API.
+Saat preferensi simpan mati, foto dihapus sesudah percobaan ekstraksi. Upload yang ditinggalkan atau cleanup yang gagal tetap memiliki TTL akses **24 jam**. Vercel Hobby membatasi cron sekali sehari: `/api/internal/retention` dijadwalkan pada jam 03 UTC (10.00 WIB). Upload juga meminta pembersihan terbatas untuk pemilik akun tersebut. Penghapusan sisa fisik dapat tertunda sampai cron berikutnya; kegagalan storage atau backlog membutuhkan retry. Foto dengan preferensi simpan aktif tidak ikut dibersihkan. Mematikan preferensi atau menghapus data aplikasi tetap menghapus foto melalui API.
 
 Periksa **Cron Jobs/Schedules** backend production agar tidak ada 401/503. Vercel mengirim `Authorization: Bearer CRON_SECRET`. Sesudah mengganti token, redeploy. [Batas cron Hobby](https://vercel.com/docs/cron-jobs/usage-and-pricing), [pengamanan cron](https://vercel.com/docs/cron-jobs/manage-cron-jobs).
 
