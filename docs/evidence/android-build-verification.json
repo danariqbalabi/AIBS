@@ -1,0 +1,16 @@
+{
+  "workflow_run": "https://github.com/danariqbalabi/AIBS/actions/runs/43579096310",
+  "artifact_id": 14108355260,
+  "artifact_name": "aibs-android-demo",
+  "commit": "a39d2749e82a33e597cfe519861f8ee6880e3861",
+  "commit_kind": "GitHub pull request merge ref for the build tested",
+  "architecture": "android-arm64",
+  "connected": true,
+  "api_base_url": "https://aibs-gilt.vercel.app",
+  "sha256": "b3498e7ec9add00ba1a42e31879373c3e9a7cd89238c5979ebba9dc54410d74d",
+  "sha256_matches_artifact_manifest": true,
+  "apk_bytes": 22335821,
+  "signing": "debug key for hackathon demo; not a store release",
+  "device_tested": false,
+  "limitation": "Build evidence for this specific commit. Use the newest green artifact after final merge."
+}
