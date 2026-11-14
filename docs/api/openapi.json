@@ -682,6 +682,50 @@
         ]
       }
     },
+    "/api/v1/food-swaps": {
+      "post": {
+        "tags": [
+          "catalog"
+        ],
+        "summary": "Food Swaps",
+        "operationId": "food_swaps_api_v1_food_swaps_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FoodCard"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/api/v1/drafts/{draft_id}/commit": {
       "post": {
         "tags": [
@@ -3417,6 +3461,8 @@
               "vomiting",
               "diarrhea",
               "constipation",
+              "gas",
+              "urgency",
               "bowel",
               "other"
             ],

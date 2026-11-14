@@ -395,6 +395,8 @@
           "vomiting",
           "diarrhea",
           "constipation",
+          "gas",
+          "urgency",
           "bowel",
           "other"
         ],
@@ -718,6 +720,8 @@
               "vomiting",
               "diarrhea",
               "constipation",
+              "gas",
+              "urgency",
               "bowel",
               "other"
             ],
@@ -1129,6 +1133,8 @@
               "vomiting",
               "diarrhea",
               "constipation",
+              "gas",
+              "urgency",
               "bowel",
               "other"
             ],
@@ -1519,6 +1525,8 @@
               "vomiting",
               "diarrhea",
               "constipation",
+              "gas",
+              "urgency",
               "bowel",
               "other"
             ],
@@ -3367,6 +3375,8 @@
               "vomiting",
               "diarrhea",
               "constipation",
+              "gas",
+              "urgency",
               "bowel",
               "other"
             ],

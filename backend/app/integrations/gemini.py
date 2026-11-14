@@ -31,7 +31,9 @@ and set occurred_at=null. Only use precision="exact" if an explicit clock time i
 (set offset-aware occurred_at matching date and set period=null). All times must have
 confirmed=false. Preserve Indonesian negations (tidak, nggak, ga, gak, belum, bukan, tanpa):
 nggak mual -> nausea present=false; nggak muntah -> vomiting present=false. When present=false,
-severity and bristol_type must be null. 
+severity and bristol_type must be null.
+Map gas/kentut to gas and urgent need to defecate/kebelet BAB to urgency;
+do not infer diarrhea from urgency. 
 When present=true, map intensity words ("banget", "parah" -> severity 4-5;
 "dikit", "agak" -> severity 1-2). Only set bristol_type (1-7) when code="bowel".
 If ingredient quantity is unknown, set both quantity=null and unit=null; never set
