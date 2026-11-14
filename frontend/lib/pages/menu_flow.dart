@@ -1,18 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
+import '../core/demo_data.dart';
+import '../core/theme/aibs_tokens.dart';
 import '../shared/widgets/status_badge.dart';
-import '../theme/aibs_theme.dart';
 import '../widgets/aibs_widgets.dart';
-
-CheckStatus _statusFromLabel(String status) => switch (status) {
-  'Sesuai' => CheckStatus.ok,
-  'Hati-hati' => CheckStatus.warn,
-  'Tidak sesuai' => CheckStatus.bad,
-  _ => CheckStatus.unknown,
-};
+import 'profile_setup_flow.dart';
 
 class MenuHomePage extends StatefulWidget {
-  const MenuHomePage({super.key});
+  const MenuHomePage({
+    required this.profile,
+    required this.shoppingItems,
+    required this.onShoppingChanged,
+    required this.onStartMealRecord,
+    required this.onPlanSaved,
+    super.key,
+  });
+
+  final ProfileSetupAnswers? profile;
+  final List<String> shoppingItems;
+  final ValueChanged<List<String>> onShoppingChanged;
+  final ValueChanged<AibsMenuItem> onStartMealRecord;
+  final ValueChanged<AibsMealPlan> onPlanSaved;
 
   @override
   State<MenuHomePage> createState() => _MenuHomePageState();
@@ -20,34 +29,8 @@ class MenuHomePage extends StatefulWidget {
 
 class _MenuHomePageState extends State<MenuHomePage> {
   final _searchController = TextEditingController();
-  String _filter = 'Semua';
-
-  static const _menu = [
-    _MenuItem(
-      'Nasi ayam bakar kecap',
-      'Beli · Rp22.000 · tanpa bawang',
-      'Sesuai',
-      Icons.rice_bowl_outlined,
-    ),
-    _MenuItem(
-      'Tumis tahu wortel',
-      'Masak · Rp15.000 · tanpa bawang',
-      'Sesuai',
-      Icons.soup_kitchen_outlined,
-    ),
-    _MenuItem(
-      'Nasi goreng telur',
-      'Beli · Rp18.000 · nasi 1½ porsi',
-      'Hati-hati',
-      Icons.rice_bowl_outlined,
-    ),
-    _MenuItem(
-      'Soto ayam santan',
-      'Beli · Rp20.000 · ada bawang putih',
-      'Tidak sesuai',
-      Icons.soup_kitchen_outlined,
-    ),
-  ];
+  String _kind = 'Semua';
+  bool _withinBudget = true;
 
   @override
   void dispose() {
@@ -57,36 +40,34 @@ class _MenuHomePageState extends State<MenuHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final filtered = _menu.where((item) {
+    final budget = _budget;
+    final filtered = aibsDemoMenus.where((item) {
       final matchesText = item.name.toLowerCase().contains(
-        _searchController.text.toLowerCase(),
+        _searchController.text.trim().toLowerCase(),
       );
-      final matchesFilter =
-          _filter == 'Semua' ||
-          (_filter == 'Beli' && item.description.startsWith('Beli')) ||
-          (_filter == 'Masak' && item.description.startsWith('Masak')) ||
-          (_filter == '≤ Rp25.000' && item.description.contains('Rp'));
-      return matchesText && matchesFilter;
+      final matchesKind = _kind == 'Semua' || item.kind == _kind;
+      final matchesBudget = !_withinBudget || item.price <= budget;
+      return matchesText && matchesKind && matchesBudget;
     }).toList();
+
     return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+      padding: const EdgeInsets.fromLTRB(
+        AibsSpace.s20,
+        AibsSpace.s20,
+        AibsSpace.s20,
+        AibsSpace.s28,
+      ),
       children: [
         Row(
           children: [
-            Expanded(
-              child: Text(
-                'Menu',
-                style: Theme.of(context).textTheme.headlineMedium,
-              ),
-            ),
-            IconButton(
-              tooltip: 'Checklist belanja',
-              onPressed: () => _open(context, const _ShoppingListPage()),
-              icon: const Icon(Icons.checklist_outlined),
+            Expanded(child: Text('Menu', style: AibsType.title)),
+            _CartButton(
+              count: widget.shoppingItems.length,
+              onTap: _openShoppingList,
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: AibsSpace.s16),
         TextField(
           controller: _searchController,
           decoration: const InputDecoration(
@@ -95,211 +76,359 @@ class _MenuHomePageState extends State<MenuHomePage> {
           ),
           onChanged: (_) => setState(() {}),
         ),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 8,
-          children: [
-            for (final option in ['Semua', 'Beli', 'Masak', '≤ Rp25.000'])
-              AibsChoiceChip(
-                label: option,
-                selected: _filter == option,
-                onTap: () => setState(() => _filter = option),
+        const SizedBox(height: AibsSpace.s12),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              for (final option in ['Semua', 'Beli', 'Masak']) ...[
+                _FilterChip(
+                  label: option,
+                  selected: _kind == option,
+                  onTap: () => setState(() => _kind = option),
+                ),
+                const SizedBox(width: AibsSpace.s8),
+              ],
+              _FilterChip(
+                label: '≤ ${formatRupiah(budget)}',
+                selected: _withinBudget,
+                onTap: () => setState(() => _withinBudget = !_withinBudget),
               ),
-          ],
+            ],
+          ),
         ),
-        const SizedBox(height: 24),
-        for (final status in ['Sesuai', 'Hati-hati', 'Tidak sesuai']) ...[
-          StatusGroupHeader(_statusFromLabel(status)),
-          const SizedBox(height: 10),
-          for (final item in filtered.where((item) => item.status == status))
-            Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: _MenuCard(
-                item: item,
-                onTap: () => _open(context, _MenuDetailPage(item: item)),
+        const SizedBox(height: AibsSpace.s20),
+        for (final status in CheckStatus.values)
+          if (filtered.any((item) => item.status == status)) ...[
+            StatusGroupHeader(status),
+            const SizedBox(height: AibsSpace.s10),
+            for (final item in filtered.where((item) => item.status == status))
+              Padding(
+                padding: const EdgeInsets.only(bottom: AibsSpace.s10),
+                child: _MenuCard(item: item, onTap: () => _openDetail(item)),
               ),
-            ),
-          const SizedBox(height: 12),
-        ],
+            const SizedBox(height: AibsSpace.s12),
+          ],
+        if (filtered.isEmpty)
+          const AibsCard(child: Text('Menu belum ditemukan.')),
       ],
     );
   }
 
-  void _open(BuildContext context, Widget page) {
-    Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => page));
+  int get _budget {
+    final value = widget.profile?.budget;
+    final digits = value?.replaceAll(RegExp(r'[^0-9]'), '');
+    return int.tryParse(digits ?? '') ?? 25000;
   }
-}
 
-class _MenuItem {
-  const _MenuItem(this.name, this.description, this.status, this.icon);
+  void _openDetail(AibsMenuItem item) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => MenuDetailPage(
+          item: item,
+          onAddShopping: _addIngredientsToShoppingList,
+          onStartMealRecord: widget.onStartMealRecord,
+          onPlanSaved: widget.onPlanSaved,
+        ),
+      ),
+    );
+  }
 
-  final String name;
-  final String description;
-  final String status;
-  final IconData icon;
-}
+  void _addIngredientsToShoppingList(AibsMenuItem item) {
+    final next = {...widget.shoppingItems, ...item.ingredients}.toList();
+    widget.onShoppingChanged(next);
+  }
 
-class _MenuCard extends StatelessWidget {
-  const _MenuCard({required this.item, required this.onTap});
-
-  final _MenuItem item;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return AibsCard(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
-        child: Row(
-          children: [
-            Container(
-              width: 52,
-              height: 52,
-              decoration: BoxDecoration(
-                color: AibsColors.primarySoft,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Icon(item.icon, color: AibsColors.primaryStrong),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    item.name,
-                    style: const TextStyle(fontWeight: FontWeight.w800),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    item.description,
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                ],
-              ),
-            ),
-            const Icon(Icons.chevron_right, color: AibsColors.inkMuted),
-          ],
+  void _openShoppingList() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => ShoppingListPage(
+          items: widget.shoppingItems,
+          onChanged: widget.onShoppingChanged,
         ),
       ),
     );
   }
 }
 
-class _MenuDetailPage extends StatelessWidget {
-  const _MenuDetailPage({required this.item});
-
-  final _MenuItem item;
+class _CartButton extends StatelessWidget {
+  const _CartButton({required this.count, required this.onTap});
+  final int count;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final ingredients = [
-      'Nasi putih · 1 porsi',
-      'Ayam paha · 100 g',
-      'Kecap manis · 1 sdm',
-      'Jahe · 1 ruas',
-      'Timun · 3 iris',
-    ];
-    return Scaffold(
-      appBar: AppBar(title: const Text('Detail menu')),
-      body: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          Container(
-            height: 170,
-            decoration: BoxDecoration(
-              color: AibsColors.primarySoft,
-              borderRadius: BorderRadius.circular(24),
-            ),
-            child: const Icon(
-              Icons.rice_bowl_outlined,
-              size: 64,
-              color: AibsColors.primaryStrong,
-            ),
-          ),
-          const SizedBox(height: 20),
-          Text(item.name, style: Theme.of(context).textTheme.headlineMedium),
-          const SizedBox(height: 8),
-          Text(item.description, style: Theme.of(context).textTheme.bodyLarge),
-          const SizedBox(height: 12),
-          StatusBadge(_statusFromLabel(item.status)),
-          const SizedBox(height: 24),
-          Text('Bahan', style: Theme.of(context).textTheme.titleLarge),
-          const SizedBox(height: 8),
-          for (final ingredient in ingredients)
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(
-                Icons.check_circle_outline,
-                color: AibsColors.ok,
-              ),
-              title: Text(ingredient),
-            ),
-          const SizedBox(height: 16),
-          AibsSecondaryButton(
-            label: 'Masukkan ke checklist belanja',
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => const _ShoppingListPage(),
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          AibsPrimaryButton(
-            label: 'Saya makan ini',
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => _ConfirmIngredientsPage(item: item),
-              ),
-            ),
-          ),
-        ],
+    return IconButton(
+      tooltip: 'Checklist belanja${count == 0 ? '' : ', $count bahan'}',
+      onPressed: onTap,
+      icon: Badge(
+        isLabelVisible: count > 0,
+        label: Text('$count'),
+        child: SvgPicture.asset(
+          'assets/icons/cart.svg',
+          width: AibsSize.navIcon,
+          height: AibsSize.navIcon,
+          colorFilter: const ColorFilter.mode(AibsColors.ink, BlendMode.srcIn),
+        ),
       ),
     );
   }
 }
 
-class _ConfirmIngredientsPage extends StatelessWidget {
-  const _ConfirmIngredientsPage({required this.item});
+class _FilterChip extends StatelessWidget {
+  const _FilterChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
 
-  final _MenuItem item;
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: selected ? AibsColors.primarySoft : AibsColors.card,
+      borderRadius: BorderRadius.circular(AibsRadius.pill),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AibsRadius.pill),
+        child: Container(
+          constraints: const BoxConstraints(minHeight: AibsSize.filterChip),
+          padding: const EdgeInsets.symmetric(horizontal: AibsSpace.s14),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AibsRadius.pill),
+            border: Border.all(
+              color: selected ? AibsColors.primarySoft : AibsColors.line,
+              width: 2,
+            ),
+          ),
+          child: Text(
+            label,
+            style: AibsType.small.copyWith(
+              color: selected ? AibsColors.primaryStrong : AibsColors.ink,
+              fontWeight: AibsType.w800,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MenuCard extends StatelessWidget {
+  const _MenuCard({required this.item, required this.onTap});
+  final AibsMenuItem item;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AibsColors.card,
+      borderRadius: BorderRadius.circular(AibsRadius.lg),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AibsRadius.lg),
+        child: Padding(
+          padding: const EdgeInsets.all(AibsSpace.s10),
+          child: Row(
+            children: [
+              Container(
+                width: AibsSize.thumb,
+                height: AibsSize.thumb,
+                decoration: BoxDecoration(
+                  gradient: AibsGradients.food(AibsColors.foodBlue),
+                  borderRadius: BorderRadius.circular(AibsRadius.md),
+                ),
+                child: Center(
+                  child: SvgPicture.asset(
+                    'assets/illustrations/bowl.svg',
+                    width: 42,
+                    height: 42,
+                  ),
+                ),
+              ),
+              const SizedBox(width: AibsSpace.s12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(item.name, style: AibsType.bodyStrong),
+                    const SizedBox(height: AibsSpace.s4),
+                    Text(item.meta, style: AibsType.small),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right, color: AibsColors.inkMuted),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class MenuDetailPage extends StatelessWidget {
+  const MenuDetailPage({
+    super.key,
+    required this.item,
+    required this.onAddShopping,
+    required this.onStartMealRecord,
+    required this.onPlanSaved,
+  });
+
+  final AibsMenuItem item;
+  final ValueChanged<AibsMenuItem> onAddShopping;
+  final ValueChanged<AibsMenuItem> onStartMealRecord;
+  final ValueChanged<AibsMealPlan> onPlanSaved;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Konfirmasi bahan')),
-      body: ListView(
-        padding: const EdgeInsets.all(20),
+      body: Column(
         children: [
-          Text(
-            'Yang kamu makan sama persis?',
-            style: Theme.of(context).textTheme.headlineMedium,
+          Stack(
+            children: [
+              Container(
+                height: 260,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  gradient: AibsGradients.food(AibsColors.foodBlue),
+                ),
+                child: Center(
+                  child: SvgPicture.asset(
+                    'assets/illustrations/bowl.svg',
+                    width: 120,
+                    height: 120,
+                  ),
+                ),
+              ),
+              Positioned(
+                top: MediaQuery.paddingOf(context).top + AibsSpace.s8,
+                left: AibsSpace.s20,
+                child: _BackButton(onTap: () => Navigator.pop(context)),
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
-          AibsCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(
+                AibsSpace.s20,
+                AibsSpace.s20,
+                AibsSpace.s20,
+                AibsSpace.s24,
+              ),
               children: [
-                Text(item.name, style: Theme.of(context).textTheme.titleLarge),
-                const SizedBox(height: 12),
-                const Text(
-                  'Nasi 1 porsi · Ayam paha 100 g · Kecap manis · Jahe · Timun',
+                Text(item.name, style: AibsType.titleDetail),
+                const SizedBox(height: AibsSpace.s8),
+                Text(
+                  '${item.kind} · ${item.priceLabel} · 1 porsi',
+                  style: AibsType.caption.copyWith(color: AibsColors.inkMuted),
+                ),
+                const SizedBox(height: AibsSpace.s10),
+                StatusBadge(item.status),
+                const SizedBox(height: AibsSpace.s16),
+                Container(
+                  padding: const EdgeInsets.all(AibsSpace.s12),
+                  decoration: BoxDecoration(
+                    color: item.status.soft,
+                    borderRadius: BorderRadius.circular(AibsRadius.lg),
+                  ),
+                  child: Text(
+                    item.reason == 'ada bawang putih'
+                        ? 'Ada bawang putih di bahan.'
+                        : item.reason == 'nasi 1½ porsi'
+                        ? 'Nasi 1½ porsi.'
+                        : 'Cek bahan sesuai arahan makan yang kamu masukkan.',
+                    style: AibsType.caption.copyWith(color: item.status.ink),
+                  ),
+                ),
+                const SizedBox(height: AibsSpace.s20),
+                Text(
+                  item.kind == 'Beli' ? 'Cara pesan' : 'Cara masak',
+                  style: AibsType.sectionTitle,
+                ),
+                const SizedBox(height: AibsSpace.s8),
+                AibsCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      for (final (index, line)
+                          in (item.kind == 'Beli'
+                                  ? item.orderTips
+                                  : item.cookSteps)
+                              .indexed) ...[
+                        if (index > 0) const Divider(height: AibsSpace.s20),
+                        Text(
+                          item.kind == 'Beli' ? line : '${index + 1}. $line',
+                          style: AibsType.bodyStrong,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AibsSpace.s20),
+                Text('Bahan', style: AibsType.sectionTitle),
+                const SizedBox(height: AibsSpace.s8),
+                AibsCard(
+                  child: Column(
+                    children: [
+                      for (final (index, ingredient)
+                          in item.ingredients.indexed) ...[
+                        if (index > 0) const Divider(height: AibsSpace.s16),
+                        _IngredientLine(
+                          ingredient: ingredient,
+                          status: item.status,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AibsSpace.s12),
+                AibsSecondaryButton(
+                  label: 'Masukkan ke checklist belanja',
+                  onPressed: () {
+                    onAddShopping(item);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Bahan ditambahkan')),
+                    );
+                  },
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 18),
-          AibsPrimaryButton(
-            label: 'Sama persis',
-            onPressed: () => _showResult(context, item),
-          ),
-          const SizedBox(height: 10),
-          AibsSecondaryButton(
-            label: 'Ada yang beda',
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => _EditIngredientsPage(item: item),
+          SafeArea(
+            top: false,
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(
+                AibsSpace.s20,
+                AibsSpace.s12,
+                AibsSpace.s20,
+                AibsSpace.s16,
+              ),
+              decoration: const BoxDecoration(
+                color: AibsColors.card,
+                boxShadow: AibsShadows.bar,
+                borderRadius: AibsRadius.sheetTop,
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: AibsSecondaryButton(
+                      label: 'Jadwalkan',
+                      onPressed: () => _schedule(context),
+                    ),
+                  ),
+                  const SizedBox(width: AibsSpace.s10),
+                  Expanded(
+                    flex: 2,
+                    child: AibsPrimaryButton(
+                      label: 'Sudah dimakan',
+                      onPressed: () => onStartMealRecord(item),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -307,75 +436,169 @@ class _ConfirmIngredientsPage extends StatelessWidget {
       ),
     );
   }
+
+  Future<void> _schedule(BuildContext context) async {
+    final plan = await showModalBottomSheet<AibsMealPlan>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => _ScheduleSheet(menu: item),
+    );
+    if (plan != null) onPlanSaved(plan);
+  }
 }
 
-class _EditIngredientsPage extends StatefulWidget {
-  const _EditIngredientsPage({required this.item});
-
-  final _MenuItem item;
-
-  @override
-  State<_EditIngredientsPage> createState() => _EditIngredientsPageState();
-}
-
-class _EditIngredientsPageState extends State<_EditIngredientsPage> {
-  final _ingredients = <String>[
-    'Nasi putih',
-    'Ayam paha',
-    'Kecap manis',
-    'Jahe',
-    'Timun',
-  ];
+class _BackButton extends StatelessWidget {
+  const _BackButton({required this.onTap});
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Ubah bahan')),
-      body: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          Text(
-            'Sesuaikan bahan yang kamu makan',
-            style: Theme.of(context).textTheme.headlineMedium,
-          ),
-          const SizedBox(height: 16),
-          for (final ingredient in _ingredients)
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(ingredient),
-              trailing: IconButton(
-                tooltip: 'Hapus $ingredient',
-                onPressed: () =>
-                    setState(() => _ingredients.remove(ingredient)),
-                icon: const Icon(Icons.close),
-              ),
-            ),
-          AibsPrimaryButton(
-            label: 'Cek makanan',
-            onPressed: () => _showResult(context, widget.item),
-          ),
-        ],
+    return Material(
+      color: AibsColors.card,
+      borderRadius: BorderRadius.circular(AibsRadius.sm),
+      child: IconButton(
+        tooltip: 'Kembali',
+        onPressed: onTap,
+        icon: const Icon(Icons.arrow_back, size: 22),
       ),
     );
   }
 }
 
-class _ShoppingListPage extends StatefulWidget {
-  const _ShoppingListPage();
+class _IngredientLine extends StatelessWidget {
+  const _IngredientLine({required this.ingredient, required this.status});
+  final String ingredient;
+  final CheckStatus status;
 
   @override
-  State<_ShoppingListPage> createState() => _ShoppingListPageState();
+  Widget build(BuildContext context) {
+    final isProblem = ingredient.toLowerCase().contains('bawang putih');
+    final result = isProblem ? CheckStatus.bad : status;
+    return Row(
+      children: [
+        StatusDot(result),
+        const SizedBox(width: AibsSpace.s10),
+        Expanded(child: Text(ingredient, style: AibsType.bodyStrong)),
+      ],
+    );
+  }
 }
 
-class _ShoppingListPageState extends State<_ShoppingListPage> {
-  final _items = <String, bool>{
-    'Ayam paha · 200 g · 2 resep': false,
-    'Kecap manis · 2 sdm': false,
-    'Jahe · 2 ruas · 2 resep': false,
-    'Tahu putih · 2 potong': false,
-    'Wortel · 1 buah': true,
-  };
+class _ScheduleSheet extends StatefulWidget {
+  const _ScheduleSheet({required this.menu});
+  final AibsMenuItem menu;
+
+  @override
+  State<_ScheduleSheet> createState() => _ScheduleSheetState();
+}
+
+class _ScheduleSheetState extends State<_ScheduleSheet> {
+  String _day = 'Hari ini';
+  String _meal = 'Malam';
+  TimeOfDay _time = const TimeOfDay(hour: 19, minute: 0);
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false,
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AibsSpace.s20,
+            AibsSpace.s8,
+            AibsSpace.s20,
+            AibsSpace.s24,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Jadwalkan', style: AibsType.sheetTitle),
+              const SizedBox(height: AibsSpace.s16),
+              Text('Hari', style: AibsType.caption),
+              const SizedBox(height: AibsSpace.s8),
+              Wrap(
+                spacing: AibsSpace.s8,
+                children: [
+                  for (final day in ['Hari ini', 'Besok', 'Rabu', 'Kamis'])
+                    _FilterChip(
+                      label: day,
+                      selected: _day == day,
+                      onTap: () => setState(() => _day = day),
+                    ),
+                ],
+              ),
+              const SizedBox(height: AibsSpace.s16),
+              Text('Waktu', style: AibsType.caption),
+              const SizedBox(height: AibsSpace.s8),
+              Wrap(
+                spacing: AibsSpace.s8,
+                children: [
+                  for (final meal in ['Pagi', 'Siang', 'Malam', 'Camilan'])
+                    _FilterChip(
+                      label: meal,
+                      selected: _meal == meal,
+                      onTap: () => setState(() => _meal = meal),
+                    ),
+                ],
+              ),
+              const SizedBox(height: AibsSpace.s12),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Jam'),
+                trailing: TextButton(
+                  onPressed: _pickTime,
+                  child: Text(_time.format(context)),
+                ),
+              ),
+              AibsPrimaryButton(
+                label: 'Simpan rencana',
+                onPressed: () => Navigator.pop(
+                  context,
+                  AibsMealPlan(
+                    menu: widget.menu,
+                    day: _day,
+                    meal: _meal,
+                    time: _time.format(context),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickTime() async {
+    final selected = await showTimePicker(context: context, initialTime: _time);
+    if (selected != null) setState(() => _time = selected);
+  }
+}
+
+class ShoppingListPage extends StatefulWidget {
+  const ShoppingListPage({
+    super.key,
+    required this.items,
+    required this.onChanged,
+  });
+  final List<String> items;
+  final ValueChanged<List<String>> onChanged;
+
+  @override
+  State<ShoppingListPage> createState() => _ShoppingListPageState();
+}
+
+class _ShoppingListPageState extends State<ShoppingListPage> {
+  late List<String> _items;
+  final Set<String> _checked = {};
   final _controller = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _items = [...widget.items];
+  }
 
   @override
   void dispose() {
@@ -388,7 +611,7 @@ class _ShoppingListPageState extends State<_ShoppingListPage> {
     return Scaffold(
       appBar: AppBar(title: const Text('Checklist belanja')),
       body: ListView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(AibsSpace.s20),
         children: [
           TextField(
             controller: _controller,
@@ -402,15 +625,50 @@ class _ShoppingListPageState extends State<_ShoppingListPage> {
             ),
             onSubmitted: (_) => _add(),
           ),
-          const SizedBox(height: 12),
-          for (final item in _items.keys.toList())
-            CheckboxListTile(
-              value: _items[item],
-              onChanged: (value) =>
-                  setState(() => _items[item] = value ?? false),
-              title: Text(item),
-              contentPadding: EdgeInsets.zero,
-              controlAffinity: ListTileControlAffinity.leading,
+          const SizedBox(height: AibsSpace.s12),
+          if (_items.isEmpty)
+            const AibsCard(child: Text('Belum ada bahan di checklist.')),
+          for (final item in _items)
+            Dismissible(
+              key: ValueKey(item),
+              direction: DismissDirection.endToStart,
+              background: const ColoredBox(
+                color: AibsColors.bad,
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: Padding(
+                    padding: EdgeInsets.only(right: AibsSpace.s20),
+                    child: Icon(
+                      Icons.delete_outline,
+                      color: AibsColors.onPrimary,
+                    ),
+                  ),
+                ),
+              ),
+              onDismissed: (_) => _remove(item),
+              child: CheckboxListTile(
+                value: _checked.contains(item),
+                onChanged: (value) => setState(() {
+                  if (value == true) {
+                    _checked.add(item);
+                  } else {
+                    _checked.remove(item);
+                  }
+                }),
+                title: Text(
+                  item,
+                  style: AibsType.bodyStrong.copyWith(
+                    color: _checked.contains(item)
+                        ? AibsColors.inkMuted
+                        : AibsColors.ink,
+                    decoration: _checked.contains(item)
+                        ? TextDecoration.lineThrough
+                        : null,
+                  ),
+                ),
+                contentPadding: EdgeInsets.zero,
+                controlAffinity: ListTileControlAffinity.leading,
+              ),
             ),
         ],
       ),
@@ -419,54 +677,19 @@ class _ShoppingListPageState extends State<_ShoppingListPage> {
 
   void _add() {
     final value = _controller.text.trim();
-    if (value.isEmpty) return;
-    setState(() => _items['$value · 1 porsi'] = false);
+    if (value.isEmpty || _items.contains(value)) return;
+    final next = [..._items, value];
+    setState(() => _items = next);
+    widget.onChanged(next);
     _controller.clear();
   }
-}
 
-class _MenuStatus extends StatelessWidget {
-  const _MenuStatus({required this.status});
-
-  final String status;
-
-  @override
-  Widget build(BuildContext context) {
-    final checkStatus = switch (status) {
-      'Sesuai' => CheckStatus.ok,
-      'Hati-hati' => CheckStatus.warn,
-      'Tidak sesuai' => CheckStatus.bad,
-      _ => throw ArgumentError.value(status, 'status'),
-    };
-    return StatusBadge(checkStatus);
+  void _remove(String value) {
+    final next = _items.where((item) => item != value).toList();
+    setState(() {
+      _items = next;
+      _checked.remove(value);
+    });
+    widget.onChanged(next);
   }
-}
-
-void _showResult(BuildContext context, _MenuItem item) {
-  Navigator.of(context).push(
-    MaterialPageRoute<void>(
-      builder: (_) => Scaffold(
-        appBar: AppBar(title: const Text('Hasil cek')),
-        body: ListView(
-          padding: const EdgeInsets.all(20),
-          children: [
-            Text(item.name, style: Theme.of(context).textTheme.headlineMedium),
-            const SizedBox(height: 16),
-            _MenuStatus(status: item.status),
-            const SizedBox(height: 12),
-            const Text(
-              'Belum tentu penyebab gejala. Hasil ini mengikuti arahan yang kamu simpan.',
-            ),
-            const SizedBox(height: 24),
-            AibsPrimaryButton(
-              label: 'Simpan catatan',
-              onPressed: () {
-                Navigator.of(context).popUntil((route) => route.isFirst);
-              },
-            ),
-          ],
-        ),
-      ),
-    ),
-  );
 }

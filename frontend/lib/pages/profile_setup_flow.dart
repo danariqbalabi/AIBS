@@ -93,6 +93,8 @@ class ProfileSetupAnswers {
     required this.budget,
     required this.spicy,
     required List<String> preferences,
+    this.aiEnabled = true,
+    this.savePhotos = false,
   }) : redFlags = List.unmodifiable(redFlags),
        pattern = List.unmodifiable(pattern),
        avoidedIngredients = List.unmodifiable(avoidedIngredients),
@@ -117,12 +119,16 @@ class ProfileSetupAnswers {
   final String? budget;
   final String? spicy;
   final List<String> preferences;
+  final bool aiEnabled;
+  final bool savePhotos;
 
   ProfileSetupAnswers copyWithDietProfile({
     required String? dietType,
     required String? dietPhase,
     required List<String> avoidedIngredients,
     required Map<String, int?> portionLimits,
+    bool? aiEnabled,
+    bool? savePhotos,
   }) => ProfileSetupAnswers(
     displayName: displayName,
     email: email,
@@ -140,6 +146,8 @@ class ProfileSetupAnswers {
     budget: budget,
     spicy: spicy,
     preferences: preferences,
+    aiEnabled: aiEnabled ?? this.aiEnabled,
+    savePhotos: savePhotos ?? this.savePhotos,
   );
 }
 
@@ -176,6 +184,7 @@ class ProfileSetupFlow extends StatefulWidget {
     required this.onBackToAccount,
     super.key,
     this.onAssess,
+    this.aiEnabled = true,
   });
 
   final String displayName;
@@ -183,6 +192,7 @@ class ProfileSetupFlow extends StatefulWidget {
   final ProfileSetupComplete onComplete;
   final VoidCallback onBackToAccount;
   final ScreeningAssessor? onAssess;
+  final bool aiEnabled;
 
   @override
   State<ProfileSetupFlow> createState() => _ProfileSetupFlowState();
@@ -1500,6 +1510,7 @@ class _ProfileSetupFlowState extends State<ProfileSetupFlow> {
     budget: _budget,
     spicy: _spicy,
     preferences: _preferences.toList(),
+    aiEnabled: widget.aiEnabled,
   );
 
   String get _dietSummary {

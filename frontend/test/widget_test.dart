@@ -4,114 +4,68 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:aibs_app/main.dart';
 
 void main() {
-  testWidgets('onboarding flow reaches the home screen', (tester) async {
+  testWidgets('demo profile supports menu, meal, journal, and summary flows', (
+    tester,
+  ) async {
     await tester.pumpWidget(const AibsApp());
     await tester.pumpAndSettle();
 
-    expect(find.text('Makan lebih tenang.'), findsOneWidget);
-    await tester.tap(find.text('Mulai'));
+    expect(find.text('Makan tenang,\nperut senang'), findsOneWidget);
+    await tester.tap(find.text('Coba Demo'));
     await tester.pumpAndSettle();
-
-    await tester.enterText(find.byType(TextFormField).at(0), 'Nadia');
-    await tester.enterText(find.byType(TextFormField).at(1), 'nadia@email.com');
-    await tester.enterText(find.byType(TextFormField).at(2), 'passwordku');
-    tester.testTextInput.hide();
-    await tester.tap(find.text('Daftar').last);
+    await tester.tap(find.text('Nadia, 21'));
     await tester.pumpAndSettle();
-
-    await tester.tap(find.text('Nanti'));
-    await tester.pumpAndSettle();
-    expect(find.text('Hai, Nadia!'), findsOneWidget);
-
-    await tester.tap(find.text('Profil'));
-    await tester.pumpAndSettle();
-    expect(find.text('Nadia'), findsOneWidget);
-
-    await tester.tap(find.text('Arahan makan'));
-    await tester.pumpAndSettle();
-    expect(find.text('Arahan diet'), findsOneWidget);
-    await tester.tap(find.text('Simpan perubahan'));
-    await tester.pumpAndSettle();
-    expect(find.text('Perubahan tersimpan untuk sesi ini'), findsOneWidget);
+    expect(find.text('Hai, Nadia'), findsOneWidget);
 
     await tester.tap(find.text('Menu').last);
     await tester.pumpAndSettle();
     expect(find.text('Sesuai arahanmu'), findsOneWidget);
-    expect(find.text('Nasi ayam bakar kecap'), findsOneWidget);
+    await tester.tap(find.text('Nasi ayam bakar kecap').first);
+    await tester.pumpAndSettle();
+    expect(find.text('Cara pesan'), findsOneWidget);
 
-    await tester.tap(find.text('Masak'));
+    await tester.tap(find.text('Jadwalkan'));
     await tester.pumpAndSettle();
-    expect(find.text('Tumis tahu wortel'), findsOneWidget);
-    expect(find.text('Nasi ayam bakar kecap'), findsNothing);
-
-    await tester.tap(find.text('Semua'));
+    await tester.tap(find.text('Simpan rencana'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Nasi ayam bakar kecap'));
-    await tester.pumpAndSettle();
-    expect(find.text('Detail menu'), findsOneWidget);
-    await tester.scrollUntilVisible(
-      find.text('Masukkan ke checklist belanja'),
-      250,
-    );
-    await tester.tap(find.text('Masukkan ke checklist belanja'));
-    await tester.pumpAndSettle();
-    expect(find.text('Checklist belanja'), findsOneWidget);
-    await tester.enterText(find.byType(TextField), 'Timun');
-    await tester.tap(find.byTooltip('Tambah'));
-    await tester.pumpAndSettle();
-    expect(find.text('Timun · 1 porsi'), findsOneWidget);
-    await tester.pageBack();
-    await tester.pumpAndSettle();
-    await tester.pageBack();
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.byTooltip('Foto makanan'));
-    await tester.pumpAndSettle();
-    expect(find.text('Foto buat apa?'), findsOneWidget);
-    await tester.tap(find.text('Isi manual'));
-    await tester.pumpAndSettle();
-    expect(find.text('Nama makanan'), findsOneWidget);
+    expect(find.text('Rencana tersimpan'), findsOneWidget);
     await tester.tap(find.byTooltip('Kembali'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Tutup'));
+    await tester.tap(find.text('Hari Ini').last);
     await tester.pumpAndSettle();
+    expect(find.text('Nasi ayam bakar kecap'), findsWidgets);
 
     await tester.tap(find.byTooltip('Foto makanan'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Cek sebelum makan'));
+    await tester.tap(find.text('Isi manual'));
     await tester.pumpAndSettle();
-    expect(find.text('Catat makanan'), findsOneWidget);
-    await tester.tap(find.text('Ambil foto'));
+    await tester.enterText(find.byType(TextField).first, 'Sup ayam');
+    await tester.tap(find.text('Lanjut'));
     await tester.pumpAndSettle();
-    expect(find.text('Cek hasil foto'), findsOneWidget);
-    await tester.drag(find.byType(ListView).last, const Offset(0, -250));
-    await tester.pumpAndSettle();
+    expect(find.text('Saus ini kira-kira apa?'), findsOneWidget);
     await tester.tap(find.text('Cek makanan'));
     await tester.pumpAndSettle();
     expect(find.text('Belum bisa dinilai'), findsOneWidget);
-    await tester.tap(find.text('Simpan catatan'));
+    await tester.tap(find.text('Tetap catat'));
+    await tester.pumpAndSettle();
+    expect(find.text('Tersimpan'), findsOneWidget);
+    await tester.tap(find.text('Selesai'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Jurnal'));
+    await tester.tap(find.text('Jurnal').last);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Ceritakan harimu'));
-    await tester.pumpAndSettle();
-    await tester.enterText(
-      find.byType(TextField).last,
-      'Perut terasa kurang nyaman setelah makan siang.',
-    );
-    await tester.tap(find.text('Lanjut'));
-    await tester.pumpAndSettle();
-    expect(find.text('Cek hasil rapikan'), findsOneWidget);
-    await tester.tap(find.text('Simpan').last);
+    expect(find.text('Sup ayam'), findsOneWidget);
+    await tester.tap(find.text('Catat'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Catat gejala'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Kembung'));
-    await tester.tap(find.text('Simpan catatan'));
+    await tester.tap(find.text('Simpan'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Lihat ringkasan'));
+    expect(find.text('Kembung'), findsOneWidget);
+
+    await tester.tap(find.text('Ringkasan'));
     await tester.pumpAndSettle();
-    expect(find.text('Belum ada pola yang cukup'), findsOneWidget);
+    expect(find.text('Catatannya belum cukup'), findsOneWidget);
   });
 }

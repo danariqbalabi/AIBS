@@ -1,103 +1,541 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
+import '../core/demo_data.dart';
+import '../core/theme/aibs_tokens.dart';
 import 'profile_setup_flow.dart';
 import '../shared/widgets/koala.dart';
+import '../shared/widgets/status_badge.dart';
 import '../theme/aibs_theme.dart';
 import '../widgets/aibs_widgets.dart';
 
 class TodayPage extends StatelessWidget {
-  const TodayPage({required this.onOpenCamera, super.key, this.userName});
+  const TodayPage({
+    required this.onOpenCamera,
+    required this.profile,
+    required this.meals,
+    required this.symptoms,
+    required this.onOpenMenu,
+    required this.onOpenProfile,
+    required this.onOpenJournal,
+    required this.onOpenSummary,
+    required this.onAddSymptom,
+    required this.onLogNoSymptoms,
+    required this.onOpenMenuItem,
+    required this.showSymptomPrompt,
+    super.key,
+    this.plan,
+  });
 
   final VoidCallback onOpenCamera;
-  final String? userName;
+  final ProfileSetupAnswers? profile;
+  final List<AibsMealLog> meals;
+  final List<AibsSymptomLog> symptoms;
+  final VoidCallback onOpenMenu;
+  final VoidCallback onOpenProfile;
+  final VoidCallback onOpenJournal;
+  final VoidCallback onOpenSummary;
+  final VoidCallback onAddSymptom;
+  final VoidCallback onLogNoSymptoms;
+  final ValueChanged<AibsMenuItem> onOpenMenuItem;
+  final bool showSymptomPrompt;
+  final AibsMealPlan? plan;
 
   @override
   Widget build(BuildContext context) {
-    final name = userName;
+    final name = profile?.displayName;
     final greetingName = name == null || name.isEmpty ? 'Nadia' : name;
+    final hasDiet =
+        profile?.dietType != null && profile!.dietType != 'Belum ada arahan';
+    final mealLabel = _mealLabel(DateTime.now().hour);
+    final hasMeals = meals.isNotEmpty;
     return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+      padding: const EdgeInsets.fromLTRB(0, 20, 0, 28),
       children: [
-        Text('Hari Ini', style: Theme.of(context).textTheme.headlineMedium),
-        const SizedBox(height: 20),
-        AibsCard(
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AibsSpace.s20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Hai, $greetingName', style: AibsType.greeting),
+              const SizedBox(height: AibsSpace.s2),
+              Text(
+                hasDiet ? 'Mau $mealLabel apa?' : 'Mau catat apa hari ini?',
+                style: AibsType.title,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: AibsSpace.s24),
+        if (!hasDiet)
+          _DietPrompt(onOpenProfile: onOpenProfile)
+        else if (!hasMeals && plan == null)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AibsSpace.s20),
+            child: Column(
+              children: [
+                _OpenMenuCard(onTap: onOpenMenu),
+                const SizedBox(height: AibsSpace.s20),
+                AibsCard(
+                  child: Column(
+                    children: [
+                      const Koala(KoalaMood.senang, size: 120),
+                      const SizedBox(height: AibsSpace.s8),
+                      Text('Belum ada catatan', style: AibsType.verdict),
+                      const SizedBox(height: AibsSpace.s12),
+                      AibsSecondaryButton(
+                        label: 'Catat makan pertama',
+                        onPressed: onOpenCamera,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          )
+        else ...[
+          _RecommendationSlider(onOpen: onOpenMenuItem, onSeeAll: onOpenMenu),
+          if (plan != null) ...[
+            const SizedBox(height: AibsSpace.s20),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AibsSpace.s20),
+              child: _PlanCard(
+                plan: plan!,
+                onTap: () => onOpenMenuItem(plan!.menu),
+              ),
+            ),
+          ],
+          if (hasMeals && symptoms.isEmpty && showSymptomPrompt) ...[
+            const SizedBox(height: AibsSpace.s20),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AibsSpace.s20),
+              child: _SymptomPrompt(
+                onAdd: onAddSymptom,
+                onNone: onLogNoSymptoms,
+              ),
+            ),
+          ],
+          const SizedBox(height: AibsSpace.s20),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AibsSpace.s20),
+            child: _WeekCard(
+              meals: meals,
+              symptoms: symptoms,
+              onSummary: onOpenSummary,
+              onJournal: onOpenJournal,
+            ),
+          ),
+        ],
+        if (!hasDiet && hasMeals) ...[
+          const SizedBox(height: AibsSpace.s20),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AibsSpace.s20),
+            child: _TodayLogCard(meals: meals, onTap: onOpenJournal),
+          ),
+        ],
+      ],
+    );
+  }
+
+  static String _mealLabel(int hour) => switch (hour) {
+    < 11 => 'sarapan',
+    < 15 => 'makan siang',
+    < 19 => 'makan malam',
+    _ => 'camilan',
+  };
+}
+
+class _DietPrompt extends StatelessWidget {
+  const _DietPrompt({required this.onOpenProfile});
+  final VoidCallback onOpenProfile;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AibsSpace.s20),
+      child: Container(
+        padding: const EdgeInsets.all(AibsSpace.s16),
+        decoration: BoxDecoration(
+          color: AibsColors.primarySoft,
+          borderRadius: BorderRadius.circular(AibsRadius.lg),
+        ),
+        child: Column(
+          children: [
+            const KoalaBubble(
+              mood: KoalaMood.mikir,
+              koalaSize: 96,
+              text: 'Isi arahan dietmu biar aku bisa kasih rekomendasi menu.',
+            ),
+            const SizedBox(height: AibsSpace.s12),
+            AibsPrimaryButton(
+              label: 'Isi arahan diet',
+              onPressed: onOpenProfile,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _OpenMenuCard extends StatelessWidget {
+  const _OpenMenuCard({required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AibsColors.card,
+      borderRadius: BorderRadius.circular(AibsRadius.lg),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AibsRadius.lg),
+        child: Padding(
+          padding: const EdgeInsets.all(AibsSpace.s16),
           child: Row(
             children: [
               Expanded(
+                child: Text(
+                  'Lihat 12 menu yang sesuai',
+                  style: AibsType.bodyStrong,
+                ),
+              ),
+              const Icon(Icons.chevron_right, color: AibsColors.inkMuted),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RecommendationSlider extends StatelessWidget {
+  const _RecommendationSlider({required this.onOpen, required this.onSeeAll});
+  final ValueChanged<AibsMenuItem> onOpen;
+  final VoidCallback onSeeAll;
+
+  @override
+  Widget build(BuildContext context) {
+    final items = aibsDemoMenus
+        .where((menu) => menu.status == CheckStatus.ok)
+        .take(3)
+        .toList();
+    return SizedBox(
+      height: 252,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.fromLTRB(AibsSpace.s20, 4, AibsSpace.s20, 12),
+        children: [
+          for (final item in items) ...[
+            _RecommendationCard(item: item, onTap: () => onOpen(item)),
+            const SizedBox(width: AibsSpace.s12),
+          ],
+          Material(
+            color: AibsColors.primarySoft,
+            borderRadius: BorderRadius.circular(AibsRadius.lg),
+            child: InkWell(
+              onTap: onSeeAll,
+              borderRadius: BorderRadius.circular(AibsRadius.lg),
+              child: SizedBox(
+                width: AibsSize.seeAllCard,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const CircleAvatar(
+                      backgroundColor: AibsColors.card,
+                      child: Icon(
+                        Icons.arrow_forward,
+                        color: AibsColors.primaryStrong,
+                      ),
+                    ),
+                    const SizedBox(height: AibsSpace.s8),
+                    Text('Lihat semua', style: AibsType.label),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RecommendationCard extends StatelessWidget {
+  const _RecommendationCard({required this.item, required this.onTap});
+  final AibsMenuItem item;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AibsColors.card,
+      borderRadius: BorderRadius.circular(AibsRadius.lg),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AibsRadius.lg),
+        child: SizedBox(
+          width: AibsSize.menuSliderCard,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                height: AibsSize.menuSliderImage,
+                decoration: BoxDecoration(
+                  gradient: AibsGradients.food(AibsColors.foodBlue),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(AibsRadius.lg),
+                  ),
+                ),
+                child: Center(
+                  child: SvgPicture.asset(
+                    'assets/illustrations/bowl.svg',
+                    width: 56,
+                    height: 56,
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(AibsSpace.s10),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Hai, $greetingName!',
-                      style: Theme.of(context).textTheme.titleLarge,
+                      item.name,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: AibsType.bodyStrong,
                     ),
-                    const SizedBox(height: 8),
                     Text(
-                      'Mau catat apa hari ini?',
-                      style: Theme.of(context).textTheme.bodyLarge,
+                      '${item.kind} · ${item.priceLabel}',
+                      style: AibsType.small,
                     ),
+                    const SizedBox(height: AibsSpace.s4),
+                    const StatusBadge(CheckStatus.ok),
                   ],
                 ),
               ),
-              const AibsMascot(expression: 'senang', size: 92),
             ],
           ),
         ),
-        const SizedBox(height: 24),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      ),
+    );
+  }
+}
+
+class _PlanCard extends StatelessWidget {
+  const _PlanCard({required this.plan, required this.onTap});
+  final AibsMealPlan plan;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return AibsCard(
+      child: InkWell(
+        onTap: onTap,
+        child: Row(
           children: [
-            Text('Hari ini', style: Theme.of(context).textTheme.titleLarge),
-            Text(
-              'Belum ada catatan',
-              style: Theme.of(context).textTheme.bodyMedium,
+            Text(plan.time, style: AibsType.bodyStrong),
+            const SizedBox(width: AibsSpace.s12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('${plan.day} · ${plan.meal}', style: AibsType.small),
+                  Text(plan.menu.name, style: AibsType.bodyStrong),
+                ],
+              ),
             ),
+            const Icon(Icons.chevron_right, color: AibsColors.inkMuted),
           ],
         ),
-        const SizedBox(height: 12),
-        AibsCard(
-          child: Row(
+      ),
+    );
+  }
+}
+
+class _SymptomPrompt extends StatelessWidget {
+  const _SymptomPrompt({required this.onAdd, required this.onNone});
+  final VoidCallback onAdd;
+  final VoidCallback onNone;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AibsSpace.s12),
+      decoration: BoxDecoration(
+        color: AibsColors.primarySoft,
+        borderRadius: BorderRadius.circular(AibsRadius.lg),
+      ),
+      child: Column(
+        children: [
+          const KoalaBubble(text: 'Ada keluhan setelah makan pagi tadi?'),
+          const SizedBox(height: AibsSpace.s10),
+          Row(
             children: [
-              const CircleAvatar(
-                backgroundColor: AibsColors.primarySoft,
-                child: Icon(
-                  Icons.restaurant_outlined,
-                  color: AibsColors.primaryStrong,
+              Expanded(
+                child: AibsSecondaryButton(
+                  label: 'Nggak ada',
+                  onPressed: onNone,
                 ),
               ),
-              const SizedBox(width: 12),
-              const Expanded(
-                child: Text('Catatan makan dan gejala muncul di sini'),
+              const SizedBox(width: AibsSpace.s10),
+              Expanded(
+                child: AibsPrimaryButton(label: 'Catat', onPressed: onAdd),
               ),
-              IconButton(
-                tooltip: 'Catat makanan',
-                onPressed: onOpenCamera,
-                icon: const Icon(
-                  Icons.add_circle_outline,
-                  color: AibsColors.primary,
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _WeekCard extends StatelessWidget {
+  const _WeekCard({
+    required this.meals,
+    required this.symptoms,
+    required this.onSummary,
+    required this.onJournal,
+  });
+  final List<AibsMealLog> meals;
+  final List<AibsSymptomLog> symptoms;
+  final VoidCallback onSummary;
+  final VoidCallback onJournal;
+
+  @override
+  Widget build(BuildContext context) {
+    final daysWithSymptoms = symptoms.map((item) => item.date.day).toSet();
+    return AibsCard(
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text('7 hari terakhir', style: AibsType.bodyStrong),
+              ),
+              Text(
+                '${daysWithSymptoms.length} hari ada gejala',
+                style: AibsType.caption,
+              ),
+            ],
+          ),
+          const SizedBox(height: AibsSpace.s14),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              for (var index = 6; index >= 0; index--)
+                _DayDot(
+                  date: DateTime.now().subtract(Duration(days: index)),
+                  hasSymptom: daysWithSymptoms.contains(
+                    DateTime.now().subtract(Duration(days: index)).day,
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: AibsSpace.s16),
+          Row(
+            children: [
+              Expanded(
+                child: AibsSecondaryButton(
+                  label: 'Baca pola',
+                  onPressed: onSummary,
+                ),
+              ),
+              const SizedBox(width: AibsSpace.s10),
+              Expanded(
+                child: AibsSecondaryButton(
+                  label: 'Lihat riwayat',
+                  onPressed: onJournal,
                 ),
               ),
             ],
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DayDot extends StatelessWidget {
+  const _DayDot({required this.date, required this.hasSymptom});
+  final DateTime date;
+  final bool hasSymptom;
+
+  @override
+  Widget build(BuildContext context) {
+    const labels = ['M', 'S', 'S', 'R', 'K', 'J', 'S'];
+    return Column(
+      children: [
+        Container(
+          width: 30,
+          height: 30,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: hasSymptom ? AibsColors.primary : AibsColors.unknownSoft,
+            shape: BoxShape.circle,
+          ),
+          child: hasSymptom
+              ? Text(
+                  '${date.day}',
+                  style: AibsType.small.copyWith(color: AibsColors.onPrimary),
+                )
+              : null,
         ),
-        const SizedBox(height: 24),
-        Text('Cek makanan', style: Theme.of(context).textTheme.titleLarge),
-        const SizedBox(height: 12),
-        AibsPrimaryButton(
-          label: 'Foto makanan',
-          icon: Icons.camera_alt_outlined,
-          onPressed: onOpenCamera,
-        ),
+        const SizedBox(height: AibsSpace.s4),
+        Text(labels[date.weekday % 7], style: AibsType.micro),
       ],
     );
   }
 }
 
+class _TodayLogCard extends StatelessWidget {
+  const _TodayLogCard({required this.meals, required this.onTap});
+  final List<AibsMealLog> meals;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return AibsCard(
+      child: Material(
+        color: AibsColors.card,
+        borderRadius: BorderRadius.circular(AibsRadius.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Hari ini', style: AibsType.sectionTitle),
+            const SizedBox(height: AibsSpace.s8),
+            for (final meal in meals)
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                onTap: onTap,
+                title: Text(meal.name, style: AibsType.bodyStrong),
+                leading: Text(meal.time, style: AibsType.small),
+                trailing: const Icon(Icons.chevron_right),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class ProfilePage extends StatefulWidget {
-  const ProfilePage({super.key, this.profile, this.onProfileSaved});
+  const ProfilePage({
+    super.key,
+    this.profile,
+    this.onProfileSaved,
+    this.onOpenShopping,
+    this.onLogout,
+    this.shoppingCount = 0,
+  });
 
   final ProfileSetupAnswers? profile;
   final ValueChanged<ProfileSetupAnswers>? onProfileSaved;
+  final VoidCallback? onOpenShopping;
+  final VoidCallback? onLogout;
+  final int shoppingCount;
 
   @override
   State<ProfilePage> createState() => _ProfilePageState();
@@ -152,6 +590,9 @@ class _ProfilePageState extends State<ProfilePage> {
             _ => spicyValue,
           };
     final preferences = profileData?.preferences;
+    final screeningResult = profileData?.pattern.isNotEmpty == true
+        ? 'Selesai'
+        : 'Belum diisi';
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
@@ -190,6 +631,13 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
         const SizedBox(height: 20),
         _ProfileSection(
+          title: 'Pengecekan awal',
+          value: screeningResult,
+          detail: 'Lihat jawaban awal',
+          onTap: _openScreening,
+        ),
+        const SizedBox(height: 12),
+        _ProfileSection(
           title: 'Arahan makan',
           value: dietValue,
           detail: avoided == null || avoided.isEmpty
@@ -213,6 +661,30 @@ class _ProfilePageState extends State<ProfilePage> {
               preferences.join(' · '),
           ].join(' · '),
         ),
+        const SizedBox(height: AibsSpace.s12),
+        _ProfileSection(
+          title: 'Checklist belanja',
+          value: '${widget.shoppingCount} bahan belum dibeli',
+          detail: 'Buka checklist',
+          onTap: widget.onOpenShopping,
+        ),
+        const SizedBox(height: AibsSpace.s12),
+        _ProfileSection(
+          title: 'Privasi & AI',
+          value: profileData?.aiEnabled == false
+              ? 'Tanpa AI'
+              : 'Bantuan AI aktif',
+          detail: 'Ubah izin dan data',
+          onTap: _openPrivacy,
+        ),
+        const SizedBox(height: AibsSpace.s12),
+        TextButton(
+          onPressed: widget.onLogout,
+          child: Text(
+            'Keluar',
+            style: AibsType.label.copyWith(color: AibsColors.badInk),
+          ),
+        ),
       ],
     );
   }
@@ -228,6 +700,43 @@ class _ProfilePageState extends State<ProfilePage> {
     widget.onProfileSaved?.call(updated);
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Perubahan tersimpan untuk sesi ini')),
+    );
+  }
+
+  Future<void> _openPrivacy() async {
+    final profile = _profile;
+    if (profile == null) return;
+    final result = await Navigator.of(context)
+        .push<({bool aiEnabled, bool savePhotos})>(
+          MaterialPageRoute(
+            builder: (_) => _PrivacyPage(
+              profile: profile,
+              onDeleteAll: widget.onLogout ?? () {},
+            ),
+          ),
+        );
+    if (result == null || !mounted) return;
+    final updated = profile.copyWithDietProfile(
+      dietType: profile.dietType,
+      dietPhase: profile.dietPhase,
+      avoidedIngredients: profile.avoidedIngredients,
+      portionLimits: profile.portionLimits,
+      aiEnabled: result.aiEnabled,
+      savePhotos: result.savePhotos,
+    );
+    if (updated.aiEnabled == profile.aiEnabled &&
+        updated.savePhotos == profile.savePhotos) {
+      return;
+    }
+    setState(() => _profile = updated);
+    widget.onProfileSaved?.call(updated);
+  }
+
+  void _openScreening() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Jawaban pengecekan awal tersimpan di sesi ini'),
+      ),
     );
   }
 
@@ -249,6 +758,110 @@ class _ProfilePageState extends State<ProfilePage> {
     spicy: 'Sedikit',
     preferences: const [],
   );
+}
+
+class _PrivacyPage extends StatefulWidget {
+  const _PrivacyPage({required this.profile, required this.onDeleteAll});
+  final ProfileSetupAnswers profile;
+  final VoidCallback onDeleteAll;
+
+  @override
+  State<_PrivacyPage> createState() => _PrivacyPageState();
+}
+
+class _PrivacyPageState extends State<_PrivacyPage> {
+  late bool _aiEnabled = widget.profile.aiEnabled;
+  late bool _savePhoto = widget.profile.savePhotos;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Privasi')),
+      body: ListView(
+        padding: const EdgeInsets.all(AibsSpace.s20),
+        children: [
+          AibsCard(
+            padding: 0,
+            child: Column(
+              children: [
+                SwitchListTile(
+                  title: const Text('Bantuan AI'),
+                  subtitle: const Text('Foto dan cerita dirapikan otomatis'),
+                  value: _aiEnabled,
+                  onChanged: (value) => setState(() => _aiEnabled = value),
+                ),
+                const Divider(height: 1),
+                SwitchListTile(
+                  title: const Text('Simpan foto makanan'),
+                  value: _savePhoto,
+                  onChanged: (value) => setState(() => _savePhoto = value),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AibsSpace.s16),
+          AibsSecondaryButton(
+            label: 'Unduh data saya',
+            onPressed: _exportProfile,
+          ),
+          const SizedBox(height: AibsSpace.s10),
+          AibsSecondaryButton(
+            label: 'Hapus semua data',
+            onPressed: _confirmDelete,
+          ),
+          const SizedBox(height: AibsSpace.s20),
+          AibsPrimaryButton(
+            label: 'Simpan',
+            onPressed: () => Navigator.pop(context, (
+              aiEnabled: _aiEnabled,
+              savePhotos: _savePhoto,
+            )),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _confirmDelete() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Hapus semua data?'),
+        content: const Text('Tindakan ini tidak bisa dibatalkan.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Hapus'),
+          ),
+        ],
+      ),
+    );
+    if (confirm == true && mounted) {
+      widget.onDeleteAll();
+      Navigator.of(context).popUntil((route) => route.isFirst);
+    }
+  }
+
+  Future<void> _exportProfile() async {
+    final data = [
+      'Nama: ${widget.profile.displayName}',
+      'Arahan makan: ${widget.profile.dietType ?? 'Belum diisi'}',
+      'Fase: ${widget.profile.dietPhase ?? 'Belum diisi'}',
+      'Bahan dihindari: ${widget.profile.avoidedIngredients.join(', ')}',
+      'Alergi: ${widget.profile.allergies.join(', ')}',
+      'Batas porsi: ${widget.profile.portionLimits}',
+      'Budget: ${widget.profile.budget ?? 'Belum diisi'}',
+    ].join('\n');
+    await Clipboard.setData(ClipboardData(text: data));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Data disalin. Kamu bisa menyimpannya.')),
+    );
+  }
 }
 
 class _ProfileSection extends StatelessWidget {
