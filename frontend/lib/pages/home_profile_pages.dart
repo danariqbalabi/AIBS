@@ -564,6 +564,7 @@ class ProfilePage extends StatefulWidget {
     this.onLogout,
     this.onDeleteAll,
     this.onLinkEmail,
+    this.onResumeScreening,
     this.onExportData,
     this.shoppingCount = 0,
   });
@@ -573,6 +574,7 @@ class ProfilePage extends StatefulWidget {
   final VoidCallback? onOpenShopping;
   final VoidCallback? onLogout;
   final VoidCallback? onLinkEmail;
+  final VoidCallback? onResumeScreening;
   final FutureOr<void> Function()? onDeleteAll;
   final Future<void> Function()? onExportData;
   final int shoppingCount;
@@ -679,7 +681,7 @@ class _ProfilePageState extends State<ProfilePage> {
           title: 'Pengecekan awal',
           value: screeningResult,
           detail: 'Lihat jawaban awal',
-          onTap: _openScreening,
+          onTap: widget.onResumeScreening ?? _openScreening,
         ),
         const SizedBox(height: 12),
         _ProfileSection(

@@ -179,6 +179,16 @@ class ProfilePatch(Contract):
     timezone: str | None = Field(default=None, max_length=60)
     diet: DietProfile | None = None
     save_photos: bool | None = None
+    onboarding_state: dict | None = None
+
+    @field_validator("onboarding_state")
+    @classmethod
+    def bounded_onboarding(cls, value):
+        import json
+
+        if value is not None and len(json.dumps(value)) > 20000:
+            raise ValueError("Onboarding draft is too large")
+        return value
 
     @field_validator("timezone")
     @classmethod

@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -57,12 +60,14 @@ class ScreeningAssessment {
     required this.headline,
     this.criteria = const [],
     this.reasons = const [],
+    this.missingFields = const [],
   });
 
   final ScreeningRoute route;
   final String headline;
   final List<bool?> criteria;
   final List<String> reasons;
+  final List<String> missingFields;
 }
 
 class ScreeningAssessmentException implements Exception {
@@ -96,6 +101,7 @@ class ProfileSetupAnswers {
     this.aiEnabled = true,
     this.savePhotos = false,
     this.serverVersion,
+    this.bleedingActive,
   }) : redFlags = List.unmodifiable(redFlags),
        pattern = List.unmodifiable(pattern),
        avoidedIngredients = List.unmodifiable(avoidedIngredients),
@@ -123,6 +129,7 @@ class ProfileSetupAnswers {
   final bool aiEnabled;
   final bool savePhotos;
   final int? serverVersion;
+  final String? bleedingActive;
 
   ProfileSetupAnswers copyWithDietProfile({
     required String? dietType,
@@ -151,6 +158,7 @@ class ProfileSetupAnswers {
     aiEnabled: aiEnabled ?? this.aiEnabled,
     savePhotos: savePhotos ?? this.savePhotos,
     serverVersion: serverVersion,
+    bleedingActive: bleedingActive,
   );
 }
 
@@ -188,6 +196,9 @@ class ProfileSetupFlow extends StatefulWidget {
     super.key,
     this.onAssess,
     this.aiEnabled = true,
+    this.initialProgress = const {},
+    this.onProgress,
+    this.initialAnswers,
   });
 
   final String displayName;
@@ -196,6 +207,9 @@ class ProfileSetupFlow extends StatefulWidget {
   final VoidCallback onBackToAccount;
   final ScreeningAssessor? onAssess;
   final bool aiEnabled;
+  final Map<String, dynamic> initialProgress;
+  final Future<void> Function(Map<String, dynamic>)? onProgress;
+  final ProfileSetupAnswers? initialAnswers;
 
   @override
   State<ProfileSetupFlow> createState() => _ProfileSetupFlowState();
@@ -232,6 +246,126 @@ class _ProfileSetupFlowState extends State<ProfileSetupFlow> {
   bool _showOtherAllergyField = false;
   bool _showToleranceField = false;
   int _assessmentRequestId = 0;
+  String? _bleedingActive;
+  String _progressSignature = '';
+  Future<void> _progressSave = Future.value();
+  bool _finishing = false;
+  bool _progressFailed = false;
+
+  Map<String, dynamic> get _snapshot => {
+    'step': _step.name,
+    'redFlagIndex': _redFlagIndex,
+    'patternIndex': _patternIndex,
+    'ageBand': _ageBand,
+    'diagnosis': _diagnosis,
+    'clinicianGuidance': _clinicianGuidance,
+    'redFlags': _redFlags,
+    'pattern': _patternAnswers,
+    'bleedingActive': _bleedingActive,
+    'dietType': _dietType,
+    'dietPhase': _dietPhase,
+    'budget': _budget,
+    'spicy': _spicy,
+    'avoided': _avoidedIngredients.toList(),
+    'allergies': _allergies.toList(),
+    'tolerances': _tolerances.toList(),
+    'preferences': _preferences.toList(),
+    'portionLimits': _portionLimits,
+    'ai': widget.aiEnabled,
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    final a = widget.initialAnswers;
+    final Map<String, dynamic> p = widget.initialProgress.isNotEmpty
+        ? widget.initialProgress
+        : a == null
+        ? <String, dynamic>{}
+        : {
+            'ageBand': a.ageBand,
+            'diagnosis': a.diagnosis,
+            'clinicianGuidance': a.clinicianGuidance,
+            'redFlags': a.redFlags,
+            'pattern': a.pattern,
+            'bleedingActive': a.bleedingActive,
+            'dietType': a.dietType,
+            'dietPhase': a.dietPhase,
+            'avoided': a.avoidedIngredients,
+            'allergies': a.allergies,
+            'tolerances': a.tolerances,
+            'preferences': a.preferences,
+            'portionLimits': a.portionLimits,
+            'budget': a.budget,
+            'spicy': a.spicy,
+          };
+    if (p.isEmpty) return;
+    _ageBand = p['ageBand'];
+    _diagnosis = p['diagnosis'];
+    _clinicianGuidance = p['clinicianGuidance'];
+    _bleedingActive = p['bleedingActive'];
+    _dietType = p['dietType'];
+    _dietPhase = p['dietPhase'];
+    _budget = p['budget'];
+    _spicy = p['spicy'];
+    for (final (key, target) in [
+      ('redFlags', _redFlags),
+      ('pattern', _patternAnswers),
+    ]) {
+      final values = p[key] as List? ?? [];
+      for (var i = 0; i < values.length && i < target.length; i++) {
+        target[i] = values[i] as String?;
+      }
+    }
+    for (final (key, target) in [
+      ('avoided', _avoidedIngredients),
+      ('allergies', _allergies),
+      ('tolerances', _tolerances),
+      ('preferences', _preferences),
+    ]) {
+      target.addAll((p[key] as List? ?? []).cast<String>());
+    }
+    if (p['portionLimits'] is Map) {
+      _portionLimits
+        ..clear()
+        ..addAll(Map<String, int?>.from(p['portionLimits']));
+    }
+    _redFlagIndex = (p['redFlagIndex'] as int? ?? 0).clamp(0, 4);
+    _patternIndex = (p['patternIndex'] as int? ?? 0).clamp(0, 5);
+    _step =
+        _ProfileStep.values.where((s) => s.name == p['step']).firstOrNull ??
+        _ProfileStep.age;
+    if ([
+      _ProfileStep.assessmentLoading,
+      _ProfileStep.assessmentResult,
+      _ProfileStep.assessmentFailed,
+    ].contains(_step)) {
+      _step = _ProfileStep.pattern;
+    }
+  }
+
+  void _persistProgress() {
+    if (widget.onProgress == null ||
+        _finishing ||
+        _progressFailed ||
+        _step == _ProfileStep.assessmentLoading) {
+      return;
+    }
+    final signature = jsonEncode(_snapshot);
+    if (signature == _progressSignature) return;
+    _progressSignature = signature;
+    final snapshot = jsonDecode(signature) as Map<String, dynamic>;
+    _progressSave = _progressSave
+        .then((_) => widget.onProgress!(snapshot))
+        .catchError((Object error) {
+          if (mounted) {
+            setState(() {
+              _progressFailed = true;
+              _formError = 'Progres belum tersimpan. Coba lagi sebelum keluar.';
+            });
+          }
+        });
+  }
 
   static const _fodmapDefaults = {
     'Bawang putih',
@@ -320,6 +454,9 @@ class _ProfileSetupFlowState extends State<ProfileSetupFlow> {
 
   @override
   Widget build(BuildContext context) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _persistProgress();
+    });
     return Scaffold(
       backgroundColor: AibsColors.surface,
       body: SafeArea(
@@ -355,6 +492,17 @@ class _ProfileSetupFlowState extends State<ProfileSetupFlow> {
                 ),
               ),
             _buildActions(),
+            if (_progressFailed)
+              TextButton(
+                onPressed: () {
+                  setState(() {
+                    _progressFailed = false;
+                    _progressSignature = '';
+                    _formError = null;
+                  });
+                },
+                child: const Text('Coba simpan progres lagi'),
+              ),
           ],
         ),
       ),
@@ -474,6 +622,20 @@ class _ProfileSetupFlowState extends State<ProfileSetupFlow> {
   }
 
   Widget _buildRedFlags() {
+    if (_redFlagIndex == 1 && _redFlags[1] == 'Ya' && _bleedingActive == null) {
+      return _singleChoice(
+        title: 'Apakah darah saat BAB atau feses hitam sedang terjadi?',
+        options: _yesNoUnknown,
+        onSelected: (answer) {
+          _bleedingActive = answer;
+          if (answer == 'Ya') {
+            setState(() => _step = _ProfileStep.help);
+          } else {
+            _answerRedFlag('Ya');
+          }
+        },
+      );
+    }
     final index = _redFlagIndex;
     return _singleChoice(
       title: _redFlagQuestions[index],
@@ -1141,8 +1303,29 @@ class _ProfileSetupFlowState extends State<ProfileSetupFlow> {
         AibsPrimaryButton(
           label: 'Lengkapi jawaban',
           onPressed: () => setState(() {
-            _patternIndex = 0;
-            _step = _ProfileStep.pattern;
+            final fields = assessment!.missingFields;
+            if (fields.contains('age_band')) {
+              _step = _ProfileStep.age;
+            } else if (fields.contains('diagnosis_reported')) {
+              _step = _ProfileStep.diagnosis;
+            } else if (fields.contains('clinician_guidance')) {
+              _step = _ProfileStep.clinicianGuidance;
+            } else {
+              final index = [
+                'severe_active',
+                'bleeding',
+                'weight_loss',
+                'anemia',
+                'family_history',
+              ].indexWhere(fields.contains);
+              if (index >= 0) {
+                _redFlagIndex = index;
+                _step = _ProfileStep.redFlags;
+              } else {
+                _patternIndex = 0;
+                _step = _ProfileStep.pattern;
+              }
+            }
           }),
         ),
         const SizedBox(height: AibsSpace.s8),
@@ -1182,6 +1365,12 @@ class _ProfileSetupFlowState extends State<ProfileSetupFlow> {
   }
 
   void _answerRedFlag(String answer) {
+    if (_redFlagIndex == 1 && answer == 'Ya' && _bleedingActive == null) {
+      setState(() {
+        _redFlags[1] = answer;
+      });
+      return;
+    }
     setState(() {
       _redFlags[_redFlagIndex] = answer;
       if (_redFlagIndex == 0 && answer == 'Ya') {
@@ -1205,6 +1394,7 @@ class _ProfileSetupFlowState extends State<ProfileSetupFlow> {
   }
 
   Future<void> _submitAssessment() async {
+    await _progressSave;
     final assessor = widget.onAssess;
     if (assessor == null) {
       setState(() {
@@ -1257,7 +1447,9 @@ class _ProfileSetupFlowState extends State<ProfileSetupFlow> {
       clinicianGuidance: _answerValue(_clinicianGuidance),
       severeActive: _answerValue(_redFlags[0]),
       bleeding: _answerValue(_redFlags[1]),
-      bleedingActive: _answerValue(_redFlags[1]),
+      bleedingActive: _redFlags[1] == 'Tidak'
+          ? 'no'
+          : _answerValue(_bleedingActive),
       weightLoss: _answerValue(_redFlags[2]),
       anemia: _answerValue(_redFlags[3]),
       familyHistory: _answerValue(_redFlags[4]),
@@ -1482,7 +1674,10 @@ class _ProfileSetupFlowState extends State<ProfileSetupFlow> {
         content: Text(
           'Usia: ${_ageBand ?? 'Belum dijawab'}\n'
           'Diagnosis IBS: ${_diagnosis ?? 'Belum dijawab'}\n'
-          'Arahan makan: ${_clinicianGuidance ?? 'Belum dijawab'}',
+          'Arahan makan: ${_clinicianGuidance ?? 'Belum dijawab'}\n'
+          '${[for (var i = 0; i < _redFlags.length; i++) '${_redFlagQuestions[i]} ${_redFlags[i] ?? 'Belum dijawab'}'].join('\n')}\n'
+          'Perdarahan sedang terjadi: ${_bleedingActive ?? 'Belum dijawab'}\n'
+          '${[for (var i = 0; i < _patternAnswers.length; i++) 'Q${i + 1}: ${_patternAnswers[i] ?? 'Belum dijawab'}'].join('\n')}',
         ),
         actions: [
           TextButton(
@@ -1494,7 +1689,18 @@ class _ProfileSetupFlowState extends State<ProfileSetupFlow> {
     );
   }
 
-  void _finish() => widget.onComplete(_createAnswers());
+  Future<void> _finish() async {
+    if (_finishing) return;
+    _persistProgress();
+    _finishing = true;
+    await _progressSave;
+    if (_progressFailed) {
+      _finishing = false;
+      return;
+    }
+    if (mounted) widget.onComplete(_createAnswers());
+    _finishing = false;
+  }
 
   ProfileSetupAnswers _createAnswers() => ProfileSetupAnswers(
     displayName: widget.displayName,
@@ -1514,6 +1720,7 @@ class _ProfileSetupFlowState extends State<ProfileSetupFlow> {
     spicy: _spicy,
     preferences: _preferences.toList(),
     aiEnabled: widget.aiEnabled,
+    bleedingActive: _bleedingActive,
   );
 
   String get _dietSummary {

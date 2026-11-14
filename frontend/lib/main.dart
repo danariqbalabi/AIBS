@@ -212,6 +212,10 @@ class _AibsAppState extends State<AibsApp> {
               onLogout: _logout,
             )
           : OnboardingFlow(
+              initialProgress:
+                  widget.services?.profiles.onboardingProgress ?? const {},
+              sessionEmail: widget.services?.identity.email ?? '',
+              onProgress: widget.services?.profiles.saveProgress,
               onComplete: _complete,
               onAssess: widget.services?.profiles.assess,
               onDemo: widget.services == null ? null : _demo,
@@ -401,6 +405,38 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
               onOpenSummary: _openSummary,
             ),
             ProfilePage(
+              onResumeScreening: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (routeContext) => ProfileSetupFlow(
+                    displayName: widget.profile?.displayName ?? 'Kamu',
+                    email: widget.profile?.email ?? '',
+                    aiEnabled: widget.profile?.aiEnabled ?? false,
+                    initialAnswers: widget.profile,
+                    onAssess: widget.services?.profiles.assess,
+                    onBackToAccount: () => Navigator.pop(routeContext),
+                    onComplete: (answers) async {
+                      try {
+                        await widget.onProfileSaved?.call(
+                          answers.copyWithDietProfile(
+                            dietType: answers.dietType,
+                            dietPhase: answers.dietPhase,
+                            avoidedIngredients: answers.avoidedIngredients,
+                            portionLimits: answers.portionLimits,
+                            savePhotos: widget.profile?.savePhotos ?? false,
+                          ),
+                        );
+                        if (routeContext.mounted) Navigator.pop(routeContext);
+                      } catch (error) {
+                        if (routeContext.mounted) {
+                          ScaffoldMessenger.of(routeContext).showSnackBar(
+                            SnackBar(content: Text(AppServices.message(error))),
+                          );
+                        }
+                      }
+                    },
+                  ),
+                ),
+              ),
               profile: widget.profile,
               onProfileSaved: widget.onProfileSaved,
               shoppingCount: _shoppingItems.length,

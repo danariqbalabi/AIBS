@@ -3238,6 +3238,18 @@
               }
             ],
             "title": "Save Photos"
+          },
+          "onboarding_state": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Onboarding State"
           }
         },
         "additionalProperties": false,
