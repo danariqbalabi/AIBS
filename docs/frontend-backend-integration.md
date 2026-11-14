@@ -1,77 +1,83 @@
-# Integrasi FE–BE untuk tes manual
+# Integrasi FE–BE dan pengujian AIBS
 
-Branch: `feat/frontend-backend-integration`. Desain dipertahankan. Tidak ada merge ke main atau deployment publik.
+Status 14 November 2026. Implementasi fitur sudah masuk `main` melalui PR #31–#33 yang digabung pemilik. Branch `feat/app-completion` mengumpulkan perubahan berikutnya; PR #34 menambahkan pemeriksaan Flutter/web/APK. Desain aplikasi dipertahankan. Backend HTTPS belum dipublikasikan karena akun Render masih disiapkan.
 
-## Commit bertahap
+## Jalankan lokal
 
-1. `a9ff527`: konfigurasi lokal, SDK, HTTP client, Bearer token, refresh dan error envelope.
-2. `43cc7c0`: Supabase anonymous/OTP, pemulihan sesi, profil/consent/screening; dukungan rentang bulan dan katalog bahan onboarding.
-3. `9eb4e13`: katalog/status server, draft/commit makanan/gejala, link makanan tersimpan, riwayat, dashboard/ringkasan, rencana dan belanja.
-4. Verifikasi/handoff: food-check manual, mempertahankan input saat gagal, pemeriksaan provider nyata dan panduan run.
-5. Perbaikan refresh/sesi: tunggu pemulihan identitas, pertahankan subject pada retry demo, bedakan gagal load dari riwayat kosong, dan jelaskan logout anonymous.
+Konfigurasi lokal yang diabaikan Git:
 
-## Run dan konfigurasi
+- `backend/.env`: database URL, Supabase service-role, Gemini, dan CORS.
+- `frontend/config/local.json`: API base URL, Supabase URL, dan publishable key client. Tidak boleh berisi secret server.
 
-Ikuti [frontend README](../frontend/README.md). Workspace ini sudah mempunyai `frontend/config/local.json` dan CORS lokal; keduanya tidak membawa secret server ke Flutter. File lokal tidak di-commit:
+Dari folder `backend`:
 
-- `backend/.env`: DB URL, Supabase service-role, Gemini, CORS.
-- `frontend/config/local.json`: API base URL, Supabase URL, publishable key client.
+```powershell
+uv sync --locked
+uv run alembic upgrade head
+uv run python -m seeds.catalog
+uv run uvicorn app.main:create_app --factory --host 0.0.0.0 --port 8000 --no-access-log
+```
 
-Gunakan Chrome port 5173. Perubahan dart-define perlu stop/run ulang; perubahan `.env` perlu restart backend. Android emulator memakai API URL `http://10.0.2.2:8000`; HP fisik memakai IP LAN komputer. HTTP Android lokal mungkin perlu pengaturan development; hosting memakai HTTPS. INTERNET permission tersedia, tetapi APK belum diuji.
+Dari folder `frontend`:
 
-## Perilaku integrasi
+```powershell
+flutter pub get
+flutter run -d chrome --web-port 5173 --dart-define-from-file=config/local.json
+```
 
-- Demo memperoleh anonymous session nyata, lalu bootstrap `/demo/sessions` untuk subject tersebut. Session SDK dipulihkan setelah refresh; data dimuat dari backend.
-- OTP dikirim dan diverifikasi lewat Supabase, tidak sekadar memeriksa enam digit terisi. Pengiriman email nyata perlu SMTP/template project; belum diklaim telah dites dari inbox pengguna.
-- Label profil dipetakan ke kontrak/UUID bahan. Rentang bulan disimpan sebagai rentang. Alergi yang tidak dikenali ditolak, tidak dihilangkan.
-- Makanan/gejala: create draft → konfirmasi waktu/konsumsi → commit dengan versi dan Idempotency-Key stabil saat retry. UI menunggu hasil sebelum menyatakan tersimpan.
-- Link gejala memakai ID makanan. Backend menolak target lintas subject dan makanan setelah waktu gejala, tanpa menggandakan konsumsi.
-- Food-check tidak otomatis menyimpan konsumsi. Pilihan Nggak ada mencatat observasi negatif; tidak menambah jumlah gejala positif.
-- Setelah mutation/tab dipilih, snapshot server dimuat ulang. Kegagalan refresh setelah commit tidak membatalkan transaksi yang sudah berhasil.
-- Cerita asli disimpan sebagai `draft.content.story` dan dimuat ulang; belum diekstrak NLP, sehingga tidak menambah food/symptom counts.
-- Rencana terpisah dari konsumsi. Checklist mengambil jumlah/satuan server dan menyimpan status dibeli.
-- Ringkasan mengikuti status kelengkapan server (minimal tujuh hari tercatat), bukan ambang lokal tiga hari sebelumnya.
+Backend lokal sudah direstart dengan kode terbaru saat pengujian. Jika Flutter masih terbuka, lakukan hot restart dengan `R`. Perubahan dart-define memerlukan stop/run ulang; perubahan `.env` memerlukan restart backend. Pastikan `/ready` menghasilkan 200. Panduan hosting dan APK ada di [render-deployment.md](render-deployment.md).
+
+## Alur yang terhubung
+
+| Area | Perilaku |
+| --- | --- |
+| Sesi | Supabase JWT nyata; refresh menunggu pemulihan sesi, kegagalan tidak mengganti identitas atau dianggap riwayat kosong |
+| Email | OTP Supabase; anonymous dapat ditautkan ke email dengan UUID yang sama. Pengiriman inbox menunggu SMTP/template |
+| Profil | Consent/screening/diet tersimpan. Rentang bulan tetap rentang. Bahan khusus disimpan sebagai nama; batasan di luar katalog membuat penilaian konservatif |
+| Makanan/gejala | Draft → konfirmasi → commit dengan versi dan idempotency key. Edit/hapus memakai owner dan versi; tautan makanan–gejala memeriksa urutan waktu |
+| NLP | Cerita dikirim hanya saat AI aktif dan pengguna meminta analisis; hasil terstruktur dapat dikoreksi, termasuk observasi negatif dan waktu perkiraan |
+| Foto | Kamera/galeri menampilkan foto lokal; Analisis mengunggah ke bucket privat lalu memanggil backend. Mode Tanpa AI tetap manual tanpa upload |
+| Draft | Draft cerita/foto tampil di Jurnal; bisa dibuka ulang, diedit, disimpan sebagai draft atau dihapus tanpa analisis ulang |
+| Cek makanan | Hasil server; tidak otomatis mencatat konsumsi. Simpan konsumsi memerlukan konfirmasi sudah dimakan dan waktu |
+| Rencana/belanja | Rencana terpisah dari konsumsi; jumlah/satuan serta status dibeli tersimpan di server |
+| Ringkasan | Periode dan kelengkapan mengikuti backend; PDF konsultasi memuat catatan dan pertanyaan pengguna, tanpa klaim penyebab |
+| Privasi | ZIP data/foto akun sendiri; hapus data aplikasi dengan konfirmasi; preferensi simpan foto dan masa berlaku foto sementara |
+
+Foto sementara berlaku 24 jam. Akses/analisis ditolak setelah kedaluwarsa; pembersih berjalan setiap 15 menit ketika backend aktif. Render Free yang tidur bisa menunda penghapusan fisik sampai proses aktif kembali. Mematikan simpan foto menghapus foto milik akun tersebut dan mempertahankan isi catatan. Hapus semua data menghapus data aplikasi dan foto; identitas login Supabase tetap ada.
 
 ## Bukti pengujian
 
-- Backend: **80 passed, 2 skipped**, lint dan ekspor kontrak diperiksa. Skip memerlukan PostgreSQL disposable/row locks.
-- Flutter: **32 tes lulus**: pengujian sebelumnya ditambah pemulihan sesi tertunda/gagal, retry data, penggunaan ulang identitas demo, bootstrap gagal tanpa rotasi akun, serta pembatalan logout anonymous.
-- Web debug build dengan konfigurasi lokal berhasil. Build release/APK/iOS belum diverifikasi.
-- Smoke API Supabase nyata: readiness DB, CORS, dua anonymous JWT asli, bootstrap Nadia/Raka dan status menu berbeda; commit/replay tanpa duplikasi; link gejala; akses silang ditolak; rencana, belanja/checked, dashboard dan ringkasan.
-- Consent AI nonaktif menghasilkan 403 sebelum provider dipanggil. Tidak mengirim data tes ini ke Gemini.
-- Akun/record sintetis smoke API dibersihkan berdasarkan UUID yang dibuat tes itu sendiri; tidak menghapus data pengguna lain.
-- Chrome nyata/headless: pilihan demo mencapai dashboard backend, reload memulihkan session/data, dan form makanan manual menghasilkan commit 200. Setelah reload kedua, GET riwayat 200 dan [capture Jurnal](integration-evidence/journal-after-reload.png) yang diperiksa visual menampilkan makanan uji tersebut. Assertion otomatis terakhir dengan locator teks/label Flutter tidak menemukan elemen meskipun record terlihat pada capture; tidak mengklaim seluruh runner browser otomatis hijau. Akun dan record uji browser juga dibersihkan.
+- Lokal: **88 tes backend lulus, 2 dilewati** karena memerlukan PostgreSQL disposable/row locks; lint dan ekspor kontrak diperiksa. **42 tes Flutter lulus**, format/analyze bersih.
+- CI backend pada main: PostgreSQL dan Python 3.12/3.13 berhasil. [Run backend](https://github.com/danariqbalabi/AIBS/actions/runs/43563137341).
+- Migrasi `0002` diterapkan ke Supabase; `alembic check` tidak menemukan selisih schema.
+- Smoke API nyata: readiness DB, browser CORS, dua anonymous JWT, bootstrap Nadia/Raka dengan status menu berbeda; commit/replay tanpa duplikasi; tautan gejala; penolakan akses lintas akun; rencana, belanja/checked, dashboard/ringkasan, dan penolakan AI saat consent mati.
+- Gemini nyata: ekstraksi cerita sintetis mempertahankan negasi tidak mual; hasil belum terkonfirmasi; request sama mengembalikan draft sama; review dan commit/replay berhasil tanpa duplikasi.
+- Storage Supabase nyata: upload privat, ZIP berisi data dan foto akun uji, lalu penghapusan data/foto berhasil. Semua akun sintetis pada smoke ini dibersihkan. Data akun pengguna tidak dihapus atau digabung.
+- Build release web dan APK sedang diperiksa di [workflow Flutter](https://github.com/danariqbalabi/AIBS/actions/workflows/flutter.yml). Jangan menganggap artifact tersedia atau lolos sebelum run selesai.
+- Pengujian Chrome sebelumnya mencapai dashboard, restore session, dan commit manual 200. [Capture Jurnal setelah reload](integration-evidence/journal-after-reload.png) memperlihatkan makanan uji; assertion terakhir runner browser lama gagal menemukan locator Flutter. Runner browser menyeluruh untuk fitur baru belum diklaim lulus.
 
 ## Urutan tes pengguna
 
-1. Jalankan backend dan Chrome; `/ready` harus 200.
-2. Coba Demo → Nadia. Menu berasal dari katalog server, bukan lima contoh Flutter lama.
-3. Kamera → Sudah dimakan → Isi manual. Simpan makanan, cek Jurnal, refresh. Session dan record tetap ada.
-4. Tambah gejala dan hubungkan makanan tersimpan. Periksa riwayat/ringkasan; periode belum cukup tetap menampilkan empty state.
-5. Tambah bahan dari menu ke belanja, tandai dibeli, buka ulang/refresh. Buat rencana besok; tidak boleh menambah konsumsi.
-6. Ubah profil/consent, refresh dan periksa hasil. Bahan di luar katalog belum didukung; form tidak boleh hilang saat gagal.
-7. Logout lalu pilih Raka. Akun demo baru tidak melihat data Nadia; beberapa status menu berbeda.
+1. Jalankan backend dan Flutter. Pilih demo Nadia; tambah makanan manual dan gejala yang dihubungkan. Refresh: data tetap ada.
+2. Edit makanan/gejala, simpan, refresh; lalu uji hapus. Waktu makanan setelah gejala yang terhubung harus ditolak, input tetap tersedia.
+3. Buat rencana dan checklist belanja; tandai dibeli lalu refresh. Rencana tidak menambah catatan konsumsi.
+4. Aktifkan Bantuan AI di Privasi. Ceritakan makanan dan gejala, termasuk kalimat “tidak mual”. Review hasil, konfirmasi waktu dan sudah dimakan, simpan. Negasi tidak menambah jumlah gejala positif.
+5. Analisis foto makanan. Periksa nama, bahan/saus, porsi, waktu dan konsumsi; koreksi sebelum simpan. Simpan sebagai draft lalu refresh dan lanjutkan lewat Jurnal.
+6. Matikan AI. Cerita/foto tidak dikirim ke AI; isi manual tetap tersedia.
+7. Unduh data saya dan PDF konsultasi. Hapus semua data hanya pada akun uji setelah membaca konfirmasi; tindakan tidak dapat dibatalkan.
+8. Setelah SMTP siap, hubungkan akun demo ke email, verifikasi OTP sendiri, logout/login email yang sama, lalu pastikan catatan tetap ada. Jangan kirim OTP/password/secret ke chat.
 
-## Batas tahap ini
+## Refresh dan logout
 
-Belum dikerjakan: perombakan visual; kamera/galeri; editor NLP/foto; edit event penuh; PDF/share; ekspor/hapus seluruh data/akun; retensi foto otomatis; iOS/APK/hosting HTTPS. Delete-all tidak lagi diarahkan ke logout palsu pada mode connected; simpan foto ditolak sampai fiturnya ada.
+**F5 berbeda dari logout.** F5 pada origin dan profil Chrome yang sama memulihkan subject beserta catatan. Logout anonymous membuang akses ke sesi demo itu; Nadia/Raka bukan kredensial untuk masuk kembali. Data server tetap ada, tetapi sesi baru tidak boleh membaca data subject lama. Gunakan email OTP yang sama untuk login ulang permanen; tautkan email sebelum logout anonymous jika ingin mempertahankan akses.
 
-`frontend/ios` belum tersedia. Default fixture `AibsApp()` tanpa services dipakai tes UI saja, bukan fallback aplikasi produksi.
+Menghapus browser storage, mengganti origin/port, atau memakai profil Chrome baru dapat kehilangan akses ke sesi anonymous lama. Sesi anonymous yang sudah di-logout tidak otomatis dipindahkan. Tidak ada akun Nadia bersama dan token yang dihapus saat logout tidak disimpan ulang.
 
-## Audit refresh dan logout
+## Yang masih membutuhkan tindakan luar repo
 
-Pemeriksaan metadata read-only menemukan 3 subject demo Nadia dan 3 food events tersimpan saat audit lanjutan. Tidak membaca isi jurnal dan tidak menghapus atau menggabungkan data akun tersebut.
+- Akun Render dan koneksi GitHub pemilik; isi environment variables langsung di dashboard, deploy, lalu gunakan URL HTTPS pada Flutter.
+- SMTP dan template OTP/Change email Supabase serta inbox untuk pengujian login nyata.
+- HP Android atau emulator. Build lokal pertama kehabisan memori JVM; heap Gradle kini dibatasi dan CI menyiapkan build APK. Build yang berhasil tetap perlu tes kamera, login, dan persistensi di perangkat.
+- `frontend/ios` belum tersedia; iOS belum dibangun/diuji. Default `AibsApp()` tanpa services hanya fixture tes UI, bukan fallback produksi.
 
-Penyebab di client:
-
-- Startup menampilkan welcome ketika proses restore masih berjalan. Mengetuk Nadia saat itu dapat mengganti identitas karena handler demo sebelumnya selalu sign-out lalu sign-in anonymous baru.
-- Restore yang gagal kembali ke welcome; pengguna dapat mengira sesi sudah hilang.
-- Initial load menggabungkan beberapa endpoint. Kegagalan satu endpoint menghasilkan list awal kosong, tanpa status gagal yang bertahan.
-
-Perbaikan: loading/retry menahan akses selama restore; error tidak membuang session; memilih template yang sama menggunakan ulang subject aktif; memilih template berbeda tidak otomatis logout; initial-load error tidak dianggap data kosong; reload yang bertabrakan dijadwalkan ulang. Anonymous logout sekarang meminta konfirmasi yang menjelaskan dampaknya.
-
-**F5 berbeda dari logout.** F5 pada origin dan profil Chrome yang sama harus memulihkan subject beserta catatan. Logout anonymous membuang akses ke sesi demo itu; nama Nadia/Raka bukan kredensial untuk masuk kembali. Data server tetap ada tetapi sesi baru tidak boleh membaca data subject lama. Gunakan akun email OTP yang sama untuk login ulang permanen. Menghapus browser storage, mengganti origin/port, atau memakai profil Chrome baru juga dapat kehilangan akses ke sesi anonymous lama.
-
-Data dari sesi anonymous yang sudah di-logout tidak otomatis dipindahkan ke sesi baru. Tidak membuat akun Nadia bersama untuk semua pengguna dan tidak menyimpan ulang token yang seharusnya dihapus saat logout.
-
-[Audit sebelum integrasi](integration-design-audit-2026-11-14.md) adalah snapshot source `012a497`; gunakan dokumen ini untuk status sesudah integrasi.
+[Rincian branch/commit](app-completion.md). [Audit sebelum integrasi](integration-design-audit-2026-11-14.md) adalah snapshot historis source `012a497`; gunakan dokumen ini untuk status integrasi terbaru.
