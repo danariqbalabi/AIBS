@@ -57,6 +57,11 @@ void main() {
     await tester.tap(find.text('Jurnal').last);
     await tester.pumpAndSettle();
     expect(find.text('Sup ayam'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Catat'),
+      150,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.tap(find.text('Catat'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Catat gejala'));
@@ -66,6 +71,11 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Kembung'), findsOneWidget);
 
+    await tester.scrollUntilVisible(
+      find.text('Ringkasan'),
+      -150,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.tap(find.text('Ringkasan'));
     await tester.pumpAndSettle();
     expect(find.text('Catatannya belum cukup'), findsOneWidget);

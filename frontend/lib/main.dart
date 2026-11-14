@@ -193,6 +193,23 @@ class _AibsAppState extends State<AibsApp> {
       navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
       theme: AibsTheme.light,
+      builder: (context, child) => ColoredBox(
+        color: AibsColors.line,
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxWidth: AibsSize.mobileViewport,
+            ),
+            child: LayoutBuilder(
+              builder: (context, constraints) => MediaQuery(
+                data: MediaQuery.of(context)
+                    .copyWith(size: constraints.biggest),
+                child: ClipRect(child: child ?? const SizedBox.shrink()),
+              ),
+            ),
+          ),
+        ),
+      ),
       home: (_restoring || _restoreError != null)
           ? LoadGate(
               busy: _restoring,
