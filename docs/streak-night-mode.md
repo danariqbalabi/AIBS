@@ -19,3 +19,5 @@ Palet malam ada di `AibsDarkColors`. Widget menggunakan token warna/teks sesuai 
 Backend: tes streak mencakup draft yang tidak dihitung, penyimpanan dan retry, penghapusan makanan, hari berturut-turut, pergantian hari Jakarta, masa sebelum hari ini berakhir, dan putus streak setelah satu hari kosong. Full suite lokal: 100 lulus, 2 tes khusus PostgreSQL dijalankan CI.
 
 Flutter: analyze bersih dan 63 tes lulus. Tes pilihan tersimpan/dipulihkan, kegagalan penyimpanan, tema layar onboarding/Profil/sheet, dan pergantian kembali ke tema terang. Jalankan `flutter analyze` dan `flutter test --concurrency=1`. Untuk melihat perubahan lokal lakukan hot restart; production memerlukan merge PR dan deployment selesai.
+
+Build web release berhasil. Chrome headless dengan preferensi sistem gelap pada 390 ? 844 sudah dirender dan diperiksa; bukti ada di `docs/evidence/night-mode-onboarding.png`.
