@@ -1,5 +1,7 @@
 # Integrasi AI untuk review draft
 
+Evaluasi NLP nyata terbaru: [empat kasus sintetis](evidence/ai-nlp-evaluation.json), dijalankan dengan `uv run python evaluate_ai.py --live`. Keempat kasus lulus; ini bukan evaluasi klinis atau kualitas foto menyeluruh. Teks tentang satu smoke di bawah adalah riwayat integrasi awal.
+
 Smoke provider nyata dengan `gemini-3.5-flash-lite` berhasil setelah schema generation diproyeksikan ke subset yang diterima Gemini. Schema API Pydantic lengkap sebelumnya menghasilkan HTTP 400; adapter sekarang inline reference lokal dan tidak mengirim default, format UUID, exclusive bound atau batas panjang/jumlah sebagai hint provider. Output tetap divalidasi dengan Pydantic lengkap, termasuk quantity positif, batas jumlah kartu dan waktu. [Referensi GenerationConfig](https://ai.google.dev/api/generate-content).
 
 Contoh sintetis “Siang makan ayam kecap, sore kembung, tapi nggak mual dan nggak muntah” menghasilkan satu makanan, kembung hadir, mual/muntah disangkal, dan JSON lolos validasi. Ini bukti satu smoke adapter/provider, bukan evaluasi semantik menyeluruh atau bukti API end-to-end Supabase/Flutter. API key tetap di `.env` yang tidak terlacak.

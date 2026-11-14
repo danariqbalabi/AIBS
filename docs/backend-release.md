@@ -1,5 +1,7 @@
 # Setup, verifikasi dan handoff release backend
 
+Dokumen historis tahap backend awal. Untuk status release setelah integrasi dan deployment, gunakan [kesiapan demo](hackathon-readiness.md) dan README utama. Klaim pending/tidak ada migrasi dalam bagian lama di bawah bukan status terkini.
+
 Ini dokumentasi source/tes dan pekerjaan yang masih membutuhkan konfigurasi nyata atau build rekan, bukan release submission final.
 
 ## Bukti yang tersedia

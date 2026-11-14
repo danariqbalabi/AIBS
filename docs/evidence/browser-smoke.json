@@ -1,0 +1,181 @@
+{
+  "web": "http://127.0.0.1:5180",
+  "tested_at": "2026-11-14T09:35:24.415306+00:00",
+  "source_commit": "a18adf9949f99b20cf9bdfa90db157943fe1a41a",
+  "completed": true,
+  "viewport": "390x844",
+  "checks": [
+    "isolated anonymous demo reaches authenticated dashboard",
+    "release browser reload restores the existing session",
+    "manual meal review commits through the real backend",
+    "saved meal remains visible in journal after reload"
+  ],
+  "requests": [
+    {
+      "method": "POST",
+      "path": "/api/v1/demo/sessions",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/me/profile",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/me/consents",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ingredients",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/me/assessment",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/meal-plans",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/drafts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/shopping-items",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/events",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/menus",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/dashboard",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/me/profile",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/me/consents",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ingredients",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/me/assessment",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/meal-plans",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/shopping-items",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/drafts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/events",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/menus",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/dashboard",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/drafts",
+      "status": 201
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/drafts/d8e07c8b-a49f-4396-a76a-4203a57e99f8/commit",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/me/profile",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/me/consents",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ingredients",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/me/assessment",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/drafts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/shopping-items",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/meal-plans",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/events",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/menus",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/dashboard",
+      "status": 200
+    }
+  ],
+  "synthetic_cleanup": true
+}

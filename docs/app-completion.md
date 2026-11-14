@@ -1,5 +1,7 @@
 # Penyelesaian fitur aplikasi
 
+Snapshot riwayat implementasi. Status audit PRD dan release terbaru: [kesiapan demo](hackathon-readiness.md).
+
 Integrasi dikumpulkan di branch `feat/app-completion`. Setiap fitur dikerjakan pada branch sendiri, diperiksa, di-commit/push, lalu digabung lokal ke branch integrasi. Satu PR akhir menuju main; tidak menggabungkan PR ke main secara otomatis.
 
 | Tahap | Branch | Status |

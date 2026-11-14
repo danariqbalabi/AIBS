@@ -1,6 +1,6 @@
 # Integrasi FE–BE dan pengujian AIBS
 
-Status 14 November 2026. Implementasi fitur sudah masuk `main` melalui PR #31–#33; pemeriksaan Flutter/web/APK masuk melalui PR #35. Target hosting beralih ke **Vercel Hobby** setelah verifikasi kartu Render gagal. Branch `feat/vercel-deployment` memuat adaptasi backend dan Flutter Web. Desain dipertahankan; deployment publik belum dinyatakan berhasil. Ikuti [panduan Vercel](vercel-deployment.md).
+Status integrasi awal 14 November 2026. Pembaruan audit PRD ada di [kesiapan demo](hackathon-readiness.md); angka tes dan status deployment di bawah merupakan snapshot historis. Implementasi fitur sudah masuk `main` melalui PR #31–#33; pemeriksaan Flutter/web/APK masuk melalui PR #35. Target hosting beralih ke **Vercel Hobby** setelah verifikasi kartu Render gagal. Branch `feat/vercel-deployment` memuat adaptasi backend dan Flutter Web. Desain dipertahankan; deployment publik belum dinyatakan berhasil. Ikuti [panduan Vercel](vercel-deployment.md).
 
 ## Jalankan lokal
 
@@ -43,7 +43,7 @@ Jika Flutter masih terbuka, lakukan hot restart dengan `R`. Perubahan dart-defin
 | Ringkasan | Periode dan kelengkapan mengikuti backend; PDF konsultasi memuat catatan dan pertanyaan pengguna, tanpa klaim penyebab |
 | Privasi | ZIP data/foto akun sendiri; hapus data aplikasi dengan konfirmasi; preferensi simpan foto dan masa berlaku foto sementara |
 
-Foto sementara berlaku 24 jam; akses/analisis ditolak setelah kedaluwarsa. Pada Vercel Hobby, cron harian dan pembersihan terbatas saat upload menggantikan worker permanen; penghapusan fisik dapat tertunda sampai jadwal berikutnya atau retry bila ada kegagalan/backlog. Mematikan simpan foto menghapus foto milik akun tersebut dan mempertahankan isi catatan. Hapus semua data menghapus data aplikasi dan foto; identitas login Supabase tetap ada.
+Foto tanpa preferensi simpan kini dihapus setelah percobaan ekstraksi; upload terbengkalai/cleanup gagal memiliki TTL akses 24 jam; akses/analisis ditolak setelah kedaluwarsa. Pada Vercel Hobby, cron harian dan pembersihan terbatas saat upload menggantikan worker permanen; penghapusan fisik dapat tertunda sampai jadwal berikutnya atau retry bila ada kegagalan/backlog. Mematikan simpan foto menghapus foto milik akun tersebut dan mempertahankan isi catatan. Hapus semua data menghapus data aplikasi dan foto; identitas login Supabase tetap ada.
 
 ## Bukti pengujian
 

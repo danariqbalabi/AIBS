@@ -1,0 +1,67 @@
+{
+  "evaluated_at": "2026-11-14T08:56:53.112767+00:00",
+  "model": "gemini-3.5-flash-lite",
+  "prompt_version": "reviewed_draft_v1",
+  "synthetic_only": true,
+  "limitations": "Four NLP cases; not a clinical benchmark or photo/device evaluation.",
+  "results": [
+    {
+      "case": "negation",
+      "checks": {
+        "schema_valid": true,
+        "times_unconfirmed": true,
+        "negation_preserved": true,
+        "bloating_present": true
+      },
+      "passed": true,
+      "usage": {
+        "input_tokens": 605,
+        "output_tokens": 741
+      },
+      "latency_ms": 5165
+    },
+    {
+      "case": "only_negative",
+      "checks": {
+        "schema_valid": true,
+        "times_unconfirmed": true,
+        "negation_preserved": true
+      },
+      "passed": true,
+      "usage": {
+        "input_tokens": 607,
+        "output_tokens": 364
+      },
+      "latency_ms": 3083
+    },
+    {
+      "case": "exact_times",
+      "checks": {
+        "schema_valid": true,
+        "times_unconfirmed": true,
+        "separate_clock_times": true
+      },
+      "passed": true,
+      "usage": {
+        "input_tokens": 609,
+        "output_tokens": 408
+      },
+      "latency_ms": 2359
+    },
+    {
+      "case": "ambiguous",
+      "checks": {
+        "schema_valid": true,
+        "times_unconfirmed": true,
+        "bloating_present": true,
+        "portion_not_invented": true
+      },
+      "passed": true,
+      "usage": {
+        "input_tokens": 611,
+        "output_tokens": 439
+      },
+      "latency_ms": 3096
+    }
+  ]
+}
