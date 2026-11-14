@@ -50,6 +50,7 @@ class CameraFlowPage extends StatefulWidget {
     this.onReviewPhoto,
     this.onSaveDraft,
     this.ingredientId,
+    this.onFindAlternatives,
   });
 
   final FutureOr<void> Function(AibsMealLog) onSaved;
@@ -64,6 +65,7 @@ class CameraFlowPage extends StatefulWidget {
   final Future<bool> Function(Uint8List, String, bool)? onReviewPhoto;
   final Future<void> Function(Map<String, dynamic>, String)? onSaveDraft;
   final String? Function(String)? ingredientId;
+  final VoidCallback? onFindAlternatives;
 
   @override
   State<CameraFlowPage> createState() => _CameraFlowPageState();
@@ -532,6 +534,14 @@ class _CameraFlowPageState extends State<CameraFlowPage> {
                 label: 'Lengkapi bahan',
                 onPressed: () => setState(() => _step = _CameraStep.clarify),
               ),
+              if (widget.onFindAlternatives != null)
+                TextButton(
+                  onPressed: () async {
+                    await _exit.currentState!.leave();
+                    widget.onFindAlternatives!();
+                  },
+                  child: const Text('Cari alternatif menu'),
+                ),
             ],
           ),
         ),

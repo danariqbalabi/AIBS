@@ -566,6 +566,7 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => CameraFlowPage(
+          onFindAlternatives: () => setState(() => _selectedIndex = 1),
           onSaveDraft: _records?.saveManualDraft,
           ingredientId: widget.services?.profiles.ingredientId,
           intent: intent,
@@ -663,9 +664,12 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
     if (_records != null) {
       await _records!.savePlan(plan);
       await _reload();
-      return;
+    } else {
+      setState(() => _plan = plan);
     }
-    setState(() => _plan = plan);
+    if (!mounted) return;
+    Navigator.of(context).popUntil((route) => route.isFirst);
+    setState(() => _selectedIndex = 0);
     ScaffoldMessenger.of(context)
         .showSnackBar(const SnackBar(content: Text('Rencana tersimpan')));
   }
