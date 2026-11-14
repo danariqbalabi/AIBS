@@ -6,6 +6,8 @@ import '../data/app_services.dart';
 import '../data/draft_review.dart';
 import '../widgets/aibs_widgets.dart';
 import '../widgets/record_card_form.dart';
+import '../data/records_repository.dart';
+import '../shared/widgets/status_badge.dart';
 
 class DraftReviewPage extends StatefulWidget {
   const DraftReviewPage({
@@ -13,10 +15,13 @@ class DraftReviewPage extends StatefulWidget {
     required this.review,
     this.meals = const [],
     this.ingredientId,
+    this.onCheckFood,
   });
   final DraftReview review;
   final List<AibsMealLog> meals;
   final String? Function(String)? ingredientId;
+  final Future<Map<String, dynamic>> Function(Map<String, dynamic>)?
+  onCheckFood;
   @override
   State<DraftReviewPage> createState() => _DraftReviewPageState();
 }
@@ -24,6 +29,42 @@ class DraftReviewPage extends StatefulWidget {
 class _DraftReviewPageState extends State<DraftReviewPage> {
   bool _busy = false;
   String? _error;
+  Future<void> _check(int index, Map<String, dynamic> card) async {
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      final result = await widget.onCheckFood!(card);
+      if (!mounted) return;
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: StatusBadge(statusFor(result['status'])),
+          content: Text(
+            [
+              for (final reason in result['reasons'] as List? ?? [])
+                reason['message'].toString(),
+              ...((result['missing_information'] as List? ?? []).map(
+                (v) => v.toString(),
+              )),
+            ].join('\n'),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Kembali'),
+            ),
+          ],
+        ),
+      );
+    } catch (error) {
+      if (mounted) setState(() => _error = AppServices.message(error));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   Future<void> _save() async {
     if (_busy) return;
     setState(() {
@@ -99,6 +140,12 @@ class _DraftReviewPageState extends State<DraftReviewPage> {
                       value: foods[i],
                       ingredientId: widget.ingredientId,
                     ),
+                    if (widget.onCheckFood != null) ...[
+                      TextButton(
+                        onPressed: () => _check(i, foods[i]),
+                        child: const Text('Cek sebelum makan'),
+                      ),
+                    ],
                   ],
                   for (var i = 0; i < symptoms.length; i++) ...[
                     const SizedBox(height: AibsSpace.s20),

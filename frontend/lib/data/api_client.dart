@@ -31,22 +31,32 @@ class ApiClient {
     Map<String, dynamic>? body,
     String? idempotencyKey,
     Duration timeout = const Duration(seconds: 20),
+    List<int>? fileBytes,
   }) async {
     for (var attempt = 0; attempt < 2; attempt++) {
       final token = await accessToken();
       if (token == null || token.isEmpty) {
         throw const ApiFailure('Silakan masuk terlebih dahulu.', status: 401);
       }
-      final request = http.Request(
-        method,
-        Uri.parse('${baseUrl.replaceFirst(RegExp(r'/+$'), '')}$path'),
-      );
+      final uri = Uri.parse('${baseUrl.replaceFirst(RegExp(r'/+$'), '')}$path');
+      final http.BaseRequest request = fileBytes == null
+          ? http.Request(method, uri)
+          : (http.MultipartRequest(method, uri)
+              ..files.add(
+                http.MultipartFile.fromBytes(
+                  'file',
+                  fileBytes,
+                  filename: 'food.jpg',
+                ),
+              ));
       request.headers.addAll({
         'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
+        if (fileBytes == null) 'Content-Type': 'application/json',
         'Idempotency-Key': ?idempotencyKey,
       });
-      if (body != null) request.body = jsonEncode(body);
+      if (body != null && request is http.Request) {
+        request.body = jsonEncode(body);
+      }
       http.Response response;
       try {
         response = await http.Response.fromStream(
