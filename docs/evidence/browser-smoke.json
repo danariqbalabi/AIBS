@@ -1,15 +1,15 @@
 {
-  "web": "http://127.0.0.1:5180",
-  "tested_at": "2026-11-14T10:31:09.348983+00:00",
-  "source_commit": "39758788d39000e60202d12a84f35e894b033af2",
+  "web": "https://aibs-frontend.vercel.app",
+  "tested_at": "2026-11-14T14:09:41.610067+00:00",
   "completed": true,
   "viewport": "390x844",
   "checks": [
     "isolated anonymous demo reaches authenticated dashboard",
-    "release browser reload restores the existing session",
-    "manual meal review commits through the real backend",
-    "symptom prompt links to the exact saved meal through the backend",
-    "saved meal remains visible in journal after reload"
+    "opt-in prepares the static offline shell and account snapshot",
+    "offline reload restores the same identity and cached history",
+    "meal draft persists locally while disconnected",
+    "reviewed offline draft commits online without automatic logging",
+    "server contains exactly one saved meal and local draft is removed"
   ],
   "requests": [
     {
@@ -39,52 +39,7 @@
     },
     {
       "method": "GET",
-      "path": "/api/v1/drafts",
-      "status": 200
-    },
-    {
-      "method": "GET",
       "path": "/api/v1/events",
-      "status": 200
-    },
-    {
-      "method": "GET",
-      "path": "/api/v1/shopping-items",
-      "status": 200
-    },
-    {
-      "method": "GET",
-      "path": "/api/v1/meal-plans",
-      "status": 200
-    },
-    {
-      "method": "GET",
-      "path": "/api/v1/menus",
-      "status": 200
-    },
-    {
-      "method": "GET",
-      "path": "/api/v1/dashboard",
-      "status": 200
-    },
-    {
-      "method": "GET",
-      "path": "/api/v1/me/profile",
-      "status": 200
-    },
-    {
-      "method": "GET",
-      "path": "/api/v1/me/consents",
-      "status": 200
-    },
-    {
-      "method": "GET",
-      "path": "/api/v1/ingredients",
-      "status": 200
-    },
-    {
-      "method": "GET",
-      "path": "/api/v1/me/assessment",
       "status": 200
     },
     {
@@ -95,11 +50,6 @@
     {
       "method": "GET",
       "path": "/api/v1/shopping-items",
-      "status": 200
-    },
-    {
-      "method": "GET",
-      "path": "/api/v1/events",
       "status": 200
     },
     {
@@ -118,13 +68,23 @@
       "status": 200
     },
     {
-      "method": "POST",
-      "path": "/api/v1/drafts",
-      "status": 201
+      "method": "GET",
+      "path": "/api/v1/shopping-items",
+      "status": 200
     },
     {
-      "method": "POST",
-      "path": "/api/v1/drafts/de8fde1c-f898-485b-8408-d1c1b4a30fb0/commit",
+      "method": "GET",
+      "path": "/api/v1/events",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/meal-plans",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/drafts",
       "status": 200
     },
     {
@@ -145,6 +105,16 @@
     {
       "method": "GET",
       "path": "/api/v1/events",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/menus",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/dashboard",
       "status": 200
     },
     {
@@ -164,59 +134,11 @@
     },
     {
       "method": "POST",
-      "path": "/api/v1/drafts/0a993660-c92f-41d5-bbde-5ab6e7f965fa/commit",
-      "status": 200
-    },
-    {
-      "method": "GET",
-      "path": "/api/v1/me/profile",
-      "status": 200
-    },
-    {
-      "method": "GET",
-      "path": "/api/v1/me/consents",
-      "status": 200
-    },
-    {
-      "method": "GET",
-      "path": "/api/v1/ingredients",
-      "status": 200
-    },
-    {
-      "method": "GET",
-      "path": "/api/v1/me/assessment",
-      "status": 200
-    },
-    {
-      "method": "GET",
-      "path": "/api/v1/shopping-items",
-      "status": 200
-    },
-    {
-      "method": "GET",
-      "path": "/api/v1/meal-plans",
-      "status": 200
-    },
-    {
-      "method": "GET",
-      "path": "/api/v1/drafts",
-      "status": 200
-    },
-    {
-      "method": "GET",
-      "path": "/api/v1/events",
-      "status": 200
-    },
-    {
-      "method": "GET",
-      "path": "/api/v1/menus",
-      "status": 200
-    },
-    {
-      "method": "GET",
-      "path": "/api/v1/dashboard",
+      "path": "/api/v1/drafts/a1c57581-7516-4669-ad33-660af9ca8507/commit",
       "status": 200
     }
   ],
-  "synthetic_cleanup": true
+  "synthetic_cleanup": true,
+  "deployed_source_commit": "730ddb9ed974008f7fbfdf622711bf39f591c95e",
+  "test_scope": "production offline manual meal draft integration"
 }
