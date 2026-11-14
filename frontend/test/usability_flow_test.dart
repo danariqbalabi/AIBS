@@ -80,7 +80,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byTooltip('Tambah catatan'));
       await tester.pumpAndSettle();
-      expect(find.text('Tulis cerita'), findsNothing);
+      expect(find.text('Tulis cerita'), findsOneWidget);
       await tester.tap(find.text('Catat makan'));
       await tester.pumpAndSettle();
       expect(find.text('Nama makanan'), findsOneWidget);
@@ -89,6 +89,12 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byTooltip('Tambah catatan'), findsOneWidget);
       expect(find.text('Ambil foto'), findsNothing);
+      await tester.tap(find.byTooltip('Tambah catatan'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Cek makanan'));
+      await tester.pumpAndSettle();
+      expect(find.text('Ambil foto'), findsOneWidget);
+      expect(find.text('Pilih dari galeri'), findsOneWidget);
     },
   );
 

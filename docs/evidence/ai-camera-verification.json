@@ -1,0 +1,32 @@
+{
+  "tested_at": "2026-11-14T16:53:44.979490+00:00",
+  "branch": "fix/ai-camera-capture",
+  "source_base": "3e05c95",
+  "ai_journal": {
+    "environment": "production API",
+    "input": "synthetic nasi/telur and bloating story",
+    "analysis_status": 200,
+    "food_cards": 1,
+    "symptom_cards": 1,
+    "review_patch_status": 200,
+    "commit_status": 200,
+    "synthetic_data_cleaned": true
+  },
+  "camera": {
+    "environment": "local release web build served via isolated Playwright route under production origin",
+    "device": "Chrome fake media device",
+    "live_stream": true,
+    "capture_to_preview": true,
+    "cancel_ai_consent_preserves_preview": true,
+    "page_errors": [],
+    "synthetic_session_cleaned": true
+  },
+  "flutter_tests": 93,
+  "flutter_analyze": "passed",
+  "web_release": "passed",
+  "limitations": [
+    "Physical Android camera not tested.",
+    "Real food photo extraction not exercised in this verification.",
+    "Production frontend needs deployment of this branch after merge."
+  ]
+}

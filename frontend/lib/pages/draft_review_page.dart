@@ -108,6 +108,29 @@ class _DraftReviewPageState extends State<DraftReviewPage> {
 
   Future<void> _save() async {
     if (_busy) return;
+    final content = widget.review.content;
+    final issues = <String>[];
+    for (final kind in ['foods', 'symptoms']) {
+      final cards = content[kind] as List? ?? [];
+      for (var i = 0; i < cards.length; i++) {
+        final card = cards[i] as Map;
+        final label = '${kind == 'foods' ? 'Makanan' : 'Gejala'} ${i + 1}';
+        if (kind == 'foods' && card['consumed'] != true) {
+          issues.add('$label: centang Sudah dimakan untuk mencatat konsumsi.');
+        }
+        final time = card['time'] as Map?;
+        if (time == null || time['confirmed'] != true) {
+          issues.add('$label: centang Waktu sudah ditinjau.');
+        } else if (time['precision'] == 'exact' &&
+            DateTime.tryParse(time['occurred_at']?.toString() ?? '') == null) {
+          issues.add('$label: pilih jam makan/gejala terlebih dahulu.');
+        }
+      }
+    }
+    if (issues.isNotEmpty) {
+      setState(() => _error = issues.first);
+      return;
+    }
     setState(() {
       _busy = true;
       _error = null;
@@ -158,6 +181,9 @@ class _DraftReviewPageState extends State<DraftReviewPage> {
                   children: [
                     if (content['story'] != null)
                       AibsCard(child: Text(content['story'].toString())),
+                    const Text(
+                      'Periksa hasil AI. Untuk mencatat konsumsi, konfirmasi Sudah dimakan dan Waktu sudah ditinjau pada setiap kartu. Bahan yang belum jelas boleh tetap ditandai belum diketahui.',
+                    ),
                     for (final question in content['questions'] as List? ?? [])
                       Padding(
                         padding: const EdgeInsets.only(top: AibsSpace.s12),

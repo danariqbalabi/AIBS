@@ -687,7 +687,7 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
                   Navigator.pop(sheetContext);
                   _openCamera(
                     intent: MealIntent.check,
-                    initialManualEntry: widget.profile?.aiEnabled == false,
+                    initialManualEntry: false,
                   );
                 },
               ),
@@ -714,19 +714,65 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
                   _openSymptomEntry();
                 },
               ),
-              if (widget.profile?.aiEnabled ?? true)
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(sheetContext);
-                    _journalKey.currentState?.openStory();
-                  },
-                  child: const Text('Tulis cerita'),
-                ),
+              TextButton(
+                onPressed: () async {
+                  Navigator.pop(sheetContext);
+                  if (!await _requestAi() || !mounted) return;
+                  await WidgetsBinding.instance.endOfFrame;
+                  if (mounted) _journalKey.currentState?.openStory();
+                },
+                child: const Text('Tulis cerita'),
+              ),
             ],
           ),
         ),
       ),
     );
+  }
+
+  Future<bool> _requestAi() async {
+    if (widget.profile?.aiEnabled == true) return true;
+    if (widget.profile == null || widget.onProfileSaved == null) return false;
+    final allow = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: const Text('Aktifkan Bantuan AI?'),
+        content: const Text(
+          'Foto atau cerita yang kamu pilih akan dikirim ke layanan AI untuk membuat draft. Tinjau hasilnya sebelum disimpan. AI bukan alat diagnosis.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(c, false),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(c, true),
+            child: const Text('Setuju dan aktifkan'),
+          ),
+        ],
+      ),
+    );
+    if (allow != true || !mounted) return false;
+    final profile = widget.profile!;
+    try {
+      await widget.onProfileSaved!(
+        profile.copyWithDietProfile(
+          dietType: profile.dietType,
+          dietPhase: profile.dietPhase,
+          avoidedIngredients: profile.avoidedIngredients,
+          portionLimits: profile.portionLimits,
+          aiEnabled: true,
+          savePhotos: profile.savePhotos,
+        ),
+      );
+      return true;
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(AppServices.message(error))));
+      }
+      return false;
+    }
   }
 
   void _openCamera({
@@ -756,6 +802,7 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
           onCheckFood: _records?.checkFood,
           onSuggestSwaps: _records?.suggestSwaps,
           onReviewPhoto: _records == null ? null : _reviewPhoto,
+          onEnableAi: _requestAi,
           onAddSymptom: () => _openSymptomEntry(initialMealId: savedMealId),
           onFinish: () => setState(() => _selectedIndex = 0),
         ),

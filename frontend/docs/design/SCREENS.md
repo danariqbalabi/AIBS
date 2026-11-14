@@ -357,3 +357,8 @@ Suggested go_router paths: `/welcome`, `/demo`, `/login`, `/login/code`, `/conse
 ## Perluasan jurnal dan offline (permintaan pengguna)
 
 Alur catat ulang, pengganti bahan, grafik, CSV, dan penyimpanan offline dijelaskan di [panduan fitur](../../../docs/journal-offline-expansion.md). Offline menggunakan banner waktu cache, pilihan penyimpanan lokal, dan peninjauan sebelum kirim; hasil tersimpan tidak dinyatakan sebagai penilaian terbaru.
+
+
+## Camera and AI capture follow-up
+
+Cek makanan always opens photo choices, including when AI is off. On web, Ambil foto opens a live browser camera with a capture button; gallery remains a fallback. Native Android uses the device camera picker. Preview can request explicit AI consent without leaving the flow; cancellation keeps the photo and does not call AI. Review explains consumption/time confirmation before saving.
