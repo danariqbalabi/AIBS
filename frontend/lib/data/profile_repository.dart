@@ -75,15 +75,10 @@ class ProfileRepository {
           )['name']
           as String;
 
-  List<String> _ids(List<String> names) => names.map((name) {
-    final id = ingredientId(name);
-    if (id == null) {
-      throw ApiFailure(
-        'Bahan "$name" belum tersedia di katalog. Pilih bahan katalog terlebih dahulu.',
-      );
-    }
-    return id;
-  }).toList();
+  List<String> _ids(List<String> names) =>
+      names.map(ingredientId).whereType<String>().toList();
+  List<String> _custom(List<String> names) =>
+      names.where((name) => ingredientId(name) == null).toList();
 
   Future<ProfileSetupAnswers?> restore(String email) async {
     try {
@@ -108,9 +103,10 @@ class ProfileRepository {
     final row = rawProfile!;
     final diet = row['diet'] as Map<String, dynamic>;
     final answers = assessment['answers'] as Map? ?? {};
-    List<String> names(String key) => (diet[key] as List? ?? [])
-        .map((id) => ingredientName(id as Object))
-        .toList();
+    List<String> names(String key) => [
+      ...(diet[key] as List? ?? []).map((id) => ingredientName(id as Object)),
+      ...(diet['custom_$key'] as List? ?? []).cast<String>(),
+    ];
     return ProfileSetupAnswers(
       displayName: row['display_name'] as String,
       email: email,
@@ -150,6 +146,9 @@ class ProfileRepository {
       dietPhase: labelFor(phaseCodes, diet['phase']),
       avoidedIngredients: names('avoided_ingredients'),
       portionLimits: {
+        for (final limit in diet['custom_portion_limits'] as List? ?? [])
+          limit['name'] as String: num.parse(limit['quantity'].toString())
+              .toInt(),
         for (final limit in diet['portion_limits'] as List? ?? [])
           ingredientName(limit['ingredient_id']): num.parse(
             limit['quantity'].toString(),
@@ -200,9 +199,17 @@ class ProfileRepository {
       'allergies': _ids(profile.allergies),
       'avoided_ingredients': _ids(profile.avoidedIngredients),
       'tolerances': _ids(profile.tolerances),
+      'custom_allergies': _custom(profile.allergies),
+      'custom_avoided_ingredients': _custom(profile.avoidedIngredients),
+      'custom_tolerances': _custom(profile.tolerances),
+      'custom_portion_limits': [
+        for (final entry in profile.portionLimits.entries)
+          if (entry.value != null && ingredientId(entry.key) == null)
+            {'name': entry.key, 'quantity': entry.value, 'unit': 'porsi'},
+      ],
       'portion_limits': [
         for (final entry in profile.portionLimits.entries)
-          if (entry.value != null)
+          if (entry.value != null && ingredientId(entry.key) != null)
             {
               'ingredient_id': _ids([entry.key]).single,
               'quantity': entry.value,

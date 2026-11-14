@@ -8,6 +8,9 @@ RULES_VERSION = "food_constraints_demo_v1"
 def check(profile, ingredients, complete, access, known_ids, *, directive_supported=False):
     diet = DietProfile.model_validate(profile.diet)
     reasons, missing = [], []
+    custom = (diet.custom_allergies, diet.custom_avoided_ingredients, diet.custom_tolerances)
+    if any(custom) or diet.custom_portion_limits:
+        missing.append("Ada batasan pribadi di luar katalog. Konfirmasi bahan dan arahanmu.")
     profile_ids = {
         *diet.allergies,
         *diet.avoided_ingredients,
@@ -21,6 +24,26 @@ def check(profile, ingredients, complete, access, known_ids, *, directive_suppor
     totals = {}
     for item in ingredients:
         key = str(item.ingredient_id) if item.ingredient_id else None
+        name = " ".join(item.display_name.casefold().split())
+        for names, code, message in (
+            (
+                diet.custom_allergies,
+                "allergy_conflict",
+                "Ada bahan yang tercatat sebagai alergimu.",
+            ),
+            (
+                diet.custom_avoided_ingredients,
+                "directive_conflict",
+                "Ada bahan dalam daftar hindari.",
+            ),
+            (
+                diet.custom_tolerances,
+                "personal_tolerance",
+                "Ada bahan yang kamu tandai kurang nyaman.",
+            ),
+        ):
+            if name in {" ".join(value.casefold().split()) for value in names}:
+                reasons.append({"code": code, "ingredient_id": key, "message": message})
         if item.certainty != "confirmed" or key not in known_ids:
             missing.append(f"Konfirmasi bahan: {item.display_name}.")
         if item.quantity is None:

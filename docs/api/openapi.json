@@ -2454,6 +2454,43 @@
         ],
         "title": "ConsentInput"
       },
+      "CustomPortionLimit": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "quantity": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 10000.0,
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Quantity"
+          },
+          "unit": {
+            "type": "string",
+            "maxLength": 30,
+            "minLength": 1,
+            "title": "Unit"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "quantity",
+          "unit"
+        ],
+        "title": "CustomPortionLimit"
+      },
       "DemoInput": {
         "properties": {
           "template": {
@@ -2569,6 +2606,44 @@
             "type": "array",
             "maxItems": 30,
             "title": "Preferences"
+          },
+          "custom_allergies": {
+            "items": {
+              "type": "string",
+              "maxLength": 100,
+              "minLength": 1
+            },
+            "type": "array",
+            "maxItems": 100,
+            "title": "Custom Allergies"
+          },
+          "custom_avoided_ingredients": {
+            "items": {
+              "type": "string",
+              "maxLength": 100,
+              "minLength": 1
+            },
+            "type": "array",
+            "maxItems": 100,
+            "title": "Custom Avoided Ingredients"
+          },
+          "custom_tolerances": {
+            "items": {
+              "type": "string",
+              "maxLength": 100,
+              "minLength": 1
+            },
+            "type": "array",
+            "maxItems": 100,
+            "title": "Custom Tolerances"
+          },
+          "custom_portion_limits": {
+            "items": {
+              "$ref": "#/components/schemas/CustomPortionLimit"
+            },
+            "type": "array",
+            "maxItems": 100,
+            "title": "Custom Portion Limits"
           }
         },
         "additionalProperties": false,

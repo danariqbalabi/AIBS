@@ -163,7 +163,10 @@ def consultation(db, owner, days, end=None):
     allergies = profile.diet.get("allergies", [])
     result["profile"] = {
         "directive": profile.diet.get("directive", "none"),
-        "allergies": [names.get(str(key), "Bahan belum dikenal") for key in allergies],
+        "allergies": [
+            *[names.get(str(key), "Bahan belum dikenal") for key in allergies],
+            *profile.diet.get("custom_allergies", []),
+        ],
     }
     events = in_period(db, owner, result["start"], result["end"], profile.timezone)
     result["records"] = [view(db, kind, row) for kind, row, _ in events]

@@ -364,6 +364,8 @@ class RecordsRepository {
       }
       cards.add({
         'code': code,
+        if (code == 'other') 'label': symptom.otherLabel,
+        if (code == 'bowel') 'bristol_type': symptom.bristolType,
         'present': true,
         'severity': symptom.severity,
         'time': eventTime(symptom.date, symptom.time),
