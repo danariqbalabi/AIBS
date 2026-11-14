@@ -19,7 +19,7 @@ class AibsCard extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(padding),
       decoration: BoxDecoration(
-        color: AibsColors.card,
+        color: context.aibsColor(AibsColors.card),
         borderRadius: BorderRadius.circular(AibsRadius.lg),
         boxShadow: AibsShadows.card,
       ),
@@ -48,7 +48,12 @@ class AibsPrimaryButton extends StatelessWidget {
       child: DecoratedBox(
         decoration: BoxDecoration(
           gradient: onPressed == null
-              ? const LinearGradient(colors: [AibsColors.line, AibsColors.line])
+              ? LinearGradient(
+                  colors: [
+                    context.aibsColor(AibsColors.line),
+                    context.aibsColor(AibsColors.line),
+                  ],
+                )
               : AibsGradients.brand,
           borderRadius: BorderRadius.circular(AibsRadius.lg),
           boxShadow: onPressed == null ? null : AibsShadows.glow,
@@ -69,9 +74,16 @@ class AibsPrimaryButton extends StatelessWidget {
                   ),
                   const SizedBox(width: AibsSpace.s8),
                 ],
-                Text(
-                  label,
-                  style: AibsType.button.copyWith(color: AibsColors.onPrimary),
+                Flexible(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      label,
+                      style: context
+                          .aibsText(AibsType.button)
+                          .copyWith(color: AibsColors.onPrimary),
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -100,14 +112,14 @@ class AibsSecondaryButton extends StatelessWidget {
       child: OutlinedButton(
         onPressed: onPressed,
         style: OutlinedButton.styleFrom(
-          foregroundColor: AibsColors.primaryStrong,
-          side: const BorderSide(color: AibsColors.line, width: 2),
+          foregroundColor: context.aibsColor(AibsColors.primaryStrong),
+          side: BorderSide(color: context.aibsColor(AibsColors.line), width: 2),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AibsRadius.lg),
           ),
-          textStyle: AibsType.button,
+          textStyle: context.aibsText(AibsType.button),
         ),
-        child: Text(label),
+        child: FittedBox(fit: BoxFit.scaleDown, child: Text(label)),
       ),
     );
   }
@@ -148,7 +160,9 @@ class AibsChoiceChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: selected ? AibsColors.primary : AibsColors.card,
+      color: selected
+          ? context.aibsColor(AibsColors.primary)
+          : context.aibsColor(AibsColors.card),
       borderRadius: BorderRadius.circular(AibsRadius.pill),
       child: InkWell(
         onTap: onTap,
@@ -162,7 +176,9 @@ class AibsChoiceChip extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(AibsRadius.pill),
             border: Border.all(
-              color: selected ? AibsColors.primary : AibsColors.line,
+              color: selected
+                  ? context.aibsColor(AibsColors.primary)
+                  : context.aibsColor(AibsColors.line),
               width: 2,
             ),
           ),
@@ -179,9 +195,13 @@ class AibsChoiceChip extends StatelessWidget {
               ],
               Text(
                 label,
-                style: AibsType.bodyStrong.copyWith(
-                  color: selected ? AibsColors.onPrimary : AibsColors.ink,
-                ),
+                style: context
+                    .aibsText(AibsType.bodyStrong)
+                    .copyWith(
+                      color: selected
+                          ? AibsColors.onPrimary
+                          : context.aibsColor(AibsColors.ink),
+                    ),
               ),
             ],
           ),

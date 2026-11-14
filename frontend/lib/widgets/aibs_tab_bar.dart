@@ -27,8 +27,8 @@ class AibsTabBar extends StatelessWidget {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
     return Container(
       padding: EdgeInsets.only(bottom: bottomInset),
-      decoration: const BoxDecoration(
-        color: AibsColors.card,
+      decoration: BoxDecoration(
+        color: context.aibsColor(AibsColors.card),
         borderRadius: BorderRadius.vertical(
           top: Radius.circular(AibsRadius.xxl),
         ),
@@ -91,7 +91,9 @@ class _TabButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = selected ? AibsColors.primaryStrong : AibsColors.inkMuted;
+    final color = selected
+        ? context.aibsColor(AibsColors.primaryStrong)
+        : context.aibsColor(AibsColors.inkMuted);
     return Center(
       child: Material(
         color: Colors.transparent,
@@ -110,7 +112,9 @@ class _TabButton extends StatelessWidget {
               vertical: AibsSpace.s6,
             ),
             decoration: BoxDecoration(
-              color: selected ? AibsColors.primarySoft : Colors.transparent,
+              color: selected
+                  ? context.aibsColor(AibsColors.primarySoft)
+                  : Colors.transparent,
               borderRadius: BorderRadius.circular(AibsRadius.md),
             ),
             child: Column(
@@ -127,10 +131,12 @@ class _TabButton extends StatelessWidget {
                   item.label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: AibsType.micro.copyWith(
-                    color: color,
-                    fontWeight: selected ? AibsType.w800 : AibsType.w700,
-                  ),
+                  style: context
+                      .aibsText(AibsType.micro)
+                      .copyWith(
+                        color: color,
+                        fontWeight: selected ? AibsType.w800 : AibsType.w700,
+                      ),
                 ),
               ],
             ),
@@ -151,23 +157,19 @@ class _CameraButton extends StatelessWidget {
     return Container(
       width: AibsSize.cameraButton,
       height: AibsSize.cameraButton,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         shape: BoxShape.circle,
         gradient: AibsGradients.brand,
-        boxShadow: AibsShadows.camera,
+        boxShadow: context.aibsShadows(AibsShadows.camera),
       ),
       child: IconButton(
-        tooltip: 'Foto makanan',
+        tooltip: 'Tambah catatan',
         onPressed: onPressed,
         padding: EdgeInsets.zero,
-        icon: SvgPicture.asset(
-          'assets/icons/camera.svg',
-          width: 26,
-          height: 26,
-          colorFilter: const ColorFilter.mode(
-            AibsColors.onPrimary,
-            BlendMode.srcIn,
-          ),
+        icon: const Icon(
+          Icons.add,
+          size: AibsSize.navIcon,
+          color: AibsColors.onPrimary,
         ),
       ),
     );

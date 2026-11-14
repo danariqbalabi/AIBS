@@ -107,6 +107,37 @@ def summary(db, owner, days, end=None):
     }
 
 
+def logging_streak(db, owner, timezone, day=None):
+    """A saved food qualifies its creation day, never the backdated meal date."""
+    zone = ZoneInfo(timezone)
+    day = day or datetime.now(zone).date()
+    timestamps = db.scalars(select(FoodEvent.created_at).where(FoodEvent.owner_id == owner))
+    days = {
+        (stamp.replace(tzinfo=UTC) if stamp.tzinfo is None else stamp).astimezone(zone).date()
+        for stamp in timestamps
+    }
+    days = {value for value in days if value <= day}
+    best = run = 0
+    previous = None
+    for value in sorted(days):
+        run = run + 1 if previous is not None and value == previous + timedelta(days=1) else 1
+        best = max(best, run)
+        previous = value
+    cursor = day if day in days else day - timedelta(days=1)
+    current = 0
+    while cursor in days:
+        current += 1
+        cursor -= timedelta(days=1)
+    return {
+        "current_days": current,
+        "best_days": best,
+        "completed_today": day in days,
+        "last_completed_date": max(days) if days else None,
+        "as_of": day,
+        "timezone": timezone,
+    }
+
+
 def dashboard(db, owner, day=None):
     require_basic(db, owner)
     profile, access = profile_for(db, owner), access_for(db, owner)
@@ -153,6 +184,7 @@ def dashboard(db, owner, day=None):
         "empty": not cards and not planned,
         "recommendations": recommendations,
         "week": summary(db, owner, 7, day),
+        "streak": logging_streak(db, owner, profile.timezone, day),
     }
 
 

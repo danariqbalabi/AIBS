@@ -1,3 +1,5 @@
+import 'package:flutter/services.dart';
+
 import 'dart:async';
 
 import '../data/app_services.dart';
@@ -47,10 +49,16 @@ class MenuHomePage extends StatefulWidget {
   final FutureOr<void> Function(AibsMealPlan) onPlanSaved;
 
   @override
-  State<MenuHomePage> createState() => _MenuHomePageState();
+  MenuHomePageState createState() => MenuHomePageState();
 }
 
-class _MenuHomePageState extends State<MenuHomePage> {
+class MenuHomePageState extends State<MenuHomePage> {
+  bool _onlySuitable = false;
+  void showSuitable() => setState(() {
+    _onlySuitable = true;
+    _kind = 'Semua';
+    _searchController.clear();
+  });
   final _searchController = TextEditingController();
   String _kind = 'Semua';
   bool _withinBudget = true;
@@ -74,7 +82,11 @@ class _MenuHomePageState extends State<MenuHomePage> {
       final matchesTime =
           !_quickOnly ||
           (item.preparationMinutes != null && item.preparationMinutes! <= 15);
-      return matchesText && matchesKind && matchesBudget && matchesTime;
+      return matchesText &&
+          matchesKind &&
+          matchesBudget &&
+          matchesTime &&
+          (!_onlySuitable || item.status == CheckStatus.ok);
     }).toList();
 
     return ListView(
@@ -87,7 +99,9 @@ class _MenuHomePageState extends State<MenuHomePage> {
       children: [
         Row(
           children: [
-            Expanded(child: Text('Menu', style: AibsType.title)),
+            Expanded(
+              child: Text('Menu', style: context.aibsText(AibsType.title)),
+            ),
             _CartButton(
               count: widget.shoppingItems.length,
               onTap: _openShoppingList,
@@ -95,7 +109,10 @@ class _MenuHomePageState extends State<MenuHomePage> {
           ],
         ),
         const SizedBox(height: AibsSpace.s16),
-        Text('Katalog demo · harga perkiraan', style: AibsType.micro),
+        Text(
+          'Katalog demo · harga perkiraan',
+          style: context.aibsText(AibsType.micro),
+        ),
         TextField(
           controller: _searchController,
           decoration: const InputDecoration(
@@ -143,6 +160,12 @@ class _MenuHomePageState extends State<MenuHomePage> {
               ),
             const SizedBox(height: AibsSpace.s12),
           ],
+        if (_onlySuitable)
+          TextButton.icon(
+            onPressed: () => setState(() => _onlySuitable = false),
+            icon: const Icon(Icons.close),
+            label: const Text('Tampilkan semua status'),
+          ),
         if (filtered.isEmpty)
           const AibsCard(child: Text('Menu belum ditemukan.')),
       ],
@@ -159,6 +182,10 @@ class _MenuHomePageState extends State<MenuHomePage> {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => MenuDetailPage(
+          onFindAlternatives: () {
+            Navigator.of(context).pop();
+            showSuitable();
+          },
           onCheckMenu: widget.onCheckMenu,
           ingredientId: widget.ingredientId,
           item: item,
@@ -211,7 +238,10 @@ class _CartButton extends StatelessWidget {
           'assets/icons/cart.svg',
           width: AibsSize.navIcon,
           height: AibsSize.navIcon,
-          colorFilter: const ColorFilter.mode(AibsColors.ink, BlendMode.srcIn),
+          colorFilter: ColorFilter.mode(
+            context.aibsColor(AibsColors.ink),
+            BlendMode.srcIn,
+          ),
         ),
       ),
     );
@@ -231,7 +261,9 @@ class _FilterChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: selected ? AibsColors.primarySoft : AibsColors.card,
+      color: selected
+          ? context.aibsColor(AibsColors.primarySoft)
+          : context.aibsColor(AibsColors.card),
       borderRadius: BorderRadius.circular(AibsRadius.pill),
       child: InkWell(
         onTap: onTap,
@@ -243,16 +275,22 @@ class _FilterChip extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(AibsRadius.pill),
             border: Border.all(
-              color: selected ? AibsColors.primarySoft : AibsColors.line,
+              color: selected
+                  ? context.aibsColor(AibsColors.primarySoft)
+                  : context.aibsColor(AibsColors.line),
               width: 2,
             ),
           ),
           child: Text(
             label,
-            style: AibsType.small.copyWith(
-              color: selected ? AibsColors.primaryStrong : AibsColors.ink,
-              fontWeight: AibsType.w800,
-            ),
+            style: context
+                .aibsText(AibsType.small)
+                .copyWith(
+                  color: selected
+                      ? context.aibsColor(AibsColors.primaryStrong)
+                      : context.aibsColor(AibsColors.ink),
+                  fontWeight: AibsType.w800,
+                ),
           ),
         ),
       ),
@@ -268,7 +306,7 @@ class _MenuCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AibsColors.card,
+      color: context.aibsColor(AibsColors.card),
       borderRadius: BorderRadius.circular(AibsRadius.lg),
       child: InkWell(
         onTap: onTap,
@@ -297,13 +335,19 @@ class _MenuCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(item.name, style: AibsType.bodyStrong),
+                    Text(
+                      item.name,
+                      style: context.aibsText(AibsType.bodyStrong),
+                    ),
                     const SizedBox(height: AibsSpace.s4),
-                    Text(item.meta, style: AibsType.small),
+                    Text(item.meta, style: context.aibsText(AibsType.small)),
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right, color: AibsColors.inkMuted),
+              Icon(
+                Icons.chevron_right,
+                color: context.aibsColor(AibsColors.inkMuted),
+              ),
             ],
           ),
         ),
@@ -319,11 +363,13 @@ class MenuDetailPage extends StatefulWidget {
     required this.onAddShopping,
     required this.onStartMealRecord,
     required this.onPlanSaved,
+    this.onFindAlternatives,
     this.onCheckMenu,
     this.ingredientId,
   });
 
   final AibsMenuItem item;
+  final VoidCallback? onFindAlternatives;
   final FutureOr<void> Function(AibsMenuItem) onAddShopping;
   final ValueChanged<AibsMenuItem> onStartMealRecord;
   final FutureOr<void> Function(AibsMealPlan) onPlanSaved;
@@ -364,7 +410,7 @@ class _MenuDetailPageState extends State<MenuDetailPage> {
           Stack(
             children: [
               Container(
-                height: 260,
+                height: AibsSize.menuHero,
                 width: double.infinity,
                 decoration: BoxDecoration(
                   gradient: AibsGradients.food(AibsColors.foodBlue),
@@ -393,11 +439,13 @@ class _MenuDetailPageState extends State<MenuDetailPage> {
                 AibsSpace.s24,
               ),
               children: [
-                Text(item.name, style: AibsType.titleDetail),
+                Text(item.name, style: context.aibsText(AibsType.titleDetail)),
                 const SizedBox(height: AibsSpace.s8),
                 Text(
                   '${item.kind} · ${item.priceLabel} · 1 porsi',
-                  style: AibsType.caption.copyWith(color: AibsColors.inkMuted),
+                  style: context
+                      .aibsText(AibsType.caption)
+                      .copyWith(color: context.aibsColor(AibsColors.inkMuted)),
                 ),
                 const SizedBox(height: AibsSpace.s10),
                 StatusBadge(item.status),
@@ -410,13 +458,15 @@ class _MenuDetailPageState extends State<MenuDetailPage> {
                   ),
                   child: Text(
                     item.reason,
-                    style: AibsType.caption.copyWith(color: item.status.ink),
+                    style: context
+                        .aibsText(AibsType.caption)
+                        .copyWith(color: item.status.ink),
                   ),
                 ),
                 const SizedBox(height: AibsSpace.s20),
                 Text(
                   item.kind == 'Beli' ? 'Cara pesan' : 'Cara masak',
-                  style: AibsType.sectionTitle,
+                  style: context.aibsText(AibsType.sectionTitle),
                 ),
                 const SizedBox(height: AibsSpace.s8),
                 AibsCard(
@@ -431,14 +481,29 @@ class _MenuDetailPageState extends State<MenuDetailPage> {
                         if (index > 0) const Divider(height: AibsSpace.s20),
                         Text(
                           item.kind == 'Beli' ? line : '${index + 1}. $line',
-                          style: AibsType.bodyStrong,
+                          style: context.aibsText(AibsType.bodyStrong),
                         ),
                       ],
                     ],
                   ),
                 ),
                 const SizedBox(height: AibsSpace.s20),
-                Text('Bahan', style: AibsType.sectionTitle),
+                if (item.kind == 'Beli')
+                  TextButton.icon(
+                    onPressed: () async {
+                      await Clipboard.setData(
+                        ClipboardData(text: item.orderTips.join('\n')),
+                      );
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Cara pesan disalin')),
+                        );
+                      }
+                    },
+                    icon: const Icon(Icons.copy),
+                    label: const Text('Salin cara pesan'),
+                  ),
+                Text('Bahan', style: context.aibsText(AibsType.sectionTitle)),
                 if (widget.onCheckMenu != null)
                   TextButton(
                     onPressed: _edit,
@@ -460,25 +525,26 @@ class _MenuDetailPageState extends State<MenuDetailPage> {
                   ),
                 ),
                 const SizedBox(height: AibsSpace.s12),
-                AibsSecondaryButton(
-                  label: 'Masukkan ke checklist belanja',
-                  onPressed: () async {
-                    try {
-                      await widget.onAddShopping(item);
-                    } catch (error) {
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(AppServices.message(error))),
-                        );
+                if (item.kind == 'Masak')
+                  AibsSecondaryButton(
+                    label: 'Masukkan ke checklist belanja',
+                    onPressed: () async {
+                      try {
+                        await widget.onAddShopping(item);
+                      } catch (error) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(AppServices.message(error))),
+                          );
+                        }
+                        return;
                       }
-                      return;
-                    }
-                    if (!context.mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Bahan ditambahkan')),
-                    );
-                  },
-                ),
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Bahan ditambahkan')),
+                      );
+                    },
+                  ),
               ],
             ),
           ),
@@ -491,34 +557,72 @@ class _MenuDetailPageState extends State<MenuDetailPage> {
                 AibsSpace.s20,
                 AibsSpace.s16,
               ),
-              decoration: const BoxDecoration(
-                color: AibsColors.card,
+              decoration: BoxDecoration(
+                color: context.aibsColor(AibsColors.card),
                 boxShadow: AibsShadows.bar,
                 borderRadius: AibsRadius.sheetTop,
               ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: AibsSecondaryButton(
-                      label: 'Jadwalkan',
-                      onPressed: () => _schedule(context),
+              child: item.status == CheckStatus.bad
+                  ? Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        AibsPrimaryButton(
+                          label: 'Lihat pilihan sesuai',
+                          onPressed:
+                              widget.onFindAlternatives ??
+                              () => Navigator.pop(context),
+                        ),
+                        TextButton(
+                          onPressed: _confirmConsumed,
+                          child: const Text('Tetap catat'),
+                        ),
+                      ],
+                    )
+                  : Row(
+                      children: [
+                        Expanded(
+                          child: AibsSecondaryButton(
+                            label: 'Jadwalkan',
+                            onPressed: () => _schedule(context),
+                          ),
+                        ),
+                        const SizedBox(width: AibsSpace.s10),
+                        Expanded(
+                          child: AibsPrimaryButton(
+                            label: 'Sudah dimakan',
+                            onPressed: () => widget.onStartMealRecord(item),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(width: AibsSpace.s10),
-                  Expanded(
-                    flex: 2,
-                    child: AibsPrimaryButton(
-                      label: 'Sudah dimakan',
-                      onPressed: () => widget.onStartMealRecord(item),
-                    ),
-                  ),
-                ],
-              ),
             ),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _confirmConsumed() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: const Text('Makanan ini tidak sesuai arahanmu'),
+        content: Text(
+          '${item.reason}\n\nKalau sudah dimakan, kamu tetap bisa mencatatnya.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(c, false),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(c, true),
+            child: const Text('Sudah dimakan'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && mounted) widget.onStartMealRecord(item);
   }
 
   Future<void> _schedule(BuildContext context) async {
@@ -631,7 +735,7 @@ class _BackButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AibsColors.card,
+      color: context.aibsColor(AibsColors.card),
       borderRadius: BorderRadius.circular(AibsRadius.sm),
       child: IconButton(
         tooltip: 'Kembali',
@@ -654,7 +758,9 @@ class _IngredientLine extends StatelessWidget {
       children: [
         StatusDot(result),
         const SizedBox(width: AibsSpace.s10),
-        Expanded(child: Text(ingredient, style: AibsType.bodyStrong)),
+        Expanded(
+          child: Text(ingredient, style: context.aibsText(AibsType.bodyStrong)),
+        ),
       ],
     );
   }
@@ -707,9 +813,9 @@ class _ScheduleSheetState extends State<_ScheduleSheet> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Jadwalkan', style: AibsType.sheetTitle),
+              Text('Jadwalkan', style: context.aibsText(AibsType.sheetTitle)),
               const SizedBox(height: AibsSpace.s16),
-              Text('Hari', style: AibsType.caption),
+              Text('Hari', style: context.aibsText(AibsType.caption)),
               const SizedBox(height: AibsSpace.s8),
               Wrap(
                 spacing: AibsSpace.s8,
@@ -723,7 +829,7 @@ class _ScheduleSheetState extends State<_ScheduleSheet> {
                 ],
               ),
               const SizedBox(height: AibsSpace.s16),
-              Text('Waktu', style: AibsType.caption),
+              Text('Waktu', style: context.aibsText(AibsType.caption)),
               const SizedBox(height: AibsSpace.s8),
               Wrap(
                 spacing: AibsSpace.s8,
@@ -742,7 +848,9 @@ class _ScheduleSheetState extends State<_ScheduleSheet> {
                 title: const Text('Jam'),
                 trailing: TextButton(
                   onPressed: _pickTime,
-                  child: Text(_time.format(context)),
+                  child: Text(
+                    '${_time.hour.toString().padLeft(2, '0')}.${_time.minute.toString().padLeft(2, '0')}',
+                  ),
                 ),
               ),
               AibsPrimaryButton(
@@ -754,7 +862,8 @@ class _ScheduleSheetState extends State<_ScheduleSheet> {
                     menu: widget.menu,
                     day: _day,
                     meal: _meal,
-                    time: _time.format(context),
+                    time:
+                        '${_time.hour.toString().padLeft(2, '0')}.${_time.minute.toString().padLeft(2, '0')}',
                     scheduledAt: DateTime(
                       _anchor.year,
                       _anchor.month,
@@ -910,14 +1019,16 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
                 },
                 title: Text(
                   item,
-                  style: AibsType.bodyStrong.copyWith(
-                    color: _checked.contains(item)
-                        ? AibsColors.inkMuted
-                        : AibsColors.ink,
-                    decoration: _checked.contains(item)
-                        ? TextDecoration.lineThrough
-                        : null,
-                  ),
+                  style: context
+                      .aibsText(AibsType.bodyStrong)
+                      .copyWith(
+                        color: _checked.contains(item)
+                            ? context.aibsColor(AibsColors.inkMuted)
+                            : context.aibsColor(AibsColors.ink),
+                        decoration: _checked.contains(item)
+                            ? TextDecoration.lineThrough
+                            : null,
+                      ),
                 ),
                 subtitle: widget.onQuantity == null
                     ? null

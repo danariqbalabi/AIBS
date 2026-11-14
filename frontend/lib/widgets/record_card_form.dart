@@ -233,7 +233,7 @@ class _RecordCardFormState extends State<RecordCardForm> {
             value: card['consumed'] == true,
             onChanged: (v) => setState(() => card['consumed'] = v ?? false),
           ),
-        Text('Bahan', style: AibsType.sectionTitle),
+        Text('Bahan', style: context.aibsText(AibsType.sectionTitle)),
         for (final row in ingredients)
           Padding(
             key: ObjectKey(row),

@@ -1,4 +1,8 @@
+> Pembaruan UX yang disetujui 14 November 2026: navigasi pencatatan memakai tombol + dan pilihan bersama; detail perilaku serta pengujian ada di [usability-polish](../../../docs/usability-polish.md). Untuk area yang berubah, catatan ini menggantikan alur kamera lama di bawah.
+
 # AIBS screens
+
+The app viewport is centered and capped at 390 logical pixels on wide windows, including the Navigator, dialogs, and sheets. Narrower windows use their full width; height follows the available window. This applies to local runs and deployed web builds.
 
 The reference frame is a 390 × 844 phone. Every screen ID below matches an artboard on the hi-fi canvas (e.g. `H1 · Hari Ini`). Numbers are logical px from the prototype. Build with normal Flutter layout (padding, Column, Stack), not absolute coordinates. Content scrolls; top bars, bottom actions, and the tab bar stay pinned.
 

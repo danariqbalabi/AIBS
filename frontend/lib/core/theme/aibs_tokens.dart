@@ -6,7 +6,7 @@
 //
 // CSS #RRGGBB was converted to Flutter 0xFFRRGGBB; alpha is the first byte.
 
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 
 abstract final class AibsColors {
   // Brand
@@ -101,6 +101,9 @@ abstract final class AibsSpace {
 }
 
 abstract final class AibsSize {
+  static const mobileViewport = 390.0;
+  static const menuHero = 144.0;
+  static const navigationClearance = 40.0;
   static const tapMin = 44.0;
   static const backButton = 44.0;
   static const button = 56.0;
@@ -262,4 +265,80 @@ abstract final class AibsMotion {
 
   static const pressScale = 0.97;
   static const pageSlide = 12.0;
+}
+
+/// Semantic night palette. Brand gradients and illustrations retain their colors.
+abstract final class AibsDarkColors {
+  static const surface = Color(0xFF0E1626);
+  static const card = Color(0xFF19263B);
+  static const ink = Color(0xFFE7EEFC);
+  static const inkMuted = Color(0xFFADBBD1);
+  static const line = Color(0xFF32425B);
+  static const trackOff = Color(0xFF43516A);
+  static const primary = Color(0xFF80ACFF);
+  static const primaryStrong = Color(0xFF8DB5FF);
+  static const primarySoft = Color(0xFF21385D);
+  static const primaryTint = Color(0xFFBCD1FF);
+  static const okInk = Color(0xFF83E0B5);
+  static const okSoft = Color(0xFF143F32);
+  static const warnInk = Color(0xFFFFD38A);
+  static const warnSoft = Color(0xFF48371D);
+  static const badInk = Color(0xFFFFADA6);
+  static const badSoft = Color(0xFF4A282D);
+  static const unknownSoft = Color(0xFF25334B);
+  static const scrim = Color(0xB3000000);
+  static const heroEnd = Color(0xFF294975);
+
+  static Color resolve(Color light, Brightness brightness) {
+    if (brightness != Brightness.dark) return light;
+    return {
+          AibsColors.surface: surface,
+          AibsColors.card: card,
+          AibsColors.ink: ink,
+          AibsColors.inkMuted: inkMuted,
+          AibsColors.line: line,
+          AibsColors.trackOff: trackOff,
+          AibsColors.primary: primary,
+          AibsColors.primaryStrong: primaryStrong,
+          AibsColors.primarySoft: primarySoft,
+          AibsColors.primaryTint: primaryTint,
+          AibsColors.okInk: okInk,
+          AibsColors.okSoft: okSoft,
+          AibsColors.warnInk: warnInk,
+          AibsColors.warnSoft: warnSoft,
+          AibsColors.badInk: badInk,
+          AibsColors.badSoft: badSoft,
+          AibsColors.unknownSoft: unknownSoft,
+          AibsColors.scrim: scrim,
+        }[light] ??
+        light;
+  }
+}
+
+extension AibsThemedTokens on BuildContext {
+  Color aibsColor(Color light) =>
+      AibsDarkColors.resolve(light, Theme.of(this).brightness);
+  TextStyle aibsText(TextStyle style) => style.copyWith(
+    color: style.color == null ? null : aibsColor(style.color!),
+  );
+  Gradient aibsGradient(Gradient light) {
+    if (Theme.of(this).brightness != Brightness.dark) return light;
+    if (light == AibsGradients.hero) {
+      return const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [AibsDarkColors.primarySoft, AibsDarkColors.heroEnd],
+      );
+    }
+    if (light == AibsGradients.glow) {
+      return const RadialGradient(
+        colors: [AibsDarkColors.primarySoft, AibsDarkColors.surface],
+      );
+    }
+    return light;
+  }
+
+  List<BoxShadow> aibsShadows(List<BoxShadow> light) => [
+    for (final shadow in light) shadow.copyWith(color: aibsColor(shadow.color)),
+  ];
 }

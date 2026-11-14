@@ -1,6 +1,9 @@
 import 'dart:async';
 
 import '../data/app_services.dart';
+import '../data/profile_repository.dart';
+import '../data/theme_preferences.dart';
+import '../widgets/unsaved_guard.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -32,6 +35,7 @@ class TodayPage extends StatelessWidget {
     this.plan,
     this.menus,
     this.serverMode,
+    this.streak,
     this.plans = const [],
   });
 
@@ -50,6 +54,7 @@ class TodayPage extends StatelessWidget {
   final AibsMealPlan? plan;
   final List<AibsMenuItem>? menus;
   final String? serverMode;
+  final Map<String, dynamic>? streak;
   final List<AibsMealPlan> plans;
 
   @override
@@ -72,21 +77,64 @@ class TodayPage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Hai, $greetingName', style: AibsType.greeting),
+              Text(
+                'Hai, $greetingName',
+                style: context.aibsText(AibsType.greeting),
+              ),
               const SizedBox(height: AibsSpace.s2),
               Text(
                 hasDiet ? 'Mau $mealLabel apa?' : 'Mau catat apa hari ini?',
-                style: AibsType.title,
+                style: context.aibsText(AibsType.title),
               ),
             ],
           ),
         ),
         const SizedBox(height: AibsSpace.s24),
+        if (streak != null) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AibsSpace.s20),
+            child: InkWell(
+              onTap: onOpenCamera,
+              borderRadius: BorderRadius.circular(AibsRadius.lg),
+              child: AibsCard(
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.local_fire_department_outlined,
+                      color: context.aibsColor(AibsColors.primary),
+                    ),
+                    const SizedBox(width: AibsSpace.s12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '${streak!['current_days']} hari berturut-turut',
+                            style: context.aibsText(AibsType.bodyStrong),
+                          ),
+                          Text(
+                            streak!['completed_today'] == true
+                                ? 'Catatan hari ini sudah tersimpan'
+                                : 'Catat makan hari ini untuk lanjut',
+                            style: context.aibsText(AibsType.caption),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: AibsSpace.s8),
+                    Text(
+                      'Terbaik ${streak!['best_days']}',
+                      style: context.aibsText(AibsType.small),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: AibsSpace.s20),
+        ],
         if (!hasDiet)
-          _DietPrompt(
-            onOpenProfile: onOpenProfile,
-            onOpenJournal: onOpenJournal,
-          )
+          _DietPrompt(onOpenProfile: onOpenProfile, onOpenJournal: onOpenCamera)
         else if (!hasMeals && visiblePlans.isEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AibsSpace.s20),
@@ -104,7 +152,10 @@ class TodayPage extends StatelessWidget {
                     children: [
                       const Koala(KoalaMood.senang, size: 120),
                       const SizedBox(height: AibsSpace.s8),
-                      Text('Belum ada catatan', style: AibsType.verdict),
+                      Text(
+                        'Belum ada catatan',
+                        style: context.aibsText(AibsType.verdict),
+                      ),
                       const SizedBox(height: AibsSpace.s12),
                       AibsSecondaryButton(
                         label: 'Catat makan pertama',
@@ -205,7 +256,7 @@ class _DietPrompt extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(AibsSpace.s16),
         decoration: BoxDecoration(
-          color: AibsColors.primarySoft,
+          color: context.aibsColor(AibsColors.primarySoft),
           borderRadius: BorderRadius.circular(AibsRadius.lg),
         ),
         child: Column(
@@ -239,7 +290,7 @@ class _OpenMenuCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AibsColors.card,
+      color: context.aibsColor(AibsColors.card),
       borderRadius: BorderRadius.circular(AibsRadius.lg),
       child: InkWell(
         onTap: onTap,
@@ -251,10 +302,13 @@ class _OpenMenuCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   'Lihat $count menu yang sesuai',
-                  style: AibsType.bodyStrong,
+                  style: context.aibsText(AibsType.bodyStrong),
                 ),
               ),
-              const Icon(Icons.chevron_right, color: AibsColors.inkMuted),
+              Icon(
+                Icons.chevron_right,
+                color: context.aibsColor(AibsColors.inkMuted),
+              ),
             ],
           ),
         ),
@@ -290,7 +344,7 @@ class _RecommendationSlider extends StatelessWidget {
             const SizedBox(width: AibsSpace.s12),
           ],
           Material(
-            color: AibsColors.primarySoft,
+            color: context.aibsColor(AibsColors.primarySoft),
             borderRadius: BorderRadius.circular(AibsRadius.lg),
             child: InkWell(
               onTap: onSeeAll,
@@ -300,15 +354,18 @@ class _RecommendationSlider extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const CircleAvatar(
-                      backgroundColor: AibsColors.card,
+                    CircleAvatar(
+                      backgroundColor: context.aibsColor(AibsColors.card),
                       child: Icon(
                         Icons.arrow_forward,
-                        color: AibsColors.primaryStrong,
+                        color: context.aibsColor(AibsColors.primaryStrong),
                       ),
                     ),
                     const SizedBox(height: AibsSpace.s8),
-                    Text('Lihat semua', style: AibsType.label),
+                    Text(
+                      'Lihat semua',
+                      style: context.aibsText(AibsType.label),
+                    ),
                   ],
                 ),
               ),
@@ -328,7 +385,7 @@ class _RecommendationCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AibsColors.card,
+      color: context.aibsColor(AibsColors.card),
       borderRadius: BorderRadius.circular(AibsRadius.lg),
       child: InkWell(
         onTap: onTap,
@@ -363,11 +420,11 @@ class _RecommendationCard extends StatelessWidget {
                       item.name,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: AibsType.bodyStrong,
+                      style: context.aibsText(AibsType.bodyStrong),
                     ),
                     Text(
                       '${item.kind} · ${item.priceLabel}',
-                      style: AibsType.small,
+                      style: context.aibsText(AibsType.small),
                     ),
                     const SizedBox(height: AibsSpace.s4),
                     const StatusBadge(CheckStatus.ok),
@@ -394,18 +451,27 @@ class _PlanCard extends StatelessWidget {
         onTap: onTap,
         child: Row(
           children: [
-            Text(plan.time, style: AibsType.bodyStrong),
+            Text(plan.time, style: context.aibsText(AibsType.bodyStrong)),
             const SizedBox(width: AibsSpace.s12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('${plan.day} · ${plan.meal}', style: AibsType.small),
-                  Text(plan.menu.name, style: AibsType.bodyStrong),
+                  Text(
+                    '${plan.day} · ${plan.meal}',
+                    style: context.aibsText(AibsType.small),
+                  ),
+                  Text(
+                    plan.menu.name,
+                    style: context.aibsText(AibsType.bodyStrong),
+                  ),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: AibsColors.inkMuted),
+            Icon(
+              Icons.chevron_right,
+              color: context.aibsColor(AibsColors.inkMuted),
+            ),
           ],
         ),
       ),
@@ -423,7 +489,7 @@ class _SymptomPrompt extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AibsSpace.s12),
       decoration: BoxDecoration(
-        color: AibsColors.primarySoft,
+        color: context.aibsColor(AibsColors.primarySoft),
         borderRadius: BorderRadius.circular(AibsRadius.lg),
       ),
       child: Column(
@@ -480,11 +546,14 @@ class _WeekCard extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: Text('7 hari terakhir', style: AibsType.bodyStrong),
+                child: Text(
+                  '7 hari terakhir',
+                  style: context.aibsText(AibsType.bodyStrong),
+                ),
               ),
               Text(
                 '${daysWithSymptoms.length} hari ada gejala',
-                style: AibsType.caption,
+                style: context.aibsText(AibsType.caption),
               ),
             ],
           ),
@@ -542,18 +611,22 @@ class _DayDot extends StatelessWidget {
           height: 30,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: hasSymptom ? AibsColors.primary : AibsColors.unknownSoft,
+            color: hasSymptom
+                ? context.aibsColor(AibsColors.primary)
+                : context.aibsColor(AibsColors.unknownSoft),
             shape: BoxShape.circle,
           ),
           child: hasSymptom
               ? Text(
                   '${date.day}',
-                  style: AibsType.small.copyWith(color: AibsColors.onPrimary),
+                  style: context
+                      .aibsText(AibsType.small)
+                      .copyWith(color: AibsColors.onPrimary),
                 )
               : null,
         ),
         const SizedBox(height: AibsSpace.s4),
-        Text(labels[date.weekday % 7], style: AibsType.micro),
+        Text(labels[date.weekday % 7], style: context.aibsText(AibsType.micro)),
       ],
     );
   }
@@ -568,19 +641,25 @@ class _TodayLogCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return AibsCard(
       child: Material(
-        color: AibsColors.card,
+        color: context.aibsColor(AibsColors.card),
         borderRadius: BorderRadius.circular(AibsRadius.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Hari ini', style: AibsType.sectionTitle),
+            Text('Hari ini', style: context.aibsText(AibsType.sectionTitle)),
             const SizedBox(height: AibsSpace.s8),
             for (final meal in meals)
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 onTap: onTap,
-                title: Text(meal.name, style: AibsType.bodyStrong),
-                leading: Text(meal.time, style: AibsType.small),
+                title: Text(
+                  meal.name,
+                  style: context.aibsText(AibsType.bodyStrong),
+                ),
+                leading: Text(
+                  meal.time,
+                  style: context.aibsText(AibsType.small),
+                ),
                 trailing: const Icon(Icons.chevron_right),
               ),
           ],
@@ -636,6 +715,7 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     final profileData = _profile;
+    final themePreferences = ThemeSettings.maybeOf(context);
     final name = profileData?.displayName;
     final displayName = name == null || name.isEmpty ? 'Nadia' : name;
     final email = profileData?.email;
@@ -681,10 +761,10 @@ class _ProfilePageState extends State<ProfilePage> {
             children: [
               CircleAvatar(
                 radius: 28,
-                backgroundColor: AibsColors.primarySoft,
+                backgroundColor: context.aibsColor(AibsColors.primarySoft),
                 child: Icon(
                   Icons.person_outline,
-                  color: AibsColors.primaryStrong,
+                  color: context.aibsColor(AibsColors.primaryStrong),
                   size: 30,
                 ),
               ),
@@ -694,7 +774,10 @@ class _ProfilePageState extends State<ProfilePage> {
                 children: [
                   Text(
                     email == null || email.isEmpty ? 'Nama panggilan' : email,
-                    style: TextStyle(color: AibsColors.inkMuted, fontSize: 12),
+                    style: TextStyle(
+                      color: context.aibsColor(AibsColors.inkMuted),
+                      fontSize: 12,
+                    ),
                   ),
                   SizedBox(height: 3),
                   Text(
@@ -732,10 +815,12 @@ class _ProfilePageState extends State<ProfilePage> {
           title: 'Alergi',
           value: allergies,
           detail: 'Bisa kamu ubah kapan saja',
+          onTap: () => _openPreferences(allergiesOnly: true),
         ),
         const SizedBox(height: 12),
         _ProfileSection(
           title: 'Budget & preferensi',
+          onTap: () => _openPreferences(allergiesOnly: false),
           value: budget,
           detail: [
             spicy,
@@ -751,6 +836,56 @@ class _ProfilePageState extends State<ProfilePage> {
           onTap: widget.onOpenShopping,
         ),
         const SizedBox(height: AibsSpace.s12),
+        if (themePreferences != null) ...[
+          AibsCard(
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Tampilan',
+                    style: context.aibsText(AibsType.bodyStrong),
+                  ),
+                ),
+                DropdownButton<ThemeMode>(
+                  value: themePreferences.mode,
+                  onChanged: themePreferences.saving
+                      ? null
+                      : (value) async {
+                          if (value == null) return;
+                          try {
+                            await themePreferences.setMode(value);
+                          } catch (_) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Pilihan tampilan belum tersimpan. Coba lagi.',
+                                  ),
+                                ),
+                              );
+                            }
+                          }
+                        },
+                  items: const [
+                    DropdownMenuItem(
+                      value: ThemeMode.system,
+                      child: Text('Ikuti perangkat'),
+                    ),
+                    DropdownMenuItem(
+                      value: ThemeMode.light,
+                      child: Text('Terang'),
+                    ),
+                    DropdownMenuItem(
+                      value: ThemeMode.dark,
+                      child: Text('Gelap'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AibsSpace.s12),
+        ],
         _ProfileSection(
           title: 'Privasi & AI',
           value: profileData?.aiEnabled == false
@@ -764,11 +899,35 @@ class _ProfilePageState extends State<ProfilePage> {
           onPressed: widget.onLogout,
           child: Text(
             'Keluar',
-            style: AibsType.label.copyWith(color: AibsColors.badInk),
+            style: context
+                .aibsText(AibsType.label)
+                .copyWith(color: context.aibsColor(AibsColors.badInk)),
           ),
         ),
       ],
     );
+  }
+
+  Future<void> _openPreferences({required bool allergiesOnly}) async {
+    final updated = await Navigator.of(context).push<ProfileSetupAnswers>(
+      MaterialPageRoute(
+        builder: (_) => _EditPreferencesPage(
+          profile: _profile ?? _demoProfile,
+          allergiesOnly: allergiesOnly,
+          onSave: widget.onProfileSaved,
+        ),
+      ),
+    );
+    if (updated == null || !mounted) return;
+    setState(
+      () => _profile =
+          widget.profile != null &&
+              widget.profile!.serverVersion != updated.serverVersion
+          ? widget.profile
+          : updated,
+    );
+    ScaffoldMessenger.of(context)
+        .showSnackBar(const SnackBar(content: Text('Perubahan tersimpan')));
   }
 
   Future<void> _openEdit() async {
@@ -788,10 +947,15 @@ class _ProfilePageState extends State<ProfilePage> {
       return;
     }
     if (!mounted) return;
-    setState(() => _profile = updated);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Perubahan tersimpan untuk sesi ini')),
+    setState(
+      () => _profile =
+          widget.profile != null &&
+              widget.profile!.serverVersion != updated.serverVersion
+          ? widget.profile
+          : updated,
     );
+    ScaffoldMessenger.of(context)
+        .showSnackBar(const SnackBar(content: Text('Perubahan tersimpan')));
   }
 
   Future<void> _openPrivacy() async {
@@ -830,7 +994,13 @@ class _ProfilePageState extends State<ProfilePage> {
       return;
     }
     if (!mounted) return;
-    setState(() => _profile = updated);
+    setState(
+      () => _profile =
+          widget.profile != null &&
+              widget.profile!.serverVersion != updated.serverVersion
+          ? widget.profile
+          : updated,
+    );
   }
 
   void _openScreening() {
@@ -1042,7 +1212,10 @@ class _ProfileSection extends StatelessWidget {
                 ),
               ),
               if (onTap != null)
-                const Icon(Icons.chevron_right, color: AibsColors.inkMuted),
+                Icon(
+                  Icons.chevron_right,
+                  color: context.aibsColor(AibsColors.inkMuted),
+                ),
             ],
           ),
         ),
@@ -1406,4 +1579,184 @@ class _ConfirmProfileDialog extends StatelessWidget {
       ],
     );
   }
+}
+
+class _EditPreferencesPage extends StatefulWidget {
+  const _EditPreferencesPage({
+    required this.profile,
+    required this.allergiesOnly,
+    this.onSave,
+  });
+  final ProfileSetupAnswers profile;
+  final bool allergiesOnly;
+  final FutureOr<void> Function(ProfileSetupAnswers)? onSave;
+  @override
+  State<_EditPreferencesPage> createState() => _EditPreferencesPageState();
+}
+
+class _EditPreferencesPageState extends State<_EditPreferencesPage> {
+  final _exit = GlobalKey<UnsavedGuardState>();
+  final _form = GlobalKey<FormState>();
+  late final _allergies = TextEditingController(
+    text: widget.profile.allergies.join(', '),
+  );
+  late final _budget = TextEditingController(
+    text: widget.profile.budget?.replaceAll(RegExp(r'[^0-9]'), '') ?? '',
+  );
+  late String? _spicy = widget.profile.spicy;
+  late final Set<String> _preferences = widget.profile.preferences.toSet();
+  bool _saving = false;
+  bool _dirty = false;
+  @override
+  void dispose() {
+    _allergies.dispose();
+    _budget.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    if (_saving || !_form.currentState!.validate()) return;
+    final allergies = _allergies.text
+        .split(',')
+        .map((x) => x.trim())
+        .where((x) => x.isNotEmpty)
+        .toSet()
+        .toList();
+    if (widget.allergiesOnly &&
+        widget.profile.allergies.any((x) => !allergies.contains(x))) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (c) => AlertDialog(
+          title: const Text('Hapus alergi dari profil?'),
+          content: const Text(
+            'Penilaian makanan berikutnya akan memakai daftar alergi yang baru.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(c, false),
+              child: const Text('Batal'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(c, true),
+              child: const Text('Ya, ubah'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true || !mounted) return;
+    }
+    final profile = widget.profile;
+    final updated = profile.copyWithDietProfile(
+      dietType: profile.dietType,
+      dietPhase: profile.dietPhase,
+      avoidedIngredients: profile.avoidedIngredients,
+      portionLimits: profile.portionLimits,
+      allergies: widget.allergiesOnly ? allergies : null,
+      budget: widget.allergiesOnly ? null : 'Rp${_budget.text.trim()}',
+      spicy: widget.allergiesOnly ? null : _spicy,
+      preferences: widget.allergiesOnly ? null : _preferences.toList(),
+    );
+    setState(() => _saving = true);
+    try {
+      await widget.onSave?.call(updated);
+      if (mounted) await _exit.currentState!.leave(updated);
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(AppServices.message(error))));
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => UnsavedGuard(
+    key: _exit,
+    isDirty: () => _dirty,
+    busy: () => _saving,
+    child: Scaffold(
+      appBar: AppBar(
+        title: Text(widget.allergiesOnly ? 'Alergi' : 'Budget & preferensi'),
+      ),
+      body: SafeArea(
+        child: Form(
+          key: _form,
+          child: ListView(
+            padding: const EdgeInsets.all(AibsSpace.s20),
+            children: [
+              if (widget.allergiesOnly)
+                TextFormField(
+                  controller: _allergies,
+                  maxLength: 300,
+                  decoration: const InputDecoration(
+                    labelText: 'Daftar alergi',
+                    hintText: 'Contoh: udang, kacang',
+                  ),
+                  onChanged: (_) => _dirty = true,
+                )
+              else ...[
+                TextFormField(
+                  controller: _budget,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  decoration: const InputDecoration(
+                    labelText: 'Budget sekali makan',
+                    prefixText: 'Rp ',
+                  ),
+                  validator: (x) =>
+                      (int.tryParse(x ?? '') ?? 0) > 0 &&
+                          (int.tryParse(x ?? '') ?? 0) <= 10000000
+                      ? null
+                      : 'Isi budget antara Rp1 dan Rp10.000.000',
+                  onChanged: (_) => _dirty = true,
+                ),
+                const SizedBox(height: AibsSpace.s20),
+                DropdownButtonFormField<String>(
+                  initialValue: _spicy,
+                  decoration: const InputDecoration(labelText: 'Tingkat pedas'),
+                  items: [
+                    for (final value in spicyCodes.keys)
+                      DropdownMenuItem(value: value, child: Text(value)),
+                  ],
+                  onChanged: (value) => setState(() {
+                    _spicy = value;
+                    _dirty = true;
+                  }),
+                ),
+                const SizedBox(height: AibsSpace.s20),
+                Text(
+                  'Preferensi',
+                  style: context.aibsText(AibsType.sectionTitle),
+                ),
+                const SizedBox(height: AibsSpace.s12),
+                Wrap(
+                  spacing: AibsSpace.s8,
+                  runSpacing: AibsSpace.s8,
+                  children: [
+                    for (final value in preferenceCodes.keys)
+                      AibsChoiceChip(
+                        label: value,
+                        selected: _preferences.contains(value),
+                        onTap: () => setState(() {
+                          _dirty = true;
+                          if (!_preferences.remove(value)) {
+                            _preferences.add(value);
+                          }
+                        }),
+                      ),
+                  ],
+                ),
+              ],
+              const SizedBox(height: AibsSpace.s24),
+              AibsPrimaryButton(
+                label: _saving ? 'Menyimpan…' : 'Simpan perubahan',
+                onPressed: _saving ? null : _save,
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
 }

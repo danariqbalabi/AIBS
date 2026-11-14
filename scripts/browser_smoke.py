@@ -66,9 +66,8 @@ with sync_playwright() as runtime:
             page.reload(wait_until="networkidle", timeout=120000)
         semantics()
         check("release browser reload restores the existing session")
-        page.get_by_role("button", name="Foto makanan", exact=True).click()
-        page.get_by_role("button", name=re.compile("Sudah dimakan")).click()
-        page.get_by_role("button", name="Isi manual", exact=True).click()
+        page.get_by_role("button", name="Tambah catatan", exact=True).click()
+        page.get_by_role("button", name=re.compile("Catat makan")).click()
         page.get_by_role("textbox", name="Nama makanan", exact=True).click()
         page.keyboard.type("Synthetic readiness meal", delay=30)
         page.get_by_role("button", name="Simpan", exact=True).click()
@@ -76,9 +75,21 @@ with sync_playwright() as runtime:
         page.get_by_role("checkbox", name=re.compile("Waktu sudah ditinjau")).click()
         with page.expect_response(
             lambda r: r.url.endswith("/commit") and r.status == 200, timeout=120000
-        ):
+        ) as meal_commit:
             page.get_by_role("button", name="Konfirmasi sudah dimakan", exact=True).click()
         check("manual meal review commits through the real backend")
+        food_id = meal_commit.value.json()["food_event_ids"][0]
+        page.get_by_role("button", name="Ada keluhan", exact=True).click()
+        page.get_by_text("Kembung", exact=True).click()
+        with page.expect_request(
+            lambda r: r.url.endswith("/api/v1/drafts") and r.method == "POST"
+        ) as symptom_draft, page.expect_response(
+            lambda r: r.url.endswith("/commit") and r.status == 200, timeout=120000
+        ):
+            page.get_by_role("button", name="Simpan", exact=True).click()
+        linked_id = symptom_draft.value.post_data_json["content"]["symptoms"][0]["linked_food_event_id"]
+        assert linked_id == food_id
+        check("symptom prompt links to the exact saved meal through the backend")
         with page.expect_response(
             lambda r: "/api/v1/events" in r.url and r.status == 200, timeout=120000
         ):

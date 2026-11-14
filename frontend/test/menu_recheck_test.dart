@@ -16,7 +16,7 @@ void main() {
           item: const AibsMenuItem(
             id: 'demo',
             name: 'Nasi',
-            kind: 'Beli',
+            kind: 'Masak',
             price: 20000,
             status: CheckStatus.ok,
             reason: 'Sesuai arahan',
