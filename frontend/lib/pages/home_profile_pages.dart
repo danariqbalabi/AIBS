@@ -563,6 +563,7 @@ class ProfilePage extends StatefulWidget {
     this.onOpenShopping,
     this.onLogout,
     this.onDeleteAll,
+    this.onLinkEmail,
     this.shoppingCount = 0,
   });
 
@@ -570,6 +571,7 @@ class ProfilePage extends StatefulWidget {
   final FutureOr<void> Function(ProfileSetupAnswers)? onProfileSaved;
   final VoidCallback? onOpenShopping;
   final VoidCallback? onLogout;
+  final VoidCallback? onLinkEmail;
   final FutureOr<void> Function()? onDeleteAll;
   final int shoppingCount;
 
@@ -665,6 +667,11 @@ class _ProfilePageState extends State<ProfilePage> {
             ],
           ),
         ),
+        if (widget.onLinkEmail != null)
+          TextButton(
+            onPressed: widget.onLinkEmail,
+            child: const Text('Hubungkan email'),
+          ),
         const SizedBox(height: 20),
         _ProfileSection(
           title: 'Pengecekan awal',

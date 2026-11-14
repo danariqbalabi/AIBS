@@ -17,6 +17,7 @@ import 'pages/summary_pages.dart';
 import 'theme/aibs_theme.dart';
 import 'widgets/aibs_tab_bar.dart';
 import 'widgets/load_gate.dart';
+import 'pages/link_email_sheet.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -125,6 +126,21 @@ class _AibsAppState extends State<AibsApp> {
     if (mounted) setState(() => _profile = saved);
   }
 
+  Future<void> _linkEmail() async {
+    final services = widget.services!;
+    await showModalBottomSheet<bool>(
+      context: navigatorKey.currentState!.overlay!.context,
+      isScrollControlled: true,
+      builder: (_) => LinkEmailSheet(
+        sendCode: services.beginEmailLink,
+        verifyCode: (email, code) async {
+          final profile = await services.confirmEmailLink(email, code);
+          if (mounted) setState(() => _profile = profile);
+        },
+      ),
+    );
+  }
+
   Future<void> _logout() async {
     if (widget.services?.identity.isAnonymous == true) {
       final navigatorContext = navigatorKey.currentState!.overlay!.context;
@@ -184,6 +200,9 @@ class _AibsAppState extends State<AibsApp> {
               services: widget.services,
               profile: _profile,
               onProfileSaved: _saveProfile,
+              onLinkEmail: widget.services?.identity.isAnonymous == true
+                  ? _linkEmail
+                  : null,
               onLogout: _logout,
             )
           : OnboardingFlow(
@@ -208,12 +227,14 @@ class AibsHomeShell extends StatefulWidget {
     super.key,
     this.profile,
     this.services,
+    this.onLinkEmail,
     this.onProfileSaved,
     this.onLogout,
   });
 
   final ProfileSetupAnswers? profile;
   final AppServices? services;
+  final VoidCallback? onLinkEmail;
   final FutureOr<void> Function(ProfileSetupAnswers)? onProfileSaved;
   final VoidCallback? onLogout;
 
@@ -372,6 +393,7 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
               shoppingCount: _shoppingItems.length,
               onOpenShopping: _openShoppingList,
               onLogout: widget.onLogout,
+              onLinkEmail: widget.onLinkEmail,
               onDeleteAll: _records == null
                   ? widget.onLogout
                   : () async {
