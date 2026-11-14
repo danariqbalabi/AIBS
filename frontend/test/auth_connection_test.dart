@@ -65,6 +65,7 @@ void main() {
               expect(code, '123456');
               throw const ApiFailure('Kode tidak valid.', status: 401);
             },
+            otpLength: 6,
           ),
         ),
       );

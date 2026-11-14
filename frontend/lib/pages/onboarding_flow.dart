@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+import '../data/auth_config.dart';
 
 import '../data/app_services.dart';
 
@@ -20,6 +23,7 @@ class OnboardingFlow extends StatefulWidget {
     this.onSendCode,
     this.onVerifyCode,
     this.onConsent,
+    this.otpLength = emailOtpLength,
   });
 
   final ProfileSetupComplete onComplete;
@@ -28,6 +32,7 @@ class OnboardingFlow extends StatefulWidget {
   final Future<void> Function(String email)? onSendCode;
   final Future<bool> Function(String email, String code)? onVerifyCode;
   final Future<void> Function(bool ai)? onConsent;
+  final int otpLength;
 
   @override
   State<OnboardingFlow> createState() => _OnboardingFlowState();
@@ -35,8 +40,14 @@ class OnboardingFlow extends StatefulWidget {
 
 class _OnboardingFlowState extends State<OnboardingFlow> {
   final _emailController = TextEditingController();
-  final _codeControllers = List.generate(6, (_) => TextEditingController());
-  final _codeFocusNodes = List.generate(6, (_) => FocusNode());
+  late final _codeControllers = List.generate(
+    widget.otpLength,
+    (_) => TextEditingController(),
+  );
+  late final _codeFocusNodes = List.generate(
+    widget.otpLength,
+    (_) => FocusNode(),
+  );
 
   _OnboardingStep _step = _OnboardingStep.welcome;
   bool _aiEnabled = true;
@@ -249,15 +260,44 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
                 child: TextField(
                   controller: _codeControllers[index],
                   focusNode: _codeFocusNodes[index],
+                  onTap: () =>
+                      _codeControllers[index].selection = TextSelection(
+                        baseOffset: 0,
+                        extentOffset: _codeControllers[index].text.length,
+                      ),
                   keyboardType: TextInputType.number,
                   textAlign: TextAlign.center,
-                  maxLength: 1,
+                  maxLength: widget.otpLength,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  autofillHints: index == 0
+                      ? const [AutofillHints.oneTimeCode]
+                      : null,
                   style: AibsType.title,
                   decoration: const InputDecoration(
                     counterText: '',
                     contentPadding: EdgeInsets.zero,
                   ),
                   onChanged: (value) {
+                    if (value.length > 1) {
+                      final start = value.length == widget.otpLength
+                          ? 0
+                          : index;
+                      for (
+                        var offset = 0;
+                        offset < value.length &&
+                            start + offset < _codeControllers.length;
+                        offset++
+                      ) {
+                        _codeControllers[start + offset].text = value[offset];
+                      }
+                      final next = (start + value.length).clamp(
+                        0,
+                        _codeFocusNodes.length - 1,
+                      );
+                      _codeFocusNodes[next].requestFocus();
+                      setState(() => _error = null);
+                      return;
+                    }
                     if (value.isNotEmpty &&
                         index < _codeFocusNodes.length - 1) {
                       _codeFocusNodes[index + 1].requestFocus();
@@ -370,8 +410,8 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
 
   Future<void> _verifyCode() async {
     final code = _codeControllers.map((c) => c.text).join();
-    if (!RegExp(r'^\d{6}$').hasMatch(code)) {
-      setState(() => _error = 'Masukkan 6 digit kode.');
+    if (!RegExp('^[0-9]{${widget.otpLength}}\$').hasMatch(code)) {
+      setState(() => _error = 'Masukkan ${widget.otpLength} digit kode.');
       return;
     }
     await _perform(() async {

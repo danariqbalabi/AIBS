@@ -19,6 +19,13 @@ for name in ('API_BASE_URL', 'SUPABASE_URL'):
         raise SystemExit(f'{name} must be a public HTTPS URL')
 if not values['SUPABASE_PUBLISHABLE_KEY'].startswith('sb_publishable_'):
     raise SystemExit('Use a Supabase publishable key, never a server key')
+try:
+    otp_length = int(os.environ.get('EMAIL_OTP_LENGTH', '8'))
+except ValueError:
+    raise SystemExit('EMAIL_OTP_LENGTH must be a number between 6 and 10')
+if otp_length not in range(6, 11):
+    raise SystemExit('EMAIL_OTP_LENGTH must be between 6 and 10')
+values['EMAIL_OTP_LENGTH'] = str(otp_length)
 Path('.vercel').mkdir(exist_ok=True)
 Path('.vercel/aibs-build.json').write_text(json.dumps(values))
 PY

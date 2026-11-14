@@ -43,6 +43,7 @@ Review/gabungkan PR `feat/vercel-deployment` sebelum mengimpor branch `main`. Ji
    | API_BASE_URL | URL backend HTTPS, tanpa `/docs` atau `/api/v1`; contoh `https://aibs-api-xxxx.vercel.app` |
    | SUPABASE_URL | `https://fpaposwwnqdtvvjaelar.supabase.co` |
    | SUPABASE_PUBLISHABLE_KEY | Key `sb_publishable_...` dari `frontend/config/local.json` |
+   | EMAIL_OTP_LENGTH | Opsional; default `8`, samakan dengan panjang OTP email di Supabase (6–10) |
 
 5. Deploy. Script menolak konfigurasi kosong, URL non-HTTPS, dan key yang bukan publishable tanpa mencetak nilainya.
 6. Salin URL frontend production. Pada project **aibs-api → Settings → Environment Variables**, tambahkan origin frontend persis ke `CORS_ORIGINS`:

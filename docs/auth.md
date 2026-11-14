@@ -2,6 +2,8 @@
 
 Flutter login email OTP langsung lewat Supabase Auth; panjang kode mengikuti konfigurasi proyek. Setiap request FastAPI fitur membawa `Authorization: Bearer <access_token>`. Backend memverifikasi signature dengan JWKS project URL yang dikonfigurasi, algoritma ES256/RS256, issuer `/auth/v1`, audience/role `authenticated`, exp/iat dan subject UUID. Tidak menerima owner dari payload.
 
+Input login dan hubungkan email memakai `EMAIL_OTP_LENGTH`, default **8 digit** sesuai kode yang dikirim project saat uji. Vercel build script memvalidasi nilai 6–10 dan memasukkannya ke dart-define. Pada run/build lokal, variabel ini harus ada di file dart-define atau argumen `--dart-define`, bukan hanya environment shell. Perubahan panjang membutuhkan build/deploy frontend ulang dan harus disamakan dengan konfigurasi Supabase. Semua digit dikirim utuh; kode tidak dipotong menjadi enam digit. Template Confirm signup, Magic link/OTP dan Change email menggunakan `{{ .Token }}`.
+
 Aktifkan asymmetric JWT signing key di Supabase jika proyek masih memakai legacy HS256; backend ini sengaja tidak menerima shared-secret token atau service-role token sebagai identitas pengguna. JWKS di-cache oleh PyJWT dan dapat refresh saat key rotation. Gangguan jaringan JWKS menghasilkan 503, bukan bypass validasi.
 
 Jalur Coba Demo:
