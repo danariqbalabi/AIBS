@@ -41,6 +41,29 @@
     For more details:
     * https://docs.flutter.dev/platform-integration/web/initialization
   -->
+  <script>
+    // Static Flutter app assets only. Health records stay in the opt-in account store.
+    window.aibsOfflineShell = async function(enabled) {
+      if (!('serviceWorker' in navigator)) throw new Error('Offline shell unavailable');
+      if (enabled) {
+        const registration = await navigator.serviceWorker.register('aibs-sw.js');
+        const worker = registration.active || registration.waiting || registration.installing;
+        if (!worker) throw new Error('Offline worker unavailable');
+        if (worker.state !== 'activated') await new Promise(resolve => {
+          worker.addEventListener('statechange', () => { if (worker.state === 'activated') resolve(); });
+          setTimeout(resolve, 60000);
+        });
+        if (worker.state !== 'activated') throw new Error('Offline shell could not be prepared');
+      } else {
+        for (const registration of await navigator.serviceWorker.getRegistrations()) {
+          if (registration.active && registration.active.scriptURL.endsWith('/aibs-sw.js')) await registration.unregister();
+        }
+        for (const name of await caches.keys()) {
+          if (name.startsWith('aibs-shell-')) await caches.delete(name);
+        }
+      }
+    };
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

@@ -14,6 +14,7 @@ import '../widgets/aibs_widgets.dart';
 import 'profile_setup_flow.dart';
 import '../widgets/record_card_form.dart';
 import '../data/records_repository.dart';
+import 'food_swaps_page.dart';
 
 import 'dart:convert';
 
@@ -28,6 +29,7 @@ class MenuHomePage extends StatefulWidget {
     this.onAddMenuShopping,
     this.onShoppingChecked,
     this.checkedShopping = const {},
+    this.onSuggestSwaps,
     this.onCheckMenu,
     this.ingredientId,
     this.onShoppingQuantity,
@@ -44,6 +46,8 @@ class MenuHomePage extends StatefulWidget {
   final Future<Map<String, dynamic>> Function(Map<String, dynamic>)?
   onCheckMenu;
   final String? Function(String)? ingredientId;
+  final Future<Map<String, dynamic>> Function(Map<String, dynamic>)?
+  onSuggestSwaps;
   final Future<void> Function(String, num)? onShoppingQuantity;
   final ValueChanged<AibsMenuItem> onStartMealRecord;
   final FutureOr<void> Function(AibsMealPlan) onPlanSaved;
@@ -187,6 +191,7 @@ class MenuHomePageState extends State<MenuHomePage> {
             showSuitable();
           },
           onCheckMenu: widget.onCheckMenu,
+          onSuggestSwaps: widget.onSuggestSwaps,
           ingredientId: widget.ingredientId,
           item: item,
           onAddShopping: _addIngredientsToShoppingList,
@@ -364,6 +369,7 @@ class MenuDetailPage extends StatefulWidget {
     required this.onStartMealRecord,
     required this.onPlanSaved,
     this.onFindAlternatives,
+    this.onSuggestSwaps,
     this.onCheckMenu,
     this.ingredientId,
   });
@@ -376,6 +382,8 @@ class MenuDetailPage extends StatefulWidget {
   final Future<Map<String, dynamic>> Function(Map<String, dynamic>)?
   onCheckMenu;
   final String? Function(String)? ingredientId;
+  final Future<Map<String, dynamic>> Function(Map<String, dynamic>)?
+  onSuggestSwaps;
 
   @override
   State<MenuDetailPage> createState() => _MenuDetailPageState();
@@ -396,6 +404,7 @@ class _MenuDetailPageState extends State<MenuDetailPage> {
           card: card,
           ingredientId: widget.ingredientId,
           check: widget.onCheckMenu!,
+          onSuggestSwaps: widget.onSuggestSwaps,
         ),
       ),
     );
@@ -640,11 +649,14 @@ class _MenuEditPage extends StatefulWidget {
     required this.card,
     required this.check,
     this.ingredientId,
+    this.onSuggestSwaps,
   });
   final AibsMenuItem item;
   final Map<String, dynamic> card;
   final Future<Map<String, dynamic>> Function(Map<String, dynamic>) check;
   final String? Function(String)? ingredientId;
+  final Future<Map<String, dynamic>> Function(Map<String, dynamic>)?
+  onSuggestSwaps;
   @override
   State<_MenuEditPage> createState() => _MenuEditPageState();
 }
@@ -709,6 +721,31 @@ class _MenuEditPageState extends State<_MenuEditPage> {
             ),
           ),
         ),
+        if (widget.onSuggestSwaps != null)
+          TextButton.icon(
+            icon: const Icon(Icons.swap_horiz),
+            label: const Text('Saran pengganti bahan'),
+            onPressed: _busy
+                ? null
+                : () async {
+                    final card = await Navigator.push<Map<String, dynamic>>(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => FoodSwapsPage(
+                          card: widget.card,
+                          load: widget.onSuggestSwaps!,
+                        ),
+                      ),
+                    );
+                    if (card == null || !mounted) return;
+                    setState(() {
+                      widget.card
+                        ..clear()
+                        ..addAll(card);
+                    });
+                    await _check();
+                  },
+          ),
         if (_error != null)
           Padding(
             padding: const EdgeInsets.all(AibsSpace.s12),

@@ -2,6 +2,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'api_client.dart';
 import 'app_config.dart';
+import 'offline_journal.dart';
 import 'profile_repository.dart';
 import 'session_identity.dart';
 import '../pages/profile_setup_flow.dart';
@@ -12,6 +13,14 @@ class AppServices {
       identity = identity ?? SupabaseSessionIdentity(auth, setupError);
 
   final ApiClient api;
+  OfflineJournal? _offline;
+  OfflineJournal? get offline {
+    final owner = auth?.auth.currentUser?.id;
+    if (owner == null) return null;
+    if (_offline?.owner != owner) _offline = OfflineJournal(owner);
+    return _offline;
+  }
+
   final SupabaseClient? auth;
   final String? setupError;
   final ProfileRepository profiles;
