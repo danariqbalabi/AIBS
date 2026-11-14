@@ -380,6 +380,7 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
             index: _selectedIndex,
             children: [
               TodayPage(
+                streak: _records?.dashboard['streak'] as Map<String, dynamic>?,
                 serverMode: _records?.dashboard['mode'] as String?,
                 plans: _records?.todayPlans ?? const [],
                 menus: _menus,

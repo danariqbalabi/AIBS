@@ -34,6 +34,7 @@ class TodayPage extends StatelessWidget {
     this.plan,
     this.menus,
     this.serverMode,
+    this.streak,
     this.plans = const [],
   });
 
@@ -52,6 +53,7 @@ class TodayPage extends StatelessWidget {
   final AibsMealPlan? plan;
   final List<AibsMenuItem>? menus;
   final String? serverMode;
+  final Map<String, dynamic>? streak;
   final List<AibsMealPlan> plans;
 
   @override
@@ -84,6 +86,49 @@ class TodayPage extends StatelessWidget {
           ),
         ),
         const SizedBox(height: AibsSpace.s24),
+        if (streak != null) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AibsSpace.s20),
+            child: InkWell(
+              onTap: onOpenCamera,
+              borderRadius: BorderRadius.circular(AibsRadius.lg),
+              child: AibsCard(
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.local_fire_department_outlined,
+                      color: AibsColors.primary,
+                    ),
+                    const SizedBox(width: AibsSpace.s12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '${streak!['current_days']} hari berturut-turut',
+                            style: AibsType.bodyStrong,
+                          ),
+                          Text(
+                            streak!['completed_today'] == true
+                                ? 'Catatan hari ini sudah tersimpan'
+                                : 'Catat makan hari ini untuk lanjut',
+                            style: AibsType.caption,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: AibsSpace.s8),
+                    Text(
+                      'Terbaik ${streak!['best_days']}',
+                      style: AibsType.small,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: AibsSpace.s20),
+        ],
         if (!hasDiet)
           _DietPrompt(onOpenProfile: onOpenProfile, onOpenJournal: onOpenCamera)
         else if (!hasMeals && visiblePlans.isEmpty)
