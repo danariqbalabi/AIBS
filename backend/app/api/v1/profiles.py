@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 
 from app.core.auth import User, get_user
@@ -33,8 +33,13 @@ def get(user: User = Depends(get_user), db: Session = Depends(get_db)):
 
 
 @router.patch("/profile")
-def patch(payload: ProfilePatch, user: User = Depends(get_user), db: Session = Depends(get_db)):
-    return profiles.patch_profile(db, user.id, payload)
+def patch(
+    payload: ProfilePatch,
+    request: Request,
+    user: User = Depends(get_user),
+    db: Session = Depends(get_db),
+):
+    return profiles.patch_profile(db, user.id, payload, request.app.state.storage)
 
 
 @router.get("/consents")

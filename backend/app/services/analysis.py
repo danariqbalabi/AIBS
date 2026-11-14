@@ -91,6 +91,9 @@ def run(db, owner, payload, feature, settings, provider, storage):
     image, media = None, None
     if feature == "photo_to_draft":
         media = owned(db, Media, payload.media_id, owner, lock=True)
+        from app.services.media import require_unexpired
+
+        require_unexpired(media)
         image = storage.download(media.path)
     attempt = AiRun(
         owner_id=owner,

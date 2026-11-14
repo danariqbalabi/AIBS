@@ -163,6 +163,7 @@ class ProfileRepository {
       spicy: labelFor(spicyCodes, diet['spicy']),
       preferences: (diet['preferences'] as List? ?? []).cast<String>(),
       aiEnabled: consent['ai'] == true,
+      savePhotos: row['save_photos'] == true,
       serverVersion: row['version'] as int?,
     );
   }
@@ -186,11 +187,6 @@ class ProfileRepository {
           status: 409,
         );
       }
-    }
-    if (profile.savePhotos) {
-      throw const ApiFailure(
-        'Penyimpanan foto belum tersedia. Matikan pilihan simpan foto untuk melanjutkan.',
-      );
     }
     // Resolve every restriction before sending a mutation: never silently omit an allergy.
     if (ingredients.isEmpty) {
@@ -240,6 +236,7 @@ class ProfileRepository {
         'clinician_guidance': answerCodes[profile.clinicianGuidance],
         'timezone': 'Asia/Jakarta',
         'diet': diet,
+        'save_photos': profile.savePhotos,
       },
     );
     assessment = await api.request('GET', '/api/v1/me/assessment');

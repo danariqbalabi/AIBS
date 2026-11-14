@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 
@@ -104,4 +105,45 @@ class ApiClient {
   }
 
   void close() => _client.close();
+
+  Future<Uint8List> download(String path) async {
+    for (var attempt = 0; attempt < 2; attempt++) {
+      final token = await accessToken();
+      if (token == null || token.isEmpty) {
+        throw const ApiFailure('Silakan masuk terlebih dahulu.', status: 401);
+      }
+      http.Response response;
+      try {
+        response = await _client
+            .get(
+              Uri.parse('${baseUrl.replaceFirst(RegExp(r'/+$'), '')}$path'),
+              headers: {'Authorization': 'Bearer $token'},
+            )
+            .timeout(const Duration(seconds: 120));
+      } on TimeoutException {
+        throw const ApiFailure('Unduhan terlalu lama. Coba lagi.');
+      } on http.ClientException {
+        throw const ApiFailure('Backend belum bisa dihubungi. Coba lagi.');
+      }
+      if (response.statusCode == 401 &&
+          attempt == 0 &&
+          refreshSession != null) {
+        await refreshSession!();
+        continue;
+      }
+      if (response.statusCode != 200) {
+        throw ApiFailure(
+          'Data belum bisa diunduh. Coba lagi.',
+          status: response.statusCode,
+        );
+      }
+      if (!(response.headers['content-type'] ?? '').startsWith(
+        'application/zip',
+      )) {
+        throw const ApiFailure('Format unduhan belum sesuai.');
+      }
+      return response.bodyBytes;
+    }
+    throw const ApiFailure('Silakan masuk kembali.', status: 401);
+  }
 }

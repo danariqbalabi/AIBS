@@ -1,14 +1,15 @@
 import io
 import warnings
+from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
 from PIL import Image, ImageOps, UnidentifiedImageError
-from sqlalchemy import update
+from sqlalchemy import select, update
 
 from app.core.errors import ApiError
-from app.models.entities import Draft, Media
+from app.models.entities import Draft, Media, Profile
 from app.repositories.owned import owned
-from app.services.profiles import require_basic
+from app.services.profiles import profile_for, require_basic
 
 MAX_INPUT = 5 * 1024 * 1024
 
@@ -44,12 +45,23 @@ def sanitize(data):
 
 
 def upload(db, owner, data, storage):
-    require_basic(db, owner)
+    consent = require_basic(db, owner)
+    if not consent.ai:
+        raise ApiError(403, "ai_consent_required", "Bantuan AI dimatikan. Kamu bisa isi manual.")
+    profile = profile_for(db, owner)
+    profile = db.scalar(select(Profile).where(Profile.id == profile.id).with_for_update())
     data = sanitize(data)
     media_id = uuid4()
     path = f"{owner}/{media_id}.jpg"
     storage.upload(path, data)
-    row = Media(id=media_id, owner_id=owner, path=path, mime="image/jpeg", size=len(data))
+    row = Media(
+        id=media_id,
+        owner_id=owner,
+        path=path,
+        mime="image/jpeg",
+        size=len(data),
+        expires_at=None if profile.save_photos else datetime.now(UTC) + timedelta(hours=24),
+    )
     db.add(row)
     try:
         db.commit()
@@ -58,6 +70,12 @@ def upload(db, owner, data, storage):
         storage.delete(path)
         raise
     return {"id": row.id, "mime": row.mime, "size": row.size, "private": True}
+
+
+def require_unexpired(row):
+    expires = row.expires_at
+    if expires is not None and expires.replace(tzinfo=UTC) <= datetime.now(UTC):
+        raise ApiError(410, "photo_expired", "Foto sementara sudah kedaluwarsa. Pilih foto lagi.")
 
 
 def remove(db, owner, media_id, storage):

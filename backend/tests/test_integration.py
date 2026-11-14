@@ -103,6 +103,7 @@ def test_cross_owner_mutations_are_denied_across_all_private_resources(account, 
     ).json()
     storage = MemoryStorage()
     client.app.state.storage = storage
+    client.put("/api/v1/me/consents", json={"basic": True, "ai": True})
     media = client.post(
         "/api/v1/media", files={"file": ("test.png", image_bytes(), "image/png")}
     ).json()
