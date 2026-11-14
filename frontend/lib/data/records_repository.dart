@@ -63,6 +63,8 @@ class RecordsRepository {
   List<AibsStoryLog> stories = [];
   List<Map<String, dynamic>> shopping = [];
   AibsMealPlan? plan;
+  List<AibsMealPlan> todayPlans = [];
+  List<Map<String, dynamic>> negativeObservations = [];
   Map<String, dynamic> dashboard = {};
   bool noSymptomsForLatestMeal = false;
   final _pending = <String, Map<String, dynamic>>{};
@@ -91,6 +93,9 @@ class RecordsRepository {
           'Sesuai arahan yang tersimpan',
       ingredients: ingredients.map(ingredientLabel).toList(),
       serverIngredients: ingredients,
+      customized: row['customized'] == true,
+      ingredientsComplete: row['ingredients_complete'] == true,
+      preparationMinutes: row['preparation_minutes'] as int?,
       orderTips: row['kind'] == 'buy' ? [instructions] : [],
       cookSteps: row['kind'] == 'cook' ? [instructions] : [],
     );
@@ -218,20 +223,39 @@ class RecordsRepository {
         ),
       );
     }
-    final plans = ((results[3] as Map)['items'] as List)
-        .cast<Map<String, dynamic>>();
+    final nextDashboard = results[5] as Map<String, dynamic>;
+    final plans =
+        ((nextDashboard['plans'] ?? (results[3] as Map)['items']) as List)
+            .cast<Map<String, dynamic>>();
     plans.sort(
       (a, b) =>
           (a['scheduled_at'] as String).compareTo(b['scheduled_at'] as String),
     );
     AibsMealPlan? nextPlan;
+    final nextPlans = <AibsMealPlan>[];
     for (final row in plans) {
       final when = DateTime.parse(row['scheduled_at'] as String).toLocal();
-      if (when.isBefore(DateTime.now())) continue;
+      if (nextDashboard['plans'] == null && when.isBefore(DateTime.now())) {
+        continue;
+      }
       final menu = nextMenus.where((m) => m.id == row['menu_id']).firstOrNull;
       if (menu == null) continue;
       nextPlan = AibsMealPlan(
-        menu: menu,
+        menu: row['snapshot'] == null
+            ? menu
+            : menuFromServer({
+                'customized': true,
+                'id': menu.id,
+                'name': (row['snapshot'] as Map)['name'] ?? menu.name,
+                'kind': menu.kind == 'Beli' ? 'buy' : 'cook',
+                'price_rupiah': menu.price,
+                'ingredients': (row['snapshot'] as Map)['ingredients'],
+                'ingredients_complete':
+                    (row['snapshot'] as Map)['ingredients_complete'] ?? true,
+                'evaluation':
+                    row['current_evaluation'] ??
+                    (row['snapshot'] as Map)['evaluation'],
+              }),
         day: dateLabel(when),
         meal: when.hour < 11
             ? 'Pagi'
@@ -241,16 +265,24 @@ class RecordsRepository {
         time: clockLabel(when),
         scheduledAt: when,
       );
-      break;
+      nextPlans.add(nextPlan);
     }
     menus = nextMenus;
     meals = nextMeals;
     symptoms = nextSymptoms;
     stories = nextStories;
-    plan = nextPlan;
+    todayPlans = nextPlans;
+    plan = nextPlans.firstOrNull;
     shopping = ((results[2] as Map)['items'] as List)
         .cast<Map<String, dynamic>>();
-    dashboard = results[5] as Map<String, dynamic>;
+    dashboard = nextDashboard;
+    negativeObservations = events
+        .where(
+          (r) =>
+              r['kind'] == 'symptom' &&
+              (r['payload'] as Map)['present'] == false,
+        )
+        .toList();
     final latest = nextMeals.firstOrNull?.id;
     noSymptomsForLatestMeal =
         latest != null &&
@@ -323,14 +355,17 @@ class RecordsRepository {
     await _saveContent(meal.requestId ?? const Uuid().v4(), {
       'foods': [
         {
+          ...?meal.serverPayload,
           'name': meal.name,
           'consumed': true,
-          'time': eventTime(meal.date, meal.time),
-          'ingredients': ingredients,
+          'time':
+              meal.serverPayload?['time'] ?? eventTime(meal.date, meal.time),
+          'ingredients': meal.serverPayload?['ingredients'] ?? ingredients,
           'ingredients_complete':
-              meal.note == null &&
-              ingredients.isNotEmpty &&
-              ingredients.every((i) => i['certainty'] == 'confirmed'),
+              meal.serverPayload?['ingredients_complete'] ??
+              (meal.note == null &&
+                  ingredients.isNotEmpty &&
+                  ingredients.every((i) => i['certainty'] == 'confirmed')),
           'notes': meal.note,
         },
       ],
@@ -395,6 +430,41 @@ class RecordsRepository {
     );
   }
 
+  final _manualDrafts = <String, Map<String, dynamic>>{};
+  Future<void> saveSymptomDraft(
+    List<Map<String, dynamic>> cards,
+    String requestId,
+  ) async {
+    final previous = _manualDrafts[requestId];
+    _manualDrafts[requestId] = await api.request(
+      previous == null ? 'POST' : 'PATCH',
+      previous == null ? '/api/v1/drafts' : '/api/v1/drafts/${previous['id']}',
+      body: {
+        if (previous != null) 'version': previous['version'],
+        'intent': 'journal',
+        'content': {'symptoms': cards},
+      },
+    );
+  }
+
+  Future<void> saveManualDraft(
+    Map<String, dynamic> card,
+    String requestId,
+  ) async {
+    final previous = _manualDrafts[requestId];
+    _manualDrafts[requestId] = await api.request(
+      previous == null ? 'POST' : 'PATCH',
+      previous == null ? '/api/v1/drafts' : '/api/v1/drafts/${previous['id']}',
+      body: {
+        if (previous != null) 'version': previous['version'],
+        'intent': 'journal',
+        'content': {
+          'foods': [card],
+        },
+      },
+    );
+  }
+
   Future<DraftReview> analyzeStory(String text, String requestId) async {
     final result = await api.request(
       'POST',
@@ -408,6 +478,18 @@ class RecordsRepository {
     );
     return DraftReview(api, result['draft'] as Map<String, dynamic>);
   }
+
+  Future<DraftReview> manualStory(String text) async => DraftReview(
+    api,
+    await api.request(
+      'POST',
+      '/api/v1/drafts',
+      body: {
+        'intent': 'journal',
+        'content': {'story': text, 'foods': [], 'symptoms': []},
+      },
+    ),
+  );
 
   Future<DraftReview> openDraft(String id) async =>
       DraftReview(api, await api.request('GET', '/api/v1/drafts/$id'));
@@ -528,6 +610,10 @@ class RecordsRepository {
       '/api/v1/meal-plans',
       body: {
         'menu_id': plan.menu.id,
+        if (plan.menu.customized) ...{
+          'ingredients': plan.menu.serverIngredients,
+          'ingredients_complete': plan.menu.ingredientsComplete,
+        },
         'scheduled_at': plan.scheduledAt!.toUtc().toIso8601String(),
       },
     );
@@ -537,7 +623,11 @@ class RecordsRepository {
     await api.request(
       'POST',
       '/api/v1/shopping-items/from-menu',
-      body: {'menu_id': menu.id, 'servings': 1},
+      body: {
+        'menu_id': menu.id,
+        'servings': 1,
+        if (menu.customized) 'ingredients': menu.serverIngredients,
+      },
     );
   }
 
@@ -575,6 +665,24 @@ class RecordsRepository {
         'version': row['version'],
         'quantity': row['quantity'],
         'checked': checked,
+      },
+    );
+    shopping = [
+      for (final item in shopping)
+        if (item['id'] == updated['id']) updated else item,
+    ];
+  }
+
+  Future<void> changeShoppingQuantity(String label, num quantity) async {
+    final row = shopping.where((r) => shoppingLabel(r) == label).firstOrNull;
+    if (row == null) throw const ApiFailure('Muat ulang daftar belanja.');
+    final updated = await api.request(
+      'PATCH',
+      '/api/v1/shopping-items/${row['id']}',
+      body: {
+        'version': row['version'],
+        'quantity': quantity,
+        'checked': row['checked'],
       },
     );
     shopping = [

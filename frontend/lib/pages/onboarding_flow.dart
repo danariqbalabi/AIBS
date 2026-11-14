@@ -24,6 +24,9 @@ class OnboardingFlow extends StatefulWidget {
     this.onVerifyCode,
     this.onConsent,
     this.otpLength = emailOtpLength,
+    this.initialProgress = const {},
+    this.sessionEmail = '',
+    this.onProgress,
   });
 
   final ProfileSetupComplete onComplete;
@@ -33,6 +36,9 @@ class OnboardingFlow extends StatefulWidget {
   final Future<bool> Function(String email, String code)? onVerifyCode;
   final Future<void> Function(bool ai)? onConsent;
   final int otpLength;
+  final Map<String, dynamic> initialProgress;
+  final String sessionEmail;
+  final Future<void> Function(Map<String, dynamic>)? onProgress;
 
   @override
   State<OnboardingFlow> createState() => _OnboardingFlowState();
@@ -53,6 +59,17 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
   bool _aiEnabled = true;
   String? _error;
   bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialProgress.isNotEmpty &&
+        widget.initialProgress['complete'] != true) {
+      _emailController.text = widget.sessionEmail;
+      _aiEnabled = widget.initialProgress['ai'] == true;
+      _step = _OnboardingStep.profile;
+    }
+  }
 
   @override
   void dispose() {
@@ -76,6 +93,8 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
         onComplete: widget.onComplete,
         onBackToAccount: () => setState(() => _step = _OnboardingStep.consent),
         onAssess: widget.onAssess,
+        initialProgress: widget.initialProgress,
+        onProgress: widget.onProgress,
       );
     }
 

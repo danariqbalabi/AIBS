@@ -212,6 +212,10 @@ class _AibsAppState extends State<AibsApp> {
               onLogout: _logout,
             )
           : OnboardingFlow(
+              initialProgress:
+                  widget.services?.profiles.onboardingProgress ?? const {},
+              sessionEmail: widget.services?.identity.email ?? '',
+              onProgress: widget.services?.profiles.saveProgress,
               onComplete: _complete,
               onAssess: widget.services?.profiles.assess,
               onDemo: widget.services == null ? null : _demo,
@@ -252,6 +256,8 @@ class AibsHomeShell extends StatefulWidget {
 
 class _AibsHomeShellState extends State<AibsHomeShell> {
   int _selectedIndex = 0;
+  DateTime? _evidenceDate;
+  String? _evidenceSymptom;
   RecordsRepository? _records;
   List<AibsMenuItem>? _menus;
   bool _loading = false;
@@ -353,6 +359,8 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
           index: _selectedIndex,
           children: [
             TodayPage(
+              serverMode: _records?.dashboard['mode'] as String?,
+              plans: _records?.todayPlans ?? const [],
               menus: _menus,
               profile: widget.profile,
               meals: _meals,
@@ -369,6 +377,9 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
               onOpenMenuItem: _openMenuItem,
             ),
             MenuHomePage(
+              onCheckMenu: _records?.checkCard,
+              ingredientId: widget.services?.profiles.ingredientId,
+              onShoppingQuantity: _records?.changeShoppingQuantity,
               menus: _menus,
               onAddMenuShopping: _records == null
                   ? null
@@ -382,6 +393,10 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
               onPlanSaved: _savePlan,
             ),
             JournalPage(
+              onManualStory: _records == null ? null : _reviewManualStory,
+              onSaveSymptomDraft: _records?.saveSymptomDraft,
+              evidenceDate: _evidenceDate,
+              evidenceSymptom: _evidenceSymptom,
               meals: _meals,
               symptoms: _symptoms,
               stories: _stories,
@@ -401,6 +416,38 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
               onOpenSummary: _openSummary,
             ),
             ProfilePage(
+              onResumeScreening: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (routeContext) => ProfileSetupFlow(
+                    displayName: widget.profile?.displayName ?? 'Kamu',
+                    email: widget.profile?.email ?? '',
+                    aiEnabled: widget.profile?.aiEnabled ?? false,
+                    initialAnswers: widget.profile,
+                    onAssess: widget.services?.profiles.assess,
+                    onBackToAccount: () => Navigator.pop(routeContext),
+                    onComplete: (answers) async {
+                      try {
+                        await widget.onProfileSaved?.call(
+                          answers.copyWithDietProfile(
+                            dietType: answers.dietType,
+                            dietPhase: answers.dietPhase,
+                            avoidedIngredients: answers.avoidedIngredients,
+                            portionLimits: answers.portionLimits,
+                            savePhotos: widget.profile?.savePhotos ?? false,
+                          ),
+                        );
+                        if (routeContext.mounted) Navigator.pop(routeContext);
+                      } catch (error) {
+                        if (routeContext.mounted) {
+                          ScaffoldMessenger.of(routeContext).showSnackBar(
+                            SnackBar(content: Text(AppServices.message(error))),
+                          );
+                        }
+                      }
+                    },
+                  ),
+                ),
+              ),
               profile: widget.profile,
               onProfileSaved: widget.onProfileSaved,
               shoppingCount: _shoppingItems.length,
@@ -519,6 +566,8 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => CameraFlowPage(
+          onSaveDraft: _records?.saveManualDraft,
+          ingredientId: widget.services?.profiles.ingredientId,
           intent: intent,
           aiEnabled: widget.profile?.aiEnabled ?? true,
           initialManualEntry: initialManualEntry,
@@ -538,6 +587,8 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => MenuDetailPage(
+          onCheckMenu: _records?.checkCard,
+          ingredientId: widget.services?.profiles.ingredientId,
           item: item,
           onAddShopping: _addShoppingIngredients,
           onStartMealRecord: _openMealRecord,
@@ -648,6 +699,7 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
           review: review,
           meals: _meals,
           ingredientId: widget.services!.profiles.ingredientId,
+          onCheckFood: _records!.checkCard,
         ),
       ),
     );
@@ -669,6 +721,23 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
       ),
     );
     await _reload();
+  }
+
+  Future<bool> _reviewManualStory(String text) async {
+    final review = await _records!.manualStory(text);
+    if (!mounted) return false;
+    final saved = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => DraftReviewPage(
+          review: review,
+          meals: _meals,
+          ingredientId: widget.services!.profiles.ingredientId,
+          onCheckFood: _records!.checkCard,
+        ),
+      ),
+    );
+    await _reload();
+    return saved == true;
   }
 
   Future<bool> _reviewPhoto(
@@ -709,6 +778,7 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => ShoppingListPage(
+          onQuantity: _records?.changeShoppingQuantity,
           items: _shoppingItems,
           initialChecked: _records?.checkedShopping ?? {},
           onChecked: _records?.checkShopping,
@@ -721,7 +791,11 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
   void _openSymptomEntry() {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => SymptomEntryPage(meals: _meals, onSave: _addSymptom),
+        builder: (_) => SymptomEntryPage(
+          meals: _meals,
+          onSave: _addSymptom,
+          onSaveDraft: _records?.saveSymptomDraft,
+        ),
       ),
     );
   }
@@ -734,7 +808,19 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
           symptoms: _symptoms,
           profile: widget.profile,
           loadSummary: _records?.summary,
-          onOpenJournal: () => setState(() => _selectedIndex = 2),
+          onOpenJournal: () {
+            Navigator.of(context).popUntil((route) => route.isFirst);
+            setState(() => _selectedIndex = 2);
+          },
+          negativeObservations: _records?.negativeObservations ?? const [],
+          onOpenEvidence: (date, symptom) {
+            Navigator.of(context).popUntil((route) => route.isFirst);
+            setState(() {
+              _selectedIndex = 2;
+              _evidenceDate = date;
+              _evidenceSymptom = symptom;
+            });
+          },
         ),
       ),
     );

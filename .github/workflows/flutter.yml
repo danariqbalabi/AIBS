@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       api_base_url:
-        description: "HTTPS Render URL (blank for compile check)"
+        description: "HTTPS backend URL (defaults to repository demo configuration)"
         required: false
         type: string
       supabase_publishable_key:
@@ -67,10 +67,11 @@ jobs:
           channel: stable
           cache: true
       - run: flutter pub get
-      - name: Build debug APK
+      - name: Build demo APK and provenance
         env:
-          AIBS_API_URL: ${{ inputs.api_base_url }}
-          AIBS_PUBLIC_KEY: ${{ inputs.supabase_publishable_key }}
+          AIBS_API_URL: ${{ inputs.api_base_url || vars.AIBS_API_BASE_URL }}
+          AIBS_PUBLIC_KEY: ${{ inputs.supabase_publishable_key || vars.AIBS_SUPABASE_PUBLISHABLE_KEY }}
+          AIBS_SUPABASE_URL: ${{ vars.AIBS_SUPABASE_URL }}
         run: |
           python3 - <<'PY'
           import json, os
@@ -83,13 +84,30 @@ jobs:
               raise SystemExit('Use a publishable client key only')
           Path('config/ci.local.json').write_text(json.dumps({
               'API_BASE_URL': api or 'http://10.0.2.2:8000',
-              'SUPABASE_URL': 'https://fpaposwwnqdtvvjaelar.supabase.co',
+              'SUPABASE_URL': os.environ.get('AIBS_SUPABASE_URL') or 'https://fpaposwwnqdtvvjaelar.supabase.co',
               'SUPABASE_PUBLISHABLE_KEY': key,
+              'EMAIL_OTP_LENGTH': '8',
           }))
           PY
-          flutter build apk --debug --target-platform android-arm64 --dart-define-from-file=config/ci.local.json
+          flutter build apk --release --target-platform android-arm64 --dart-define-from-file=config/ci.local.json
+          python3 - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          target = Path('build/app/outputs/flutter-apk')
+          apk = target / 'app-release.apk'
+          (target / 'SHA256SUMS').write_text(hashlib.sha256(apk.read_bytes()).hexdigest() + '  app-release.apk\n')
+          (target / 'build-info.json').write_text(json.dumps({
+              'commit': os.environ['GITHUB_SHA'], 'architecture': 'android-arm64',
+              'connected': bool(os.environ.get('AIBS_API_URL') and os.environ.get('AIBS_PUBLIC_KEY')),
+              'api_base_url': os.environ.get('AIBS_API_URL') or None,
+              'signing': 'debug key for hackathon demo; not a store release',
+          }, indent=2))
+          PY
       - uses: actions/upload-artifact@v4
         with:
-          name: aibs-android-debug
-          path: frontend/build/app/outputs/flutter-apk/app-debug.apk
-          retention-days: 7
+          name: aibs-android-demo
+          path: |
+            frontend/build/app/outputs/flutter-apk/app-release.apk
+            frontend/build/app/outputs/flutter-apk/SHA256SUMS
+            frontend/build/app/outputs/flutter-apk/build-info.json
+          retention-days: 30

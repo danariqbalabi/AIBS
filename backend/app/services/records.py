@@ -162,6 +162,10 @@ def commit(db, owner, draft_id, payload, key):
         foods.append(event)
     for symptom in content.symptoms:
         linked_food = validate_existing_food_link(db, owner, symptom, profile)
+        if symptom.linked_food_index is not None:
+            validate_food_precedes_symptom(
+                content.foods[symptom.linked_food_index].time, symptom.time, profile.timezone
+            )
         event = SymptomEvent(owner_id=owner, batch_id=batch.id, **event_fields(symptom, profile))
         db.add(event)
         db.flush()

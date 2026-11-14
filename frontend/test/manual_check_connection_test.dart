@@ -3,6 +3,35 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  testWidgets('manual consumption requires time confirmation before saving', (
+    tester,
+  ) async {
+    var saved = false;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: CameraFlowPage(
+          initialManualEntry: true,
+          initialFoodName: 'Nasi',
+          intent: MealIntent.eaten,
+          onSaved: (meal) {
+            saved = true;
+            expect(meal.serverPayload!['time']['confirmed'], true);
+          },
+          onAddSymptom: () {},
+        ),
+      ),
+    );
+    await tester.tap(find.text('Simpan'));
+    await tester.pumpAndSettle();
+    expect(saved, false);
+    await tester.tap(find.text('Konfirmasi sudah dimakan'));
+    await tester.pumpAndSettle();
+    expect(saved, false);
+    await tester.tap(find.text('Waktu sudah ditinjau'));
+    await tester.tap(find.text('Konfirmasi sudah dimakan'));
+    await tester.pumpAndSettle();
+    expect(saved, true);
+  });
   testWidgets(
     'food check renders server assessment without logging consumption',
     (tester) async {

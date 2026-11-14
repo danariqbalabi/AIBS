@@ -90,3 +90,39 @@ def test_photo_uses_owned_media_and_keeps_sauce_unknown(account):
     assert any(i["certainty"] == "unknown" for i in content["foods"][0]["ingredients"])
     assert content["foods"][0]["consumed"] is False
     assert content["foods"][0]["time"] is None
+    assert storage.files == {}
+    assert client.get(f"/api/v1/media/{media_id}/access").status_code == 404
+    assert response.json()["draft"]["media_id"] is None
+
+
+def test_opted_in_photo_is_kept_and_failed_temporary_analysis_discards_photo(account):
+    client, _ = account
+    storage = MemoryStorage()
+    client.app.state.storage = storage
+    client.app.state.gemini = FakeGemini("photo-v1.json")
+    client.put("/api/v1/me/consents", json={"basic": True, "ai": True})
+    profile = client.get("/api/v1/me/profile").json()
+    client.patch("/api/v1/me/profile", json={"version": profile["version"], "save_photos": True})
+    media = client.post(
+        "/api/v1/media", files={"file": ("food.png", image_bytes(), "image/png")}
+    ).json()
+    body = {
+        "request_id": str(uuid4()),
+        "media_id": media["id"],
+        "intent": "before_meal",
+        "reference_date": "2026-11-14",
+    }
+    first = client.post("/api/v1/analysis/photo", json=body)
+    assert first.status_code == 200
+    assert first.json()["draft"]["media_id"] == media["id"]
+    assert len(storage.files) == 1
+    assert client.post("/api/v1/analysis/photo", json=body).json() == first.json()
+    profile = client.get("/api/v1/me/profile").json()
+    client.patch("/api/v1/me/profile", json={"version": profile["version"], "save_photos": False})
+    client.app.state.gemini = FakeGemini(fail=True)
+    media = client.post(
+        "/api/v1/media", files={"file": ("food.png", image_bytes(), "image/png")}
+    ).json()
+    body.update(request_id=str(uuid4()), media_id=media["id"])
+    assert client.post("/api/v1/analysis/photo", json=body).status_code == 503
+    assert storage.files == {}

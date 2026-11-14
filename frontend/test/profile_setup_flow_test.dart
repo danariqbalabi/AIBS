@@ -5,6 +5,64 @@ import 'package:aibs_app/pages/profile_setup_flow.dart';
 import 'package:aibs_app/theme/aibs_theme.dart';
 
 void main() {
+  testWidgets('onboarding resumes saved answers and saves progress per step', (
+    tester,
+  ) async {
+    Map<String, dynamic>? progress;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ProfileSetupFlow(
+          displayName: 'Tester',
+          email: 'tester@example.com',
+          onComplete: (_) {},
+          onBackToAccount: () {},
+          initialProgress: const {'step': 'diagnosis', 'ageBand': '18–29'},
+          onProgress: (value) async {
+            progress = value;
+          },
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Apakah dokter pernah mendiagnosis kamu dengan IBS?'),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('Tidak'));
+    await tester.pumpAndSettle();
+    expect(progress!['ageBand'], '18–29');
+    expect(progress!['diagnosis'], 'Tidak');
+    expect(progress!['step'], 'clinicianGuidance');
+  });
+
+  testWidgets('bleeding history asks separately whether it is active', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ProfileSetupFlow(
+          displayName: 'Tester',
+          email: 'tester@example.com',
+          onComplete: (_) {},
+          onBackToAccount: () {},
+          initialProgress: const {
+            'step': 'redFlags',
+            'redFlagIndex': 1,
+            'ageBand': '18–29',
+          },
+        ),
+      ),
+    );
+    await tester.tap(find.text('Ya'));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Apakah darah saat BAB atau feses hitam sedang terjadi?'),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('Ya'));
+    await tester.pumpAndSettle();
+    expect(find.text('Telepon 119'), findsOneWidget);
+  });
   testWidgets('under-18 answer opens the scope screen and can be changed', (
     tester,
   ) async {

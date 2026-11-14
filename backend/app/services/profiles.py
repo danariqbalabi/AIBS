@@ -78,6 +78,7 @@ def profile_response(row):
         "diet": row.diet,
         "demo_template": row.demo_template,
         "save_photos": row.save_photos,
+        "onboarding_state": row.onboarding_state,
     }
 
 
@@ -86,7 +87,7 @@ def patch_profile(db, owner, payload, storage=None):
     profile = profile_for(db, owner)
     profile = db.scalar(select(Profile).where(Profile.id == profile.id).with_for_update())
     changes = payload.model_dump(mode="json", exclude_unset=True, exclude={"version"})
-    for key in ("display_name", "timezone", "diet", "save_photos"):
+    for key in ("display_name", "timezone", "diet", "save_photos", "onboarding_state"):
         if key in changes and changes[key] is None:
             raise ApiError(422, "invalid_profile", "Nama, zona waktu dan diet tidak boleh null.")
     if profile.version != payload.version:

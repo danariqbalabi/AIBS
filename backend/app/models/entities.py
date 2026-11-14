@@ -48,6 +48,7 @@ class Profile(Owned, Base):
     diet: Mapped[dict] = mapped_column(JSON, default=dict)
     demo_template: Mapped[str | None] = mapped_column(String(30))
     save_photos: Mapped[bool] = mapped_column(default=False, server_default=false())
+    onboarding_state: Mapped[dict] = mapped_column(JSON, default=dict, server_default="{}")
 
 
 class Consent(Owned, Base):

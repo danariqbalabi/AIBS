@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 
+from app.models.entities import Menu
 from seeds.catalog import seed_catalog, stable_id
 from tests.test_assessment import ANSWERS
 
@@ -84,6 +85,34 @@ def test_unknown_sauce_does_not_hide_known_allergy_conflict(account, db_engine):
 def test_incomplete_profile_cannot_request_diet_recommendations(account):
     client, _ = account
     assert client.get("/api/v1/recommendations").status_code == 403
+
+
+def test_display_preferences_and_spice_affect_ranking_after_constraints(account, db_engine):
+    client, _ = account
+    with Session(db_engine) as db, db.begin():
+        seed_catalog(db)
+        for key, tags in (
+            ("chicken-rice", ["halal", "spicy_none"]),
+            ("tofu-carrot", ["vegetarian", "quick", "spicy_hot"]),
+        ):
+            menu = db.get(Menu, stable_id(key))
+            menu.price_rupiah = 22000
+            menu.tags = tags
+    configure(client)
+    profile = client.get("/api/v1/me/profile").json()
+    diet = {**profile["diet"], "preferences": ["Vegetarian", "Masak ≤ 15 menit"], "spicy": None}
+    updated = client.patch(
+        "/api/v1/me/profile", json={"version": profile["version"], "diet": diet}
+    ).json()
+    assert updated["diet"]["preferences"] == ["vegetarian", "quick"]
+    order = [item["id"] for item in client.get("/api/v1/recommendations").json()["items"]]
+    assert order.index(str(stable_id("tofu-carrot"))) < order.index(str(stable_id("chicken-rice")))
+    client.patch(
+        "/api/v1/me/profile",
+        json={"version": updated["version"], "diet": {**diet, "spicy": "none"}},
+    )
+    order = [item["id"] for item in client.get("/api/v1/recommendations").json()["items"]]
+    assert order.index(str(stable_id("chicken-rice"))) < order.index(str(stable_id("tofu-carrot")))
 
 
 def test_portion_recheck_sums_duplicate_ingredients_and_requires_compatible_unit(

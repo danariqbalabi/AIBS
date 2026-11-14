@@ -10,6 +10,10 @@ import '../core/theme/aibs_tokens.dart';
 import '../shared/widgets/status_badge.dart';
 import '../widgets/aibs_widgets.dart';
 import 'profile_setup_flow.dart';
+import '../widgets/record_card_form.dart';
+import '../data/records_repository.dart';
+
+import 'dart:convert';
 
 class MenuHomePage extends StatefulWidget {
   const MenuHomePage({
@@ -22,6 +26,9 @@ class MenuHomePage extends StatefulWidget {
     this.onAddMenuShopping,
     this.onShoppingChecked,
     this.checkedShopping = const {},
+    this.onCheckMenu,
+    this.ingredientId,
+    this.onShoppingQuantity,
     super.key,
   });
 
@@ -32,6 +39,10 @@ class MenuHomePage extends StatefulWidget {
   final FutureOr<void> Function(AibsMenuItem)? onAddMenuShopping;
   final FutureOr<void> Function(String, bool)? onShoppingChecked;
   final Set<String> checkedShopping;
+  final Future<Map<String, dynamic>> Function(Map<String, dynamic>)?
+  onCheckMenu;
+  final String? Function(String)? ingredientId;
+  final Future<void> Function(String, num)? onShoppingQuantity;
   final ValueChanged<AibsMenuItem> onStartMealRecord;
   final FutureOr<void> Function(AibsMealPlan) onPlanSaved;
 
@@ -43,6 +54,7 @@ class _MenuHomePageState extends State<MenuHomePage> {
   final _searchController = TextEditingController();
   String _kind = 'Semua';
   bool _withinBudget = true;
+  bool _quickOnly = false;
 
   @override
   void dispose() {
@@ -59,7 +71,10 @@ class _MenuHomePageState extends State<MenuHomePage> {
       );
       final matchesKind = _kind == 'Semua' || item.kind == _kind;
       final matchesBudget = !_withinBudget || item.price <= budget;
-      return matchesText && matchesKind && matchesBudget;
+      final matchesTime =
+          !_quickOnly ||
+          (item.preparationMinutes != null && item.preparationMinutes! <= 15);
+      return matchesText && matchesKind && matchesBudget && matchesTime;
     }).toList();
 
     return ListView(
@@ -80,6 +95,7 @@ class _MenuHomePageState extends State<MenuHomePage> {
           ],
         ),
         const SizedBox(height: AibsSpace.s16),
+        Text('Katalog demo · harga perkiraan', style: AibsType.micro),
         TextField(
           controller: _searchController,
           decoration: const InputDecoration(
@@ -105,6 +121,12 @@ class _MenuHomePageState extends State<MenuHomePage> {
                 label: '≤ ${formatRupiah(budget)}',
                 selected: _withinBudget,
                 onTap: () => setState(() => _withinBudget = !_withinBudget),
+              ),
+              const SizedBox(width: AibsSpace.s8),
+              _FilterChip(
+                label: '≤ 15 menit',
+                selected: _quickOnly,
+                onTap: () => setState(() => _quickOnly = !_quickOnly),
               ),
             ],
           ),
@@ -137,6 +159,8 @@ class _MenuHomePageState extends State<MenuHomePage> {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => MenuDetailPage(
+          onCheckMenu: widget.onCheckMenu,
+          ingredientId: widget.ingredientId,
           item: item,
           onAddShopping: _addIngredientsToShoppingList,
           onStartMealRecord: widget.onStartMealRecord,
@@ -159,6 +183,7 @@ class _MenuHomePageState extends State<MenuHomePage> {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => ShoppingListPage(
+          onQuantity: widget.onShoppingQuantity,
           items: widget.shoppingItems,
           initialChecked: widget.checkedShopping,
           onChecked: widget.onShoppingChecked,
@@ -287,19 +312,49 @@ class _MenuCard extends StatelessWidget {
   }
 }
 
-class MenuDetailPage extends StatelessWidget {
+class MenuDetailPage extends StatefulWidget {
   const MenuDetailPage({
     super.key,
     required this.item,
     required this.onAddShopping,
     required this.onStartMealRecord,
     required this.onPlanSaved,
+    this.onCheckMenu,
+    this.ingredientId,
   });
 
   final AibsMenuItem item;
   final FutureOr<void> Function(AibsMenuItem) onAddShopping;
   final ValueChanged<AibsMenuItem> onStartMealRecord;
   final FutureOr<void> Function(AibsMealPlan) onPlanSaved;
+  final Future<Map<String, dynamic>> Function(Map<String, dynamic>)?
+  onCheckMenu;
+  final String? Function(String)? ingredientId;
+
+  @override
+  State<MenuDetailPage> createState() => _MenuDetailPageState();
+}
+
+class _MenuDetailPageState extends State<MenuDetailPage> {
+  late AibsMenuItem item = widget.item;
+  Future<void> _edit() async {
+    final card = <String, dynamic>{
+      'name': item.name,
+      'ingredients': jsonDecode(jsonEncode(item.serverIngredients)),
+      'ingredients_complete': item.ingredientsComplete,
+    };
+    final updated = await Navigator.of(context).push<AibsMenuItem>(
+      MaterialPageRoute(
+        builder: (_) => _MenuEditPage(
+          item: item,
+          card: card,
+          ingredientId: widget.ingredientId,
+          check: widget.onCheckMenu!,
+        ),
+      ),
+    );
+    if (updated != null && mounted) setState(() => item = updated);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -354,11 +409,7 @@ class MenuDetailPage extends StatelessWidget {
                     borderRadius: BorderRadius.circular(AibsRadius.lg),
                   ),
                   child: Text(
-                    item.reason == 'ada bawang putih'
-                        ? 'Ada bawang putih di bahan.'
-                        : item.reason == 'nasi 1½ porsi'
-                        ? 'Nasi 1½ porsi.'
-                        : 'Cek bahan sesuai arahan makan yang kamu masukkan.',
+                    item.reason,
                     style: AibsType.caption.copyWith(color: item.status.ink),
                   ),
                 ),
@@ -388,6 +439,11 @@ class MenuDetailPage extends StatelessWidget {
                 ),
                 const SizedBox(height: AibsSpace.s20),
                 Text('Bahan', style: AibsType.sectionTitle),
+                if (widget.onCheckMenu != null)
+                  TextButton(
+                    onPressed: _edit,
+                    child: const Text('Ubah porsi / ganti bahan'),
+                  ),
                 const SizedBox(height: AibsSpace.s8),
                 AibsCard(
                   child: Column(
@@ -408,7 +464,7 @@ class MenuDetailPage extends StatelessWidget {
                   label: 'Masukkan ke checklist belanja',
                   onPressed: () async {
                     try {
-                      await onAddShopping(item);
+                      await widget.onAddShopping(item);
                     } catch (error) {
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -453,7 +509,7 @@ class MenuDetailPage extends StatelessWidget {
                     flex: 2,
                     child: AibsPrimaryButton(
                       label: 'Sudah dimakan',
-                      onPressed: () => onStartMealRecord(item),
+                      onPressed: () => widget.onStartMealRecord(item),
                     ),
                   ),
                 ],
@@ -469,9 +525,103 @@ class MenuDetailPage extends StatelessWidget {
     await showModalBottomSheet<AibsMealPlan>(
       context: context,
       isScrollControlled: true,
-      builder: (_) => _ScheduleSheet(menu: item, onSave: onPlanSaved),
+      builder: (_) => _ScheduleSheet(menu: item, onSave: widget.onPlanSaved),
     );
   }
+}
+
+class _MenuEditPage extends StatefulWidget {
+  const _MenuEditPage({
+    required this.item,
+    required this.card,
+    required this.check,
+    this.ingredientId,
+  });
+  final AibsMenuItem item;
+  final Map<String, dynamic> card;
+  final Future<Map<String, dynamic>> Function(Map<String, dynamic>) check;
+  final String? Function(String)? ingredientId;
+  @override
+  State<_MenuEditPage> createState() => _MenuEditPageState();
+}
+
+class _MenuEditPageState extends State<_MenuEditPage> {
+  bool _busy = false;
+  String? _error;
+  Future<void> _check() async {
+    if (_busy) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      final result = await widget.check(widget.card);
+      final previous = widget.item;
+      final rows = (widget.card['ingredients'] as List)
+          .cast<Map<String, dynamic>>();
+      final updated = AibsMenuItem(
+        id: previous.id,
+        name: widget.card['name'] as String,
+        kind: previous.kind,
+        price: previous.price,
+        status: statusFor(result['status']),
+        reason: [
+          for (final r in result['reasons'] as List? ?? [])
+            r['message'].toString(),
+          ...(result['missing_information'] as List? ?? []).cast<String>(),
+        ].join('\n'),
+        ingredients: rows.map(RecordsRepository.ingredientLabel).toList(),
+        serverIngredients: rows,
+        orderTips: previous.orderTips,
+        cookSteps: previous.cookSteps,
+        customized: true,
+        ingredientsComplete: widget.card['ingredients_complete'] == true,
+        preparationMinutes: previous.preparationMinutes,
+      );
+      if (mounted) Navigator.pop(context, updated);
+    } catch (error) {
+      if (mounted) setState(() => _error = AppServices.message(error));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('Ubah bahan & porsi')),
+    body: Column(
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(AibsSpace.s20),
+            child: AbsorbPointer(
+              absorbing: _busy,
+              child: RecordCardForm(
+                kind: 'food',
+                value: widget.card,
+                ingredientId: widget.ingredientId,
+                showConsumptionAndTime: false,
+              ),
+            ),
+          ),
+        ),
+        if (_error != null)
+          Padding(
+            padding: const EdgeInsets.all(AibsSpace.s12),
+            child: Text(_error!),
+          ),
+        SafeArea(
+          child: Padding(
+            padding: AibsSpace.bottomActions,
+            child: AibsPrimaryButton(
+              label: _busy ? 'Mengecek...' : 'Cek ulang & gunakan',
+              onPressed: _busy ? null : _check,
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
 class _BackButton extends StatelessWidget {
@@ -648,10 +798,12 @@ class ShoppingListPage extends StatefulWidget {
     required this.onChanged,
     this.initialChecked = const {},
     this.onChecked,
+    this.onQuantity,
   });
   final List<String> items;
   final Set<String> initialChecked;
   final FutureOr<void> Function(String, bool)? onChecked;
+  final Future<void> Function(String, num)? onQuantity;
   final FutureOr<void> Function(List<String>) onChanged;
 
   @override
@@ -764,6 +916,15 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
                         : null,
                   ),
                 ),
+                subtitle: widget.onQuantity == null
+                    ? null
+                    : Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton(
+                          onPressed: () => _editQuantity(item),
+                          child: const Text('Ubah jumlah'),
+                        ),
+                      ),
                 contentPadding: EdgeInsets.zero,
                 controlAffinity: ListTileControlAffinity.leading,
               ),
@@ -771,6 +932,55 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
         ],
       ),
     );
+  }
+
+  Future<void> _editQuantity(String item) async {
+    final controller = TextEditingController(
+      text: RegExp(r'·\s*([0-9.,]+)').firstMatch(item)?[1] ?? '1',
+    );
+    final amount = await showDialog<num>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: const Text('Ubah jumlah'),
+        content: TextField(
+          controller: controller,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          decoration: const InputDecoration(labelText: 'Jumlah'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(c),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () {
+              final n = num.tryParse(controller.text.replaceAll(',', '.'));
+              if (n != null && n > 0 && n <= 10000) Navigator.pop(c, n);
+            },
+            child: const Text('Simpan'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (amount == null) return;
+    try {
+      await widget.onQuantity!(item, amount);
+      if (!mounted) return;
+      final display = amount == amount.toInt()
+          ? amount.toInt().toString()
+          : amount.toString();
+      final updated = item.replaceFirst(RegExp(r'·\s*[0-9.,]+'), '· $display');
+      setState(() {
+        _items[_items.indexOf(item)] = updated;
+        if (_checked.remove(item)) _checked.add(updated);
+      });
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(AppServices.message(error))));
+      }
+    }
   }
 
   Future<void> _add() async {

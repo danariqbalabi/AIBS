@@ -3,6 +3,32 @@ from uuid import uuid4
 from app.core.auth import User
 
 
+def test_onboarding_progress_is_versioned_private_and_bounded(account):
+    client, context = account
+    row = client.get("/api/v1/me/profile").json()
+    state = {"step": "redFlags", "redFlags": ["no", "unknown"], "complete": False}
+    result = client.patch(
+        "/api/v1/me/profile", json={"version": row["version"], "onboarding_state": state}
+    )
+    assert result.status_code == 200
+    assert client.get("/api/v1/me/profile").json()["onboarding_state"] == state
+    assert (
+        client.patch(
+            "/api/v1/me/profile", json={"version": row["version"], "onboarding_state": {}}
+        ).status_code
+        == 409
+    )
+    assert (
+        client.patch(
+            "/api/v1/me/profile",
+            json={"version": result.json()["version"], "onboarding_state": {"text": "x" * 20001}},
+        ).status_code
+        == 422
+    )
+    context["user"] = User(uuid4())
+    assert client.get("/api/v1/me/profile").status_code == 404
+
+
 def test_profile_persists_with_version_conflict(account):
     client, _ = account
     initial = client.get("/api/v1/me/profile").json()

@@ -12,6 +12,9 @@ class AibsMenuItem {
     this.orderTips = const [],
     this.cookSteps = const [],
     this.serverIngredients = const [],
+    this.customized = false,
+    this.ingredientsComplete = true,
+    this.preparationMinutes,
   });
 
   final String id;
@@ -24,6 +27,9 @@ class AibsMenuItem {
   final List<String> orderTips;
   final List<String> cookSteps;
   final List<Map<String, dynamic>> serverIngredients;
+  final bool customized;
+  final bool ingredientsComplete;
+  final int? preparationMinutes;
 
   String get priceLabel => 'Rp${price ~/ 1000}.000';
   String get meta => '$kind · $priceLabel · $reason';

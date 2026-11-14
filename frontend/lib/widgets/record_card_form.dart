@@ -36,11 +36,13 @@ class RecordCardForm extends StatefulWidget {
     required this.value,
     this.ingredientId,
     this.meals = const [],
+    this.showConsumptionAndTime = true,
   });
   final String kind;
   final Map<String, dynamic> value;
   final String? Function(String)? ingredientId;
   final List<AibsMealLog> meals;
+  final bool showConsumptionAndTime;
   @override
   State<RecordCardForm> createState() => _RecordCardFormState();
 }
@@ -59,12 +61,13 @@ class _RecordCardFormState extends State<RecordCardForm> {
           decoration: const InputDecoration(labelText: 'Nama makanan'),
           onChanged: (v) => card['name'] = v,
         ),
-        _CardCheckbox(
-          contentPadding: EdgeInsets.zero,
-          title: const Text('Sudah dimakan'),
-          value: card['consumed'] == true,
-          onChanged: (v) => setState(() => card['consumed'] = v ?? false),
-        ),
+        if (widget.showConsumptionAndTime)
+          _CardCheckbox(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Sudah dimakan'),
+            value: card['consumed'] == true,
+            onChanged: (v) => setState(() => card['consumed'] = v ?? false),
+          ),
         Text('Bahan', style: AibsType.sectionTitle),
         for (final row in ingredients)
           Padding(
@@ -273,7 +276,7 @@ class _RecordCardFormState extends State<RecordCardForm> {
           ),
       ],
       const SizedBox(height: AibsSpace.s16),
-      CardTimeForm(value: card),
+      if (widget.showConsumptionAndTime) CardTimeForm(value: card),
       const SizedBox(height: AibsSpace.s12),
       TextFormField(
         initialValue: card['notes'] as String? ?? '',

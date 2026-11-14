@@ -18,6 +18,8 @@ class SummaryPage extends StatefulWidget {
     required this.onOpenJournal,
     super.key,
     this.loadSummary,
+    this.negativeObservations = const [],
+    this.onOpenEvidence,
   });
 
   final List<AibsMealLog> meals;
@@ -25,6 +27,8 @@ class SummaryPage extends StatefulWidget {
   final ProfileSetupAnswers? profile;
   final VoidCallback onOpenJournal;
   final Future<Map<String, dynamic>> Function(int)? loadSummary;
+  final List<Map<String, dynamic>> negativeObservations;
+  final void Function(DateTime, String)? onOpenEvidence;
 
   @override
   State<SummaryPage> createState() => _SummaryPageState();
@@ -100,26 +104,25 @@ class _SummaryPageState extends State<SummaryPage> {
   List<AibsMealLog> get _mealsInPeriod => widget.meals
       .where(
         (entry) =>
-            !DateUtils.dateOnly(entry.date).isBefore(
-              DateUtils.dateOnly(DateTime.now())
-                  .subtract(Duration(days: _period - 1)),
-            ) &&
-            !DateUtils.dateOnly(entry.date)
-                .isAfter(DateUtils.dateOnly(DateTime.now())),
+            !DateUtils.dateOnly(entry.date).isBefore(_start) &&
+            !DateUtils.dateOnly(entry.date).isAfter(_end),
       )
       .toList();
 
   List<AibsSymptomLog> get _symptomsInPeriod => widget.symptoms
       .where(
         (entry) =>
-            !DateUtils.dateOnly(entry.date).isBefore(
-              DateUtils.dateOnly(DateTime.now())
-                  .subtract(Duration(days: _period - 1)),
-            ) &&
-            !DateUtils.dateOnly(entry.date)
-                .isAfter(DateUtils.dateOnly(DateTime.now())),
+            !DateUtils.dateOnly(entry.date).isBefore(_start) &&
+            !DateUtils.dateOnly(entry.date).isAfter(_end),
       )
       .toList();
+
+  DateTime get _end =>
+      DateTime.tryParse(_report?['end']?.toString() ?? '') ??
+      DateUtils.dateOnly(DateTime.now());
+  DateTime get _start =>
+      DateTime.tryParse(_report?['start']?.toString() ?? '') ??
+      _end.subtract(Duration(days: _period - 1));
 
   Widget _buildEmpty(BuildContext context, int activeDays) {
     return ListView(
@@ -168,6 +171,7 @@ class _SummaryPageState extends State<SummaryPage> {
         ),
         const SizedBox(height: AibsSpace.s8),
         Text('$activeDays dari 7 hari', textAlign: TextAlign.center),
+        _observations(),
         const SizedBox(height: AibsSpace.s24),
         AibsPrimaryButton(
           label: 'Catat hari ini',
@@ -234,13 +238,13 @@ class _SummaryPageState extends State<SummaryPage> {
                 children: [
                   Expanded(
                     child: _StatTile(
-                      value: '${meals.length}',
+                      value: '${_report?['food_count'] ?? meals.length}',
                       label: 'catatan makan',
                     ),
                   ),
                   Expanded(
                     child: _StatTile(
-                      value: '${symptoms.length}',
+                      value: '${_report?['symptom_count'] ?? symptoms.length}',
                       label: 'gejala',
                     ),
                   ),
@@ -248,7 +252,15 @@ class _SummaryPageState extends State<SummaryPage> {
               ),
               const SizedBox(height: AibsSpace.s16),
               _SummaryDayStrip(
-                activeDays: uniqueDays.map((day) => day.day).toSet(),
+                activeDays: _report == null
+                    ? uniqueDays
+                    : {
+                        for (final day in _report!['daily'] as List? ?? [])
+                          if (day['recorded'] == true)
+                            DateTime.parse(day['date'] as String),
+                      },
+                days: _period,
+                end: _end,
               ),
             ],
           ),
@@ -289,6 +301,7 @@ class _SummaryPageState extends State<SummaryPage> {
             ),
           ),
         ],
+        _observations(),
         const SizedBox(height: AibsSpace.s20),
         AibsPrimaryButton(
           label: 'Ringkasan buat konsultasi',
@@ -309,10 +322,47 @@ class _SummaryPageState extends State<SummaryPage> {
     return counts.entries.reduce((a, b) => a.value >= b.value ? a : b).key;
   }
 
+  Widget _observations() {
+    final rows = widget.negativeObservations.where((r) {
+      final day = DateTime.parse(r['local_date'] as String);
+      return !day.isBefore(_start) && !day.isAfter(_end);
+    }).toList();
+    if (rows.isEmpty) return const SizedBox.shrink();
+    return ExpansionTile(
+      title: Text(
+        '${_report?['negated_observation_count'] ?? rows.length} observasi tanpa gejala',
+      ),
+      children: [
+        for (final row in rows)
+          ListTile(
+            title: Text(
+              'Tidak ${labelForSymptom((row['payload'] as Map)['code'])}',
+            ),
+            subtitle: Text(row['local_date'].toString()),
+          ),
+      ],
+    );
+  }
+
+  String labelForSymptom(Object? code) =>
+      const {
+        'pain': 'nyeri perut',
+        'bloating': 'kembung',
+        'nausea': 'mual',
+        'vomiting': 'muntah',
+        'diarrhea': 'diare',
+        'constipation': 'sembelit',
+        'bowel': 'keluhan BAB',
+        'other': 'keluhan lain',
+      }[code] ??
+      code.toString();
+
   void _openPattern(BuildContext context, String symptom) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => _PatternDetailPage(
+          onOpenEvidence: widget.onOpenEvidence,
+          days: _period,
           symptom: symptom,
           meals: _mealsInPeriod,
           symptoms: _symptomsInPeriod,
@@ -365,25 +415,29 @@ class _StatTile extends StatelessWidget {
 }
 
 class _SummaryDayStrip extends StatelessWidget {
-  const _SummaryDayStrip({required this.activeDays});
-  final Set<int> activeDays;
+  const _SummaryDayStrip({
+    required this.activeDays,
+    required this.days,
+    required this.end,
+  });
+  final Set<DateTime> activeDays;
+  final int days;
+  final DateTime end;
 
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      label: '7 hari terakhir',
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      label: '$days hari terakhir',
+      child: Wrap(
+        spacing: AibsSpace.s4,
+        runSpacing: AibsSpace.s4,
         children: [
-          for (var index = 6; index >= 0; index--)
+          for (var index = days - 1; index >= 0; index--)
             Container(
               width: AibsSpace.s20,
               height: AibsSpace.s20,
               decoration: BoxDecoration(
-                color:
-                    activeDays.contains(
-                      DateTime.now().subtract(Duration(days: index)).day,
-                    )
+                color: activeDays.contains(end.subtract(Duration(days: index)))
                     ? AibsColors.primary
                     : AibsColors.unknownSoft,
                 shape: BoxShape.circle,
@@ -401,17 +455,21 @@ class _PatternDetailPage extends StatelessWidget {
     required this.meals,
     required this.symptoms,
     required this.onOpenJournal,
+    required this.days,
+    this.onOpenEvidence,
   });
   final String symptom;
   final List<AibsMealLog> meals;
   final List<AibsSymptomLog> symptoms;
   final VoidCallback onOpenJournal;
+  final int days;
+  final void Function(DateTime, String)? onOpenEvidence;
 
   @override
   Widget build(BuildContext context) {
     final entries = symptoms.where((entry) => entry.name.contains(symptom));
     return Scaffold(
-      appBar: AppBar(title: Text('$symptom · 7 hari')),
+      appBar: AppBar(title: Text('$symptom · $days hari')),
       body: ListView(
         padding: const EdgeInsets.all(AibsSpace.s20),
         children: [
@@ -430,10 +488,15 @@ class _PatternDetailPage extends StatelessWidget {
                   ),
                   if (entry.mealName != null) ...[
                     const SizedBox(height: AibsSpace.s8),
-                    Text('Sebelum ${entry.mealName}'),
+                    Text('Setelah ${entry.mealName}'),
                     const Text('Belum tentu penyebab'),
                   ],
                   if (entry.note != null) Text(entry.note!),
+                  if (onOpenEvidence != null)
+                    TextButton(
+                      onPressed: () => onOpenEvidence!(entry.date, symptom),
+                      child: const Text('Buka catatan hari ini'),
+                    ),
                 ],
               ),
             ),
@@ -444,7 +507,6 @@ class _PatternDetailPage extends StatelessWidget {
           AibsSecondaryButton(
             label: 'Lihat catatan',
             onPressed: () {
-              Navigator.pop(context);
               onOpenJournal();
             },
           ),
@@ -473,6 +535,26 @@ class _ConsultationSummaryPage extends StatefulWidget {
 
 class _ConsultationSummaryPageState extends State<_ConsultationSummaryPage> {
   bool _exporting = false;
+  List<String> get _screening {
+    final p = widget.profile;
+    if (p == null) return [];
+    const flags = [
+      'Keluhan berat aktif',
+      'Darah saat BAB / feses hitam',
+      'Berat badan turun',
+      'Anemia',
+      'Riwayat keluarga terkait',
+    ];
+    return [
+      'Diagnosis IBS oleh dokter: ${p.diagnosis ?? 'Belum dijawab'}',
+      for (var i = 0; i < flags.length; i++)
+        '${flags[i]}: ${i < p.redFlags.length ? p.redFlags[i] ?? 'Belum dijawab' : 'Belum dijawab'}',
+      'Perdarahan sedang terjadi: ${p.bleedingActive ?? 'Belum dijawab'}',
+      for (var i = 0; i < p.pattern.length; i++)
+        'Q${i + 1}: ${p.pattern[i] ?? 'Belum dijawab'}',
+    ];
+  }
+
   Future<void> _export() async {
     setState(() => _exporting = true);
     try {
@@ -482,6 +564,7 @@ class _ConsultationSummaryPageState extends State<_ConsultationSummaryPage> {
         meals: widget.meals,
         symptoms: widget.symptoms,
         questions: _questions,
+        screening: _screening,
       );
       await exportFile(bytes, 'aibs-konsultasi.pdf', 'application/pdf');
     } catch (error) {
@@ -536,6 +619,12 @@ class _ConsultationSummaryPageState extends State<_ConsultationSummaryPage> {
           ),
           const SizedBox(height: AibsSpace.s16),
           Text('Gejala & makanan sebelumnya', style: AibsType.sectionTitle),
+          ExpansionTile(
+            title: const Text('Hasil pengecekan awal'),
+            children: [
+              for (final answer in _screening) ListTile(title: Text(answer)),
+            ],
+          ),
           const SizedBox(height: AibsSpace.s8),
           for (final symptom in widget.symptoms)
             ListTile(

@@ -28,6 +28,15 @@ const spicyCodes = {
   'Sedang': 'medium',
   'Pedas banget': 'hot',
 };
+const preferenceCodes = {
+  'Halal': 'halal',
+  'Vegetarian': 'vegetarian',
+  'Tinggi protein': 'high_protein',
+  'Masak ≤ 15 menit': 'quick',
+  'Tanpa daging merah': 'no_red_meat',
+  'Lebih suka beli': 'prefer_buy',
+  'Lebih suka masak': 'prefer_cook',
+};
 const answerCodes = {'Ya': 'yes', 'Tidak': 'no', 'Tidak tahu': 'unknown'};
 
 String? labelFor(Map<String, String> codes, Object? code) {
@@ -43,6 +52,23 @@ class ProfileRepository {
   Map<String, dynamic>? rawProfile;
   Map<String, dynamic> consent = {};
   Map<String, dynamic> assessment = {};
+  Map<String, dynamic> get onboardingProgress =>
+      Map<String, dynamic>.from(rawProfile?['onboarding_state'] as Map? ?? {});
+  Future<void> _progressTail = Future.value();
+
+  Future<void> saveProgress(Map<String, dynamic> snapshot) {
+    final task = _progressTail.catchError((Object _) {}).then((_) async {
+      final current = await api.request('GET', '/api/v1/me/profile');
+      rawProfile = await api.request(
+        'PATCH',
+        '/api/v1/me/profile',
+        body: {'version': current['version'], 'onboarding_state': snapshot},
+      );
+    });
+    _progressTail = task;
+    return task;
+  }
+
   List<Map<String, dynamic>> ingredients = [];
 
   void clear() {
@@ -91,6 +117,10 @@ class ProfileRepository {
     if (consent['basic'] != true) return null;
     await loadIngredients();
     assessment = await api.request('GET', '/api/v1/me/assessment');
+    if (onboardingProgress.isNotEmpty &&
+        onboardingProgress['complete'] != true) {
+      return null;
+    }
     // A profile initialized only to evaluate screening is not a completed onboarding.
     if (rawProfile!['display_name'] == 'Kamu' &&
         rawProfile!['demo_template'] == null) {
@@ -160,10 +190,13 @@ class ProfileRepository {
           ? null
           : formatRupiah(diet['budget_rupiah'] as int),
       spicy: labelFor(spicyCodes, diet['spicy']),
-      preferences: (diet['preferences'] as List? ?? []).cast<String>(),
+      preferences: (diet['preferences'] as List? ?? [])
+          .map((v) => labelFor(preferenceCodes, v) ?? v.toString())
+          .toList(),
       aiEnabled: consent['ai'] == true,
       savePhotos: row['save_photos'] == true,
       serverVersion: row['version'] as int?,
+      bleedingActive: labelFor(answerCodes, answers['bleeding_active']),
     );
   }
 
@@ -177,6 +210,7 @@ class ProfileRepository {
   }
 
   Future<ProfileSetupAnswers> save(ProfileSetupAnswers profile) async {
+    await _progressTail.catchError((Object _) {});
     var consentUpdates = 0;
     if (profile.serverVersion != null) {
       final latest = await api.request('GET', '/api/v1/me/profile');
@@ -220,7 +254,9 @@ class ProfileRepository {
           ? null
           : int.tryParse(profile.budget!.replaceAll(RegExp(r'[^0-9]'), '')),
       'spicy': spicyCodes[profile.spicy],
-      'preferences': profile.preferences,
+      'preferences': profile.preferences
+          .map((v) => preferenceCodes[v] ?? v.trim().toLowerCase())
+          .toList(),
     };
     await ensureConsent(profile.aiEnabled);
     consentUpdates++;
@@ -244,6 +280,7 @@ class ProfileRepository {
         'timezone': 'Asia/Jakarta',
         'diet': diet,
         'save_photos': profile.savePhotos,
+        'onboarding_state': {'complete': true},
       },
     );
     assessment = await api.request('GET', '/api/v1/me/assessment');
@@ -260,7 +297,9 @@ class ProfileRepository {
       }
     }
     if (answers.containsKey('bleeding')) {
-      answers['bleeding_active'] = answers['bleeding'];
+      answers['bleeding_active'] = profile.redFlags[1] == 'Tidak'
+          ? 'no'
+          : answerCodes[profile.bleedingActive] ?? 'unknown';
     }
     for (final entry in {0: 'q1', 3: 'q4', 4: 'q5', 5: 'q6'}.entries) {
       if (entry.key < profile.pattern.length &&
@@ -370,6 +409,7 @@ class ProfileRepository {
         criteria: (result['criteria'] as List? ?? [null, null, null, null])
             .cast<bool?>(),
         reasons: (result['reasons'] as List? ?? []).cast<String>(),
+        missingFields: (result['missing_fields'] as List? ?? []).cast<String>(),
       );
     } on ApiFailure catch (e) {
       throw ScreeningAssessmentException(e.message);

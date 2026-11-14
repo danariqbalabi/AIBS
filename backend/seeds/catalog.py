@@ -95,12 +95,50 @@ MENUS = [
     ),
 ]
 
+MENU_DETAILS = {
+    "chicken-rice": (
+        15,
+        "Konfirmasi ayam tidak dimarinasi bawang. Minta jahe tanpa saus tambahan; nasi 1 porsi. "
+        "Tanyakan bumbu dan kemungkinan kontak dengan alergen.",
+    ),
+    "tofu-carrot": (
+        15,
+        "Potong tahu dan wortel. Masak dengan sedikit air hingga matang, "
+        "tanpa menambahkan saus atau bumbu yang belum dikonfirmasi. "
+        "Sesuaikan porsi dengan arahanmu.",
+    ),
+    "shrimp-rice": (
+        15,
+        "Konfirmasi bumbu udang dan cara pengolahan. Pesan nasi 1 porsi. "
+        "Menu mengandung udang; periksa alergi sebelum memilih.",
+    ),
+    "peanut-tofu": (
+        15,
+        "Tanyakan seluruh bahan saus kacang dan bumbu tahu. "
+        "Pisahkan saus agar porsinya dapat dikonfirmasi. Menu mengandung kacang tanah.",
+    ),
+    "garlic-rice": (
+        20,
+        "Konfirmasi bawang putih pada ayam dan bumbunya. Nasi contoh 1,5 porsi; "
+        "ubah jumlah dan cek ulang bila arahanmu membatasi porsi.",
+    ),
+    "coconut-chicken": (
+        25,
+        "Masak ayam sampai matang bersama santan dan bawang putih sesuai komposisi contoh. "
+        "Konfirmasi seluruh bumbu tambahan dan cek arahanmu sebelum memilih.",
+    ),
+}
+
 
 def seed_catalog(session: Session):
     for key, (name, aliases) in INGREDIENTS.items():
         session.merge(Ingredient(id=stable_id(key), name=name, aliases=aliases, source=SOURCE))
     session.flush()
     for key, name, kind, price, tags, directives, ingredients in MENUS:
+        minutes, instructions = MENU_DETAILS[key]
+        tags = [*tags, "no_red_meat", "spicy_none", f"minutes_{minutes}"]
+        if minutes <= 15 and "quick" not in tags:
+            tags.append("quick")
         session.merge(
             Menu(
                 id=stable_id(key),
@@ -110,7 +148,7 @@ def seed_catalog(session: Session):
                 tags=tags,
                 directives=directives,
                 ingredients_complete=True,
-                instructions="Contoh komposisi demo. Konfirmasi bahan dan porsi sebelum mencatat.",
+                instructions=instructions,
                 source=SOURCE,
             )
         )
