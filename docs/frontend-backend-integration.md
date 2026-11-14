@@ -53,7 +53,7 @@ Foto sementara berlaku 24 jam. Akses/analisis ditolak setelah kedaluwarsa; pembe
 - Smoke API nyata: readiness DB, browser CORS, dua anonymous JWT, bootstrap Nadia/Raka dengan status menu berbeda; commit/replay tanpa duplikasi; tautan gejala; penolakan akses lintas akun; rencana, belanja/checked, dashboard/ringkasan, dan penolakan AI saat consent mati.
 - Gemini nyata: ekstraksi cerita sintetis mempertahankan negasi tidak mual; hasil belum terkonfirmasi; request sama mengembalikan draft sama; review dan commit/replay berhasil tanpa duplikasi.
 - Storage Supabase nyata: upload privat, ZIP berisi data dan foto akun uji, lalu penghapusan data/foto berhasil. Semua akun sintetis pada smoke ini dibersihkan. Data akun pengguna tidak dihapus atau digabung.
-- Build release web dan APK sedang diperiksa di [workflow Flutter](https://github.com/danariqbalabi/AIBS/actions/workflows/flutter.yml). Jangan menganggap artifact tersedia atau lolos sebelum run selesai.
+- Format/analyze/test, build release web, build APK debug ARM64 dan upload artifact berhasil pada [run Flutter 43563381257](https://github.com/danariqbalabi/AIBS/actions/runs/43563381257). Artifact `aibs-android-debug` baru pemeriksaan kompilasi tanpa key client; APK demo terhubung dibangun setelah URL Render siap. Tes perangkat belum tersedia.
 - Pengujian Chrome sebelumnya mencapai dashboard, restore session, dan commit manual 200. [Capture Jurnal setelah reload](integration-evidence/journal-after-reload.png) memperlihatkan makanan uji; assertion terakhir runner browser lama gagal menemukan locator Flutter. Runner browser menyeluruh untuk fitur baru belum diklaim lulus.
 
 ## Urutan tes pengguna
