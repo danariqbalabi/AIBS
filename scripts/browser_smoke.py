@@ -111,7 +111,7 @@ with sync_playwright() as runtime:
             page.screenshot(path=str(screenshot))
         if os.environ.get("AIBS_TEST_OFFLINE") == "1":
             def reveal(text):
-                locator = page.get_by_text(text, exact=True).or_(page.get_by_role("button", name=re.compile("^" + re.escape(text))))
+                locator = page.get_by_text(text, exact=True).or_(page.get_by_role("button", name=re.compile("^" + re.escape(text)))).or_(page.get_by_role("checkbox", name=text, exact=True))
                 page.mouse.move(195, 400)
                 for _ in range(15):
                     if locator.count() and locator.first.is_visible():
@@ -145,15 +145,27 @@ with sync_playwright() as runtime:
             reveal("Draft makan").click()
             page.get_by_role("checkbox", name="Sudah dimakan", exact=True).click()
             reveal("Waktu sudah ditinjau").click()
-            with page.expect_response(lambda r: r.url.endswith("/commit") and r.status == 200, timeout=120000):
+            with page.expect_response(lambda r: r.url.endswith("/commit") and r.status == 200, timeout=120000) as offline_commit:
                 reveal("Tinjau & kirim").click()
             check("reviewed offline draft commits online without automatic logging")
+            saved_ids = offline_commit.value.json()["food_event_ids"]
+            assert len(saved_ids) == 1
+            commit_url = offline_commit.value.url
+            api_base = commit_url.split("/api/v1/")[0]
+            bearer = offline_commit.value.request.header_value("authorization")
+            result = page.request.get(api_base + "/api/v1/events?limit=100", headers={"Authorization": bearer})
+            assert result.status == 200
+            saved = [row for row in result.json()["items"] if row["kind"] == "food" and row["payload"]["name"] == "Synthetic offline draft"]
+            assert len(saved) == 1 and saved[0]["id"] == saved_ids[0]
+            page.get_by_role("button", name=re.compile("^Draft makan")).wait_for(state="detached")
+            check("server contains exactly one saved meal and local draft is removed")
+
             page.screenshot(path=str(ROOT / "docs/evidence/offline-sync.png"))
         completed = True
     finally:
         if not completed:
             try:
-                print(page.evaluate("() => Object.keys(localStorage).filter(k=>k.includes('aibs.offline')).map(k=>{const v=JSON.parse(localStorage[k]); return {enabled:v.enabled,profile:!!v.profile,snapshot:!!v.snapshot,keys:Object.keys(v)}})"), flush=True)
+                print(page.evaluate("() => Object.keys(localStorage).filter(k=>k.includes('aibs.offline')).map(k=>{let v=JSON.parse(localStorage[k]); if(typeof v==='string') v=JSON.parse(v); return {enabled:v.enabled===true,profile:!!v.profile,snapshot:!!v.snapshot,drafts:(v.drafts||[]).length}})"), flush=True)
             except Exception:
                 pass
             page.screenshot(path=str(Path(tempfile.gettempdir()) / "aibs-offline-failure.png"))
