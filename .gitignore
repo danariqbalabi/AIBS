@@ -33,3 +33,11 @@ android/key.properties
 *.jks
 *.keystore
 .vercel/
+
+# Temporary files and merge leftovers
+Thumbs.db
+Desktop.ini
+*.tmp
+*.bak
+*.orig
+*.rej
