@@ -21,7 +21,13 @@ class OfflineJournal {
   bool get enabled => data['enabled'] == true;
   List<Map<String, dynamic>> get drafts =>
       (data['drafts'] as List? ?? []).cast<Map<String, dynamic>>();
-  Future<void> load() async {
+  Future<void>? _loadTask;
+  Future<void> load({bool force = false}) {
+    if (!force && _loadTask != null) return _loadTask!;
+    return _loadTask = _load();
+  }
+
+  Future<void> _load() async {
     final raw = await _read(key);
     data = raw == null ? {} : Map<String, dynamic>.from(jsonDecode(raw) as Map);
   }
@@ -31,6 +37,7 @@ class OfflineJournal {
   }
 
   Future<void> enable() async {
+    await load();
     data['enabled'] = true;
     await persist();
   }

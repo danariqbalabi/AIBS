@@ -513,7 +513,9 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
                       onManualStory: _records == null
                           ? null
                           : _reviewManualStory,
-                      onSaveSymptomDraft: _records?.saveSymptomDraft,
+                      onSaveSymptomDraft: _records == null
+                          ? null
+                          : _saveSymptomDraft,
                       evidenceDate: _evidenceDate,
                       evidenceSymptom: _evidenceSymptom,
                       meals: _meals,
@@ -723,7 +725,7 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
             setState(() => _selectedIndex = 1);
             _menuKey.currentState?.showSuitable();
           },
-          onSaveDraft: _records?.saveManualDraft,
+          onSaveDraft: _records == null ? null : _saveFoodDraft,
           ingredientId: widget.services?.profiles.ingredientId,
           intent: intent,
           aiEnabled: widget.profile?.aiEnabled ?? true,
@@ -783,6 +785,28 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
             .showSnackBar(SnackBar(content: Text(AppServices.message(error))));
       }
     }
+  }
+
+  void _draftSavedMessage() {
+    if (!mounted || _records?.offline?.enabled != true) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Draft tersimpan di perangkat. Belum dikirim ke akun.'),
+      ),
+    );
+  }
+
+  Future<void> _saveFoodDraft(Map<String, dynamic> card, String id) async {
+    await _records!.saveManualDraft(card, id);
+    _draftSavedMessage();
+  }
+
+  Future<void> _saveSymptomDraft(
+    List<Map<String, dynamic>> cards,
+    String id,
+  ) async {
+    await _records!.saveSymptomDraft(cards, id);
+    _draftSavedMessage();
   }
 
   Future<String?> _addMeal(AibsMealLog meal) async {
@@ -965,7 +989,7 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
           meals: _meals,
           initialMealId: initialMealId,
           onSave: _addSymptom,
-          onSaveDraft: _records?.saveSymptomDraft,
+          onSaveDraft: _records == null ? null : _saveSymptomDraft,
         ),
       ),
     );

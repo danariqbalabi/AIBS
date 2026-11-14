@@ -8,6 +8,7 @@ import '../data/app_services.dart';
 import '../data/offline_shell.dart';
 import '../widgets/record_card_form.dart';
 import '../widgets/aibs_widgets.dart';
+import '../widgets/unsaved_guard.dart';
 
 class OfflinePage extends StatefulWidget {
   const OfflinePage({super.key, required this.records});
@@ -54,13 +55,23 @@ class _OfflinePageState extends State<OfflinePage> {
                       await local.enable();
                       await widget.records.load();
                       await offlineShell(true);
+                      local.data['shell_ready'] = true;
+                      await local.persist();
                     } else {
                       await local.clear();
                       await offlineShell(false);
                     }
                   }),
           ),
+          if (busy) ...[
+            const LinearProgressIndicator(),
+            const Text(
+              'Menyiapkan data. Tunggu sampai selesai sebelum menutup atau memutus koneksi.',
+            ),
+          ],
           if (error != null) Text(error!),
+          if (local.enabled && !busy && local.data['shell_ready'] == true)
+            const Text('Siap dibuka offline di perangkat ini.'),
           if (local.enabled) ...[
             Text(
               'Data terakhir: ${local.data['cached_at'] ?? "belum tersedia"}',
@@ -190,6 +201,7 @@ class LocalDraftPage extends StatefulWidget {
 }
 
 class _LocalDraftPageState extends State<LocalDraftPage> {
+  final _exit = GlobalKey<UnsavedGuardState>();
   late final content = Map<String, dynamic>.from(
     jsonDecode(jsonEncode(widget.draft['content'])) as Map,
   );
@@ -202,7 +214,7 @@ class _LocalDraftPageState extends State<LocalDraftPage> {
     });
     try {
       await widget.records.commitLocal(widget.draft['id'] as String, content);
-      if (mounted) Navigator.pop(context);
+      if (mounted) await _exit.currentState!.leave();
     } catch (e) {
       if (mounted) setState(() => error = AppServices.message(e));
     } finally {
@@ -211,45 +223,55 @@ class _LocalDraftPageState extends State<LocalDraftPage> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Tinjau draft lokal')),
-    body: ListView(
-      padding: const EdgeInsets.all(AibsSpace.s20),
-      children: [
-        const Text(
-          'Perlu internet untuk kirim. Tinjau waktu dan porsi; ini akan menjadi catatan baru di akun.',
+  Widget build(BuildContext context) => UnsavedGuard(
+    key: _exit,
+    busy: () => busy,
+    isDirty: () => jsonEncode(content) != jsonEncode(widget.draft['content']),
+    onSaveDraft: () =>
+        widget.records.offline!.draft(widget.draft['id'] as String, content),
+    child: Scaffold(
+      appBar: AppBar(title: const Text('Tinjau draft lokal')),
+      body: AbsorbPointer(
+        absorbing: busy,
+        child: ListView(
+          padding: const EdgeInsets.all(AibsSpace.s20),
+          children: [
+            const Text(
+              'Perlu internet untuk kirim. Tinjau waktu dan porsi; ini akan menjadi catatan baru di akun.',
+            ),
+            for (final card in content['foods'] as List? ?? [])
+              RecordCardForm(
+                kind: 'food',
+                value: card as Map<String, dynamic>,
+                ingredientId: widget.records.profiles.ingredientId,
+              ),
+            for (final card in content['symptoms'] as List? ?? [])
+              RecordCardForm(
+                kind: 'symptom',
+                value: card as Map<String, dynamic>,
+                meals: widget.records.meals,
+              ),
+            if (error != null) Text(error!),
+            const SizedBox(height: AibsSpace.s20),
+            AibsPrimaryButton(
+              label: busy ? 'Mengirim...' : 'Tinjau & kirim',
+              onPressed: busy ? null : send,
+            ),
+            TextButton(
+              onPressed: busy
+                  ? null
+                  : () async {
+                      await widget.records.offline!.draft(
+                        widget.draft['id'] as String,
+                        content,
+                      );
+                      if (context.mounted) await _exit.currentState!.leave();
+                    },
+              child: const Text('Simpan draft lokal'),
+            ),
+          ],
         ),
-        for (final card in content['foods'] as List? ?? [])
-          RecordCardForm(
-            kind: 'food',
-            value: card as Map<String, dynamic>,
-            ingredientId: widget.records.profiles.ingredientId,
-          ),
-        for (final card in content['symptoms'] as List? ?? [])
-          RecordCardForm(
-            kind: 'symptom',
-            value: card as Map<String, dynamic>,
-            meals: widget.records.meals,
-          ),
-        if (error != null) Text(error!),
-        const SizedBox(height: AibsSpace.s20),
-        AibsPrimaryButton(
-          label: busy ? 'Mengirim...' : 'Tinjau & kirim',
-          onPressed: busy ? null : send,
-        ),
-        TextButton(
-          onPressed: busy
-              ? null
-              : () async {
-                  await widget.records.offline!.draft(
-                    widget.draft['id'] as String,
-                    content,
-                  );
-                  if (context.mounted) Navigator.pop(context);
-                },
-          child: const Text('Simpan draft lokal'),
-        ),
-      ],
+      ),
     ),
   );
 }

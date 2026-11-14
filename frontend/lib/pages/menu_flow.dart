@@ -688,8 +688,14 @@ class _MenuEditPageState extends State<_MenuEditPage> {
         ].join('\n'),
         ingredients: rows.map(RecordsRepository.ingredientLabel).toList(),
         serverIngredients: rows,
-        orderTips: previous.orderTips,
-        cookSteps: previous.cookSteps,
+        orderTips: previous.kind == 'Beli'
+            ? [
+                'Pesan ${previous.name} dengan bahan: ${rows.map(RecordsRepository.ingredientLabel).join(', ')}. Konfirmasi bahan dan cara olah dengan penjual.',
+              ]
+            : [],
+        cookSteps: const [
+          'Bahan atau porsi telah diubah. Tinjau ulang cara memasak sesuai daftar bahan terbaru; instruksi resep awal tidak diterapkan otomatis.',
+        ],
         customized: true,
         ingredientsComplete: widget.card['ingredients_complete'] == true,
         preparationMinutes: previous.preparationMinutes,

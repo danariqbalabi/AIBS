@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:aibs_app/data/offline_journal.dart';
@@ -6,6 +7,28 @@ import 'package:aibs_app/core/demo_data.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('enabling waits for initial storage read and later tab reloads preserve edits', () async {
+    final read = Completer<String?>();
+    var reads = 0;
+    final local = OfflineJournal(
+      'owner',
+      read: (_) {
+        reads++;
+        return read.future;
+      },
+      write: (_, _) async {},
+      remove: (_) async {},
+    );
+    final loading = local.load();
+    final enabling = local.enable();
+    read.complete(null);
+    await loading;
+    await enabling;
+    await local.load();
+    expect(local.enabled, true);
+    expect(reads, 1);
+  });
+
   test(
     'offline data is opt-in, isolated by subject, and removed on clear',
     () async {
@@ -44,7 +67,7 @@ void main() {
       await bob.load();
       expect(bob.drafts, isEmpty);
       await alice.clear();
-      await restored.load();
+      await restored.load(force: true);
       expect(restored.enabled, false);
       expect(restored.drafts, isEmpty);
     },

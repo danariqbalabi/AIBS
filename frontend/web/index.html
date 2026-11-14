@@ -54,6 +54,10 @@
           setTimeout(resolve, 60000);
         });
         if (worker.state !== 'activated') throw new Error('Offline shell could not be prepared');
+        if (!navigator.serviceWorker.controller) await new Promise((resolve, reject) => {
+          navigator.serviceWorker.addEventListener('controllerchange', resolve, {once: true});
+          setTimeout(() => reject(new Error('Offline shell not controlling this page')), 60000);
+        });
       } else {
         for (const registration of await navigator.serviceWorker.getRegistrations()) {
           if (registration.active && registration.active.scriptURL.endsWith('/aibs-sw.js')) await registration.unregister();
