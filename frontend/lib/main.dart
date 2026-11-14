@@ -31,7 +31,10 @@ class _AibsAppState extends State<AibsApp> {
       debugShowCheckedModeBanner: false,
       theme: AibsTheme.light,
       home: _onboardingComplete
-          ? AibsHomeShell(profile: _profile)
+          ? AibsHomeShell(
+              profile: _profile,
+              onProfileSaved: (profile) => setState(() => _profile = profile),
+            )
           : OnboardingFlow(
               onComplete: (profile) => setState(() {
                 _profile = profile;
@@ -43,9 +46,10 @@ class _AibsAppState extends State<AibsApp> {
 }
 
 class AibsHomeShell extends StatefulWidget {
-  const AibsHomeShell({super.key, this.profile});
+  const AibsHomeShell({super.key, this.profile, this.onProfileSaved});
 
   final ProfileSetupAnswers? profile;
+  final ValueChanged<ProfileSetupAnswers>? onProfileSaved;
 
   @override
   State<AibsHomeShell> createState() => _AibsHomeShellState();
@@ -65,7 +69,10 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
           ),
           1 => const MenuHomePage(),
           2 => const JournalPage(),
-          3 => ProfilePage(profile: widget.profile),
+          3 => ProfilePage(
+            profile: widget.profile,
+            onProfileSaved: widget.onProfileSaved,
+          ),
           _ => const SizedBox.shrink(),
         },
       ),

@@ -29,10 +29,7 @@ void main() {
 
     await tester.tap(find.text('Arahan makan'));
     await tester.pumpAndSettle();
-    expect(find.text('Ubah arahan diet'), findsOneWidget);
-    await tester.tap(find.text('Lanjut'));
-    await tester.pumpAndSettle();
-    expect(find.text('Konfirmasi perubahan'), findsOneWidget);
+    expect(find.text('Arahan diet'), findsOneWidget);
     await tester.tap(find.text('Simpan perubahan'));
     await tester.pumpAndSettle();
     expect(find.text('Perubahan tersimpan untuk sesi ini'), findsOneWidget);

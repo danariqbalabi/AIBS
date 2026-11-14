@@ -117,6 +117,30 @@ class ProfileSetupAnswers {
   final String? budget;
   final String? spicy;
   final List<String> preferences;
+
+  ProfileSetupAnswers copyWithDietProfile({
+    required String? dietType,
+    required String? dietPhase,
+    required List<String> avoidedIngredients,
+    required Map<String, int?> portionLimits,
+  }) => ProfileSetupAnswers(
+    displayName: displayName,
+    email: email,
+    ageBand: ageBand,
+    diagnosis: diagnosis,
+    clinicianGuidance: clinicianGuidance,
+    redFlags: redFlags,
+    pattern: pattern,
+    dietType: dietType,
+    dietPhase: dietPhase,
+    avoidedIngredients: avoidedIngredients,
+    portionLimits: portionLimits,
+    allergies: allergies,
+    tolerances: tolerances,
+    budget: budget,
+    spicy: spicy,
+    preferences: preferences,
+  );
 }
 
 typedef ProfileSetupComplete = void Function(ProfileSetupAnswers answers);
