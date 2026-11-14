@@ -147,6 +147,8 @@ class AibsSymptomLog {
     this.mealId,
     this.requestId,
     this.serverPayload,
+    this.otherLabel,
+    this.bristolType,
   });
 
   final String name;
@@ -161,6 +163,8 @@ class AibsSymptomLog {
   final String? mealId;
   final String? requestId;
   final Map<String, dynamic>? serverPayload;
+  final String? otherLabel;
+  final int? bristolType;
 }
 
 class AibsStoryLog {

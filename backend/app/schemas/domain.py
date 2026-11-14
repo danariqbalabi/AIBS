@@ -123,6 +123,12 @@ class PortionLimit(Contract):
     unit: str = Field(min_length=1, max_length=30)
 
 
+class CustomPortionLimit(Contract):
+    name: str = Field(min_length=1, max_length=100)
+    quantity: PositiveQuantity
+    unit: str = Field(min_length=1, max_length=30)
+
+
 class DietProfile(Contract):
     directive: Literal["low_fodmap", "low_fat", "high_fiber", "other", "none"] = "none"
     phase: Literal["elimination", "reintroduction", "personalization", "unknown"] = "unknown"
@@ -133,6 +139,16 @@ class DietProfile(Contract):
     budget_rupiah: int | None = Field(default=None, gt=0, le=10000000)
     spicy: Literal["none", "little", "medium", "hot"] | None = None
     preferences: list[str] = Field(default_factory=list, max_length=30)
+    custom_allergies: list[Annotated[str, Field(min_length=1, max_length=100)]] = Field(
+        default_factory=list, max_length=100
+    )
+    custom_avoided_ingredients: list[Annotated[str, Field(min_length=1, max_length=100)]] = Field(
+        default_factory=list, max_length=100
+    )
+    custom_tolerances: list[Annotated[str, Field(min_length=1, max_length=100)]] = Field(
+        default_factory=list, max_length=100
+    )
+    custom_portion_limits: list[CustomPortionLimit] = Field(default_factory=list, max_length=100)
 
 
 class ProfilePatch(Contract):
