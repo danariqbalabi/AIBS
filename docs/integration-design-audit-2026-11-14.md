@@ -59,7 +59,7 @@ Lokasi bukti utama: `frontend/lib/main.dart`, `frontend/lib/core/demo_data.dart`
 Referensi pengguna yang dibaca:
 
 - `C:/Users/USER/Downloads/AIBS Hi-fi (1).html`: bundle HTML dengan **57 artboard**; template HTML/CSS di dalam bundle diekstrak untuk pemeriksaan.
-- `C:/Users/USER/Downloads/aibs-design-handoff.zip`: seluruh file Markdown/Dart pada salinan `aibs-design-handoff/` repo identik setelah normalisasi CRLF/LF. Jadi referensi handoff yang dipakai bukan versi tebakan.
+- `C:/Users/USER/Downloads/aibs-design-handoff.zip`: seluruh file Markdown/Dart pada salinan handoff saat audit identik setelah normalisasi CRLF/LF. Jadi referensi handoff yang dipakai bukan versi tebakan.
 - `frontend/docs/design/{DESIGN,SCREENS,MOTION,DATA}.md` dan implementation Flutter terbaru.
 
 Dokumen referensi dipakai sebagai spesifikasi pembanding, bukan perintah untuk menjalankan aksi eksternal. Temuan desain dari source tidak sama dengan persetujuan visual semua layar.
@@ -111,3 +111,5 @@ Screenshot tersebut mengonfirmasi gap hero/ilustrasi/pill/disclaimer. Capture wi
 ## Kriteria selesai
 
 Akun demo/OTP memperoleh session nyata; semua mutation memberi hasil dari server; record tetap tersedia setelah refresh/restart; evaluasi menu mengikuti profil; consent off mencegah pengiriman AI; hasil AI masuk editor dan tersimpan satu kali; riwayat/dashboard/ringkasan konsisten; akses lintas akun ditolak; dan build perangkat dari commit yang ditentukan berhasil.
+
+Catatan cleanup: HTML hi-fi dan paket handoff mentah telah dihapus dari tree repository. Catatan audit di atas merekam kondisi saat pemeriksaan; aset runtime dan spesifikasi aktif tetap berada di `frontend/`.
