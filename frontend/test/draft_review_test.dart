@@ -7,6 +7,27 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
 void main() {
+  test('a newer draft is not silently overwritten during review', () async {
+    final api = ApiClient(
+      baseUrl: 'https://api.example',
+      accessToken: () async => 'test',
+      client: MockClient((request) async {
+        expect(request.method, 'GET');
+        return http.Response('{"version":2,"persistence_status":"draft"}', 200);
+      }),
+    );
+    final review = DraftReview(api, {
+      'id': 'draft-1',
+      'version': 1,
+      'intent': 'journal',
+      'content': {},
+    });
+    await expectLater(
+      review.save(),
+      throwsA(isA<ApiFailure>().having((e) => e.status, 'status', 409)),
+    );
+    api.close();
+  });
   test('lost commit response replays the same version and key without patching again', () async {
     var patches = 0;
     var commits = 0;
@@ -42,6 +63,7 @@ void main() {
     );
     final review = DraftReview(api, {
       'id': 'draft-1',
+      'version': 1,
       'intent': 'journal',
       'content': {
         'symptoms': [

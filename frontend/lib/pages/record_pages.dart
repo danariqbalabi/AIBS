@@ -1,4 +1,9 @@
 import 'dart:async';
+import 'dart:typed_data';
+
+import 'package:image_picker/image_picker.dart';
+
+import '../data/photo_picker.dart';
 
 import 'package:uuid/uuid.dart';
 
@@ -8,7 +13,6 @@ import '../data/records_repository.dart';
 import 'event_editor_page.dart';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 import '../core/demo_data.dart';
 import '../core/theme/aibs_tokens.dart';
@@ -41,6 +45,7 @@ class CameraFlowPage extends StatefulWidget {
     this.initialFoodName,
     this.initialIngredients = const [],
     this.onCheckFood,
+    this.onReviewPhoto,
   });
 
   final FutureOr<void> Function(AibsMealLog) onSaved;
@@ -52,6 +57,7 @@ class CameraFlowPage extends StatefulWidget {
   final String? initialFoodName;
   final List<String> initialIngredients;
   final Future<Map<String, dynamic>> Function(List<String>, bool)? onCheckFood;
+  final Future<bool> Function(Uint8List, String, bool)? onReviewPhoto;
 
   @override
   State<CameraFlowPage> createState() => _CameraFlowPageState();
@@ -70,6 +76,32 @@ class _CameraFlowPageState extends State<CameraFlowPage> {
   bool _saving = false;
   bool _checking = false;
   Map<String, dynamic>? _evaluation;
+  Uint8List? _photo;
+  String _photoRequest = const Uuid().v4();
+  String? _photoError;
+  bool _picking = false;
+
+  Future<void> _pickPhoto(ImageSource source) async {
+    if (_picking) return;
+    setState(() => _picking = true);
+    try {
+      final bytes = await PhotoPicker.pick(source);
+      if (!mounted || bytes == null) return;
+      setState(() {
+        _photo = bytes;
+        _photoRequest = const Uuid().v4();
+        _photoError = null;
+        _step = _CameraStep.preview;
+      });
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(AppServices.message(error))));
+      }
+    } finally {
+      if (mounted) setState(() => _picking = false);
+    }
+  }
 
   @override
   void initState() {
@@ -137,11 +169,15 @@ class _CameraFlowPageState extends State<CameraFlowPage> {
               AibsPrimaryButton(
                 label: 'Ambil foto',
                 icon: Icons.camera_alt_outlined,
-                onPressed: () => setState(() => _step = _CameraStep.preview),
+                onPressed: _picking
+                    ? null
+                    : () => _pickPhoto(ImageSource.camera),
               ),
               const SizedBox(height: AibsSpace.s8),
               TextButton(
-                onPressed: () => setState(() => _step = _CameraStep.preview),
+                onPressed: _picking
+                    ? null
+                    : () => _pickPhoto(ImageSource.gallery),
                 child: Text(
                   'Pilih dari galeri',
                   style: AibsType.label.copyWith(color: AibsColors.onPrimary),
@@ -177,13 +213,10 @@ class _CameraFlowPageState extends State<CameraFlowPage> {
                 gradient: AibsGradients.food(AibsColors.foodBlue),
                 borderRadius: BorderRadius.circular(AibsRadius.xl),
               ),
-              child: Center(
-                child: SvgPicture.asset(
-                  'assets/illustrations/bowl.svg',
-                  width: 120,
-                  height: 120,
-                ),
-              ),
+              clipBehavior: Clip.antiAlias,
+              child: _photo == null
+                  ? const SizedBox.shrink()
+                  : Image.memory(_photo!, fit: BoxFit.contain),
             ),
           ),
         ),
@@ -250,13 +283,11 @@ class _CameraFlowPageState extends State<CameraFlowPage> {
             style: AibsType.title,
             textAlign: TextAlign.center,
           ),
+          if (_photoError != null) Text(_photoError!, style: AibsType.caption),
           const Spacer(),
           AibsSecondaryButton(label: 'Isi manual', onPressed: _openManual),
           const SizedBox(height: AibsSpace.s10),
-          AibsPrimaryButton(
-            label: 'Coba lagi',
-            onPressed: () => setState(() => _step = _CameraStep.camera),
-          ),
+          AibsPrimaryButton(label: 'Coba lagi', onPressed: _analyze),
         ],
       ),
     );
@@ -530,13 +561,35 @@ class _CameraFlowPageState extends State<CameraFlowPage> {
     );
   }
 
-  void _analyze() {
+  Future<void> _analyze() async {
+    if (!widget.aiEnabled || widget.onReviewPhoto == null || _photo == null) {
+      _openManual();
+      return;
+    }
     setState(() => _step = _CameraStep.processing);
-    Future<void>.delayed(const Duration(milliseconds: 450), () {
-      if (mounted && _step == _CameraStep.processing) {
-        setState(() => _step = _CameraStep.failed);
+    try {
+      final saved = await widget.onReviewPhoto!(
+        _photo!,
+        _photoRequest,
+        widget.intent == MealIntent.eaten,
+      );
+      if (!mounted) return;
+      if (saved) {
+        Navigator.pop(context);
+      } else {
+        setState(() => _step = _CameraStep.preview);
       }
-    });
+    } catch (error) {
+      if (error is ApiFailure && error.code == 'analysis_already_attempted') {
+        _photoRequest = const Uuid().v4();
+      }
+      if (mounted) {
+        setState(() {
+          _photoError = AppServices.message(error);
+          _step = _CameraStep.failed;
+        });
+      }
+    }
   }
 
   void _openManual() {

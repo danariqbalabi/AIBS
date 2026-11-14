@@ -19,9 +19,13 @@ import 'widgets/aibs_tab_bar.dart';
 import 'widgets/load_gate.dart';
 import 'pages/link_email_sheet.dart';
 import 'pages/draft_review_page.dart';
+import 'data/photo_picker.dart';
+
+import 'dart:typed_data';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await PhotoPicker.recover();
   final services = await AppServices.create(const AppConfig());
   runApp(AibsApp(services: services));
 }
@@ -504,6 +508,7 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
           initialIngredients: ingredients,
           onSaved: _addMeal,
           onCheckFood: _records?.checkFood,
+          onReviewPhoto: _records == null ? null : _reviewPhoto,
           onAddSymptom: _openSymptomEntry,
           onFinish: () => setState(() => _selectedIndex = 0),
         ),
@@ -625,6 +630,27 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
           review: review,
           meals: _meals,
           ingredientId: widget.services!.profiles.ingredientId,
+        ),
+      ),
+    );
+    if (saved == true) await _reload();
+    return saved == true;
+  }
+
+  Future<bool> _reviewPhoto(
+    Uint8List bytes,
+    String requestId,
+    bool consumed,
+  ) async {
+    final review = await _records!.analyzePhoto(bytes, requestId, consumed);
+    if (!mounted) return false;
+    final saved = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => DraftReviewPage(
+          review: review,
+          meals: _meals,
+          ingredientId: widget.services!.profiles.ingredientId,
+          onCheckFood: _records!.checkCard,
         ),
       ),
     );

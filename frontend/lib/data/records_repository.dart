@@ -400,6 +400,53 @@ class RecordsRepository {
     return DraftReview(api, result['draft'] as Map<String, dynamic>);
   }
 
+  final _photoMedia = <String, String>{};
+  Future<DraftReview> analyzePhoto(
+    List<int> bytes,
+    String requestId,
+    bool consumed,
+  ) async {
+    if (profiles.consent['ai'] != true) {
+      throw const ApiFailure('Bantuan AI dimatikan. Kamu bisa isi manual.');
+    }
+    var mediaId = _photoMedia[requestId];
+    if (mediaId == null) {
+      final media = await api.request(
+        'POST',
+        '/api/v1/media',
+        fileBytes: bytes,
+        timeout: const Duration(seconds: 90),
+      );
+      mediaId = media['id'] as String;
+      _photoMedia[requestId] = mediaId;
+    }
+    final result = await api.request(
+      'POST',
+      '/api/v1/analysis/photo',
+      body: {
+        'request_id': requestId,
+        'media_id': mediaId,
+        'intent': consumed ? 'consumed' : 'before_meal',
+        'reference_date': dateLabel(DateTime.now()),
+      },
+      timeout: const Duration(seconds: 120),
+    );
+    return DraftReview(api, result['draft'] as Map<String, dynamic>);
+  }
+
+  Future<Map<String, dynamic>> checkCard(Map<String, dynamic> card) async {
+    final profile = await api.request('GET', '/api/v1/me/profile');
+    return api.request(
+      'POST',
+      '/api/v1/food-checks',
+      body: {
+        'profile_version': profile['version'],
+        'ingredients': card['ingredients'],
+        'ingredients_complete': card['ingredients_complete'] == true,
+      },
+    );
+  }
+
   Future<void> saveNoSymptoms() async {
     final food = meals
         .where((m) => dateLabel(m.date) == dateLabel(DateTime.now()))
