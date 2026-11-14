@@ -1,6 +1,10 @@
 import 'dart:convert';
 import 'dart:async';
-import 'dart:typed_data';
+
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
+
+import '../data/browser_camera.dart';
 
 import 'package:image_picker/image_picker.dart';
 
@@ -51,6 +55,7 @@ class CameraFlowPage extends StatefulWidget {
     this.initialIngredients = const [],
     this.onCheckFood,
     this.onReviewPhoto,
+    this.onEnableAi,
     this.onSaveDraft,
     this.ingredientId,
     this.onSuggestSwaps,
@@ -63,6 +68,7 @@ class CameraFlowPage extends StatefulWidget {
   final bool initialManualEntry;
   final MealIntent intent;
   final bool aiEnabled;
+  final Future<bool> Function()? onEnableAi;
   final String? initialFoodName;
   final List<String> initialIngredients;
   final Future<Map<String, dynamic>> Function(List<String>, bool)? onCheckFood;
@@ -94,6 +100,7 @@ class _CameraFlowPageState extends State<CameraFlowPage> {
   String _photoRequest = const Uuid().v4();
   String? _photoError;
   bool _picking = false;
+  late bool _aiEnabled;
   final _mealCard = <String, dynamic>{};
   String? _reviewSource;
   String get _manualSource => jsonEncode([
@@ -132,7 +139,9 @@ class _CameraFlowPageState extends State<CameraFlowPage> {
     if (_picking) return;
     setState(() => _picking = true);
     try {
-      final bytes = await PhotoPicker.pick(source);
+      final bytes = kIsWeb && source == ImageSource.camera
+          ? await captureBrowserPhoto(context)
+          : await PhotoPicker.pick(source);
       if (!mounted || bytes == null) return;
       setState(() {
         _photo = bytes;
@@ -142,8 +151,15 @@ class _CameraFlowPageState extends State<CameraFlowPage> {
       });
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(AppServices.message(error))));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              error is PlatformException
+                  ? 'Kamera belum bisa dibuka. Izinkan akses kamera atau pilih dari galeri.'
+                  : AppServices.message(error),
+            ),
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _picking = false);
@@ -153,6 +169,7 @@ class _CameraFlowPageState extends State<CameraFlowPage> {
   @override
   void initState() {
     super.initState();
+    _aiEnabled = widget.aiEnabled;
     _step = widget.initialManualEntry ? _CameraStep.manual : _CameraStep.camera;
     _foodController = TextEditingController(text: widget.initialFoodName ?? '');
     _ingredients = [...widget.initialIngredients];
@@ -290,9 +307,15 @@ class _CameraFlowPageState extends State<CameraFlowPage> {
           child: Column(
             children: [
               AibsPrimaryButton(
-                label: widget.aiEnabled ? 'Analisis' : 'Isi manual',
-                icon: widget.aiEnabled ? Icons.auto_awesome : Icons.edit,
-                onPressed: widget.aiEnabled ? _analyze : _openManual,
+                label: _aiEnabled
+                    ? 'Analisis foto'
+                    : 'Aktifkan AI dan analisis',
+                icon: Icons.auto_awesome,
+                onPressed: _analyze,
+              ),
+              TextButton(
+                onPressed: _openManual,
+                child: const Text('Isi manual'),
               ),
               const SizedBox(height: AibsSpace.s8),
               AibsSecondaryButton(
@@ -691,7 +714,12 @@ class _CameraFlowPageState extends State<CameraFlowPage> {
   }
 
   Future<void> _analyze() async {
-    if (!widget.aiEnabled || widget.onReviewPhoto == null || _photo == null) {
+    if (!_aiEnabled) {
+      final enabled = await widget.onEnableAi?.call() ?? false;
+      if (!enabled || !mounted) return;
+      setState(() => _aiEnabled = true);
+    }
+    if (widget.onReviewPhoto == null || _photo == null) {
       _openManual();
       return;
     }
