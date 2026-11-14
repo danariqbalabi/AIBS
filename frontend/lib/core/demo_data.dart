@@ -168,9 +168,15 @@ class AibsStoryLog {
     required this.text,
     required this.time,
     required this.date,
+    this.draftId,
+    this.version,
+    this.title,
   });
 
   final String text;
+  final String? draftId;
+  final int? version;
+  final String? title;
   final String time;
   final DateTime date;
 }

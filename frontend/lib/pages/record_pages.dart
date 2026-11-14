@@ -829,6 +829,7 @@ class JournalPage extends StatefulWidget {
     this.onEditEvent,
     this.ingredientId,
     this.onAnalyzeStory,
+    this.onResumeDraft,
     super.key,
   });
 
@@ -845,6 +846,7 @@ class JournalPage extends StatefulWidget {
   final Future<void> Function(Map<String, dynamic>)? onEditEvent;
   final String? Function(String)? ingredientId;
   final Future<bool> Function(String, String)? onAnalyzeStory;
+  final Future<void> Function(String)? onResumeDraft;
 
   @override
   State<JournalPage> createState() => _JournalPageState();
@@ -1093,6 +1095,7 @@ class _JournalPageState extends State<JournalPage> {
       MaterialPageRoute<bool>(
         builder: (_) => _StoryEntryPage(
           initialText: initialText ?? '',
+          persistDraft: widget.onResumeDraft != null,
           onReview: widget.aiEnabled ? widget.onAnalyzeStory : null,
           onDraftChanged: (draft) => setState(() => _storyDraft = draft),
           onSave: (text) async {
@@ -1127,6 +1130,16 @@ class _JournalPageState extends State<JournalPage> {
   }
 
   void _openRecordDetail(BuildContext context, _JournalRecord record) {
+    if (record.story?.draftId != null && widget.onResumeDraft != null) {
+      widget.onResumeDraft!(record.story!.draftId!).catchError((Object error) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(AppServices.message(error))));
+        }
+      });
+      return;
+    }
     final canEdit =
         widget.onEditEvent != null &&
         (record.meal?.serverPayload != null ||
@@ -1222,7 +1235,8 @@ class _JournalRecord {
   final AibsMealLog? meal;
   final AibsSymptomLog? symptom;
   final AibsStoryLog? story;
-  String get title => meal?.name ?? symptom?.name ?? 'Cerita hari ini';
+  String get title =>
+      meal?.name ?? symptom?.name ?? story?.title ?? 'Cerita hari ini';
   String? get subtitle => meal == null
       ? symptom == null
             ? story!.text
@@ -1270,11 +1284,13 @@ class _StoryEntryPage extends StatefulWidget {
     required this.onDraftChanged,
     required this.onSave,
     this.onReview,
+    this.persistDraft = false,
   });
   final String initialText;
   final ValueChanged<String?> onDraftChanged;
   final FutureOr<void> Function(String) onSave;
   final Future<bool> Function(String, String)? onReview;
+  final bool persistDraft;
 
   @override
   State<_StoryEntryPage> createState() => _StoryEntryPageState();
@@ -1495,7 +1511,29 @@ class _StoryEntryPageState extends State<_StoryEntryPage> {
               const SizedBox(height: AibsSpace.s8),
               Center(
                 child: TextButton(
-                  onPressed: () {
+                  onPressed: () async {
+                    if (widget.persistDraft) {
+                      if (_saving) return;
+                      _saving = true;
+                      try {
+                        await widget.onSave(_controller.text.trim());
+                      } catch (error) {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(AppServices.message(error))),
+                          );
+                        }
+                        _saving = false;
+                        return;
+                      }
+                      _saving = false;
+                      _controller.clear();
+                      if (!mounted || !sheetContext.mounted) return;
+                      Navigator.pop(sheetContext);
+                      setState(() {});
+                      Navigator.pop(context);
+                      return;
+                    }
                     widget.onDraftChanged(_controller.text.trim());
                     Navigator.pop(sheetContext);
                     Navigator.pop(context, true);

@@ -199,13 +199,19 @@ class RecordsRepository {
     final nextStories = <AibsStoryLog>[];
     for (final row in results[4] as List<Map<String, dynamic>>) {
       final content = row['content'] as Map;
-      if (content['story'] is! String || (content['story'] as String).isEmpty) {
-        continue;
-      }
       final date = DateTime.parse(row['created_at'] as String).toLocal();
       nextStories.add(
         AibsStoryLog(
-          text: content['story'] as String,
+          text:
+              content['story'] as String? ??
+              ((content['foods'] as List? ?? [])
+                  .map((f) => f['name'].toString())
+                  .join(', ')),
+          draftId: row['id'] as String,
+          version: row['version'] as int,
+          title: row['source'] == 'photo'
+              ? 'Draft foto makanan'
+              : 'Cerita hari ini',
           date: date,
           time: clockLabel(date),
         ),
@@ -398,6 +404,15 @@ class RecordsRepository {
       timeout: const Duration(seconds: 120),
     );
     return DraftReview(api, result['draft'] as Map<String, dynamic>);
+  }
+
+  Future<DraftReview> openDraft(String id) async =>
+      DraftReview(api, await api.request('GET', '/api/v1/drafts/$id'));
+  Future<void> discardDraft(AibsStoryLog story) async {
+    await api.request(
+      'DELETE',
+      '/api/v1/drafts/${story.draftId}?version=${story.version}',
+    );
   }
 
   final _photoMedia = <String, String>{};
