@@ -5,6 +5,7 @@ import os
 import re
 import subprocess
 import tempfile
+import time
 from datetime import UTC, datetime
 from pathlib import Path
 from urllib.parse import urlparse
@@ -59,49 +60,104 @@ with sync_playwright() as runtime:
             lambda r: "/api/v1/dashboard" in r.url and r.status == 200, timeout=120000
         ):
             page.get_by_role("button", name=re.compile("Nadia")).click()
+        deadline = time.monotonic() + 180
+        while not page.get_by_role("button", name="Profil", exact=True).count():
+            if time.monotonic() > deadline:
+                raise AssertionError("Dashboard sections did not become ready")
+            retry = page.get_by_role("button", name="Coba lagi", exact=True)
+            if retry.count(): retry.click()
+            page.wait_for_timeout(500)
         check("isolated anonymous demo reaches authenticated dashboard")
-        with page.expect_response(
-            lambda r: "/api/v1/dashboard" in r.url and r.status == 200, timeout=120000
-        ):
-            page.reload(wait_until="networkidle", timeout=120000)
-        semantics()
-        check("release browser reload restores the existing session")
-        page.get_by_role("button", name="Tambah catatan", exact=True).click()
-        page.get_by_role("button", name=re.compile("Catat makan")).click()
-        page.get_by_role("textbox", name="Nama makanan", exact=True).click()
-        page.keyboard.type("Synthetic readiness meal", delay=30)
-        page.get_by_role("button", name="Simpan", exact=True).click()
-        page.screenshot(path=str(Path(tempfile.gettempdir()) / "aibs-readiness-time.png"))
-        page.get_by_role("checkbox", name=re.compile("Waktu sudah ditinjau")).click()
-        with page.expect_response(
-            lambda r: r.url.endswith("/commit") and r.status == 200, timeout=120000
-        ) as meal_commit:
-            page.get_by_role("button", name="Konfirmasi sudah dimakan", exact=True).click()
-        check("manual meal review commits through the real backend")
-        food_id = meal_commit.value.json()["food_event_ids"][0]
-        page.get_by_role("button", name="Ada keluhan", exact=True).click()
-        page.get_by_text("Kembung", exact=True).click()
-        with page.expect_request(
-            lambda r: r.url.endswith("/api/v1/drafts") and r.method == "POST"
-        ) as symptom_draft, page.expect_response(
-            lambda r: r.url.endswith("/commit") and r.status == 200, timeout=120000
-        ):
+        if os.environ.get("AIBS_TEST_OFFLINE_ONLY") != "1":
+            with page.expect_response(
+                lambda r: "/api/v1/dashboard" in r.url and r.status == 200, timeout=120000
+            ):
+                page.reload(wait_until="networkidle", timeout=120000)
+            semantics()
+            check("release browser reload restores the existing session")
+            page.get_by_role("button", name="Tambah catatan", exact=True).click()
+            page.get_by_role("button", name=re.compile("Catat makan")).click()
+            page.get_by_role("textbox", name="Nama makanan", exact=True).click()
+            page.keyboard.type("Synthetic readiness meal", delay=30)
             page.get_by_role("button", name="Simpan", exact=True).click()
-        linked_id = symptom_draft.value.post_data_json["content"]["symptoms"][0]["linked_food_event_id"]
-        assert linked_id == food_id
-        check("symptom prompt links to the exact saved meal through the backend")
-        with page.expect_response(
-            lambda r: "/api/v1/events" in r.url and r.status == 200, timeout=120000
-        ):
+            page.screenshot(path=str(Path(tempfile.gettempdir()) / "aibs-readiness-time.png"))
+            page.get_by_role("checkbox", name=re.compile("Waktu sudah ditinjau")).click()
+            with page.expect_response(
+                lambda r: r.url.endswith("/commit") and r.status == 200, timeout=120000
+            ) as meal_commit:
+                page.get_by_role("button", name="Konfirmasi sudah dimakan", exact=True).click()
+            check("manual meal review commits through the real backend")
+            food_id = meal_commit.value.json()["food_event_ids"][0]
+            page.get_by_role("button", name="Ada keluhan", exact=True).click()
+            page.get_by_text("Kembung", exact=True).click()
+            with page.expect_request(
+                lambda r: r.url.endswith("/api/v1/drafts") and r.method == "POST"
+            ) as symptom_draft, page.expect_response(
+                lambda r: r.url.endswith("/commit") and r.status == 200, timeout=120000
+            ):
+                page.get_by_role("button", name="Simpan", exact=True).click()
+            linked_id = symptom_draft.value.post_data_json["content"]["symptoms"][0]["linked_food_event_id"]
+            assert linked_id == food_id
+            check("symptom prompt links to the exact saved meal through the backend")
+            with page.expect_response(
+                lambda r: "/api/v1/events" in r.url and r.status == 200, timeout=120000
+            ):
+                page.reload(wait_until="networkidle", timeout=120000)
+            semantics()
+            page.get_by_role("button", name="Jurnal", exact=True).click()
+            page.get_by_text("Synthetic readiness meal", exact=False).first.wait_for()
+            check("saved meal remains visible in journal after reload")
+            screenshot = ROOT / "docs/evidence/browser-journal.png"
+            page.screenshot(path=str(screenshot))
+        if os.environ.get("AIBS_TEST_OFFLINE") == "1":
+            def reveal(text):
+                locator = page.get_by_text(text, exact=True).or_(page.get_by_role("button", name=re.compile("^" + re.escape(text))))
+                page.mouse.move(195, 400)
+                for _ in range(15):
+                    if locator.count() and locator.first.is_visible():
+                        return locator.first
+                    page.mouse.wheel(0, 250)
+                    page.wait_for_timeout(150)
+                raise AssertionError("Could not reveal " + text)
+
+            page.get_by_role("button", name="Profil", exact=True).click()
+            reveal("Data offline").click()
+            page.locator('[role="switch"], [role="checkbox"]').first.click()
+            page.wait_for_function("async () => (await caches.keys()).some(n => n.startsWith('aibs-shell-'))", timeout=120000)
+            page.wait_for_function("() => navigator.serviceWorker.controller?.state === 'activated'", timeout=120000)
+            check("opt-in prepares the static offline shell and account snapshot")
+            page.context.set_offline(True)
             page.reload(wait_until="networkidle", timeout=120000)
-        semantics()
-        page.get_by_role("button", name="Jurnal", exact=True).click()
-        page.get_by_text("Synthetic readiness meal", exact=False).first.wait_for()
-        check("saved meal remains visible in journal after reload")
-        screenshot = ROOT / "docs/evidence/browser-journal.png"
-        page.screenshot(path=str(screenshot))
+            semantics()
+            page.get_by_text("Offline", exact=False).first.wait_for(timeout=120000)
+            check("offline reload restores the same identity and cached history")
+            page.get_by_role("button", name="Tambah catatan", exact=True).click()
+            page.get_by_role("button", name=re.compile("Catat makan")).click()
+            page.get_by_role("textbox", name="Nama makanan", exact=True).click()
+            page.keyboard.type("Synthetic offline draft")
+            page.get_by_role("button", name="Tutup", exact=True).click()
+            page.get_by_role("button", name="Simpan draft", exact=True).click()
+            page.get_by_role("button", name="Profil", exact=True).click()
+            reveal("Data offline").click()
+            reveal("Draft makan").wait_for()
+            check("meal draft persists locally while disconnected")
+            page.context.set_offline(False)
+            reveal("Draft makan").click()
+            page.get_by_role("checkbox", name="Sudah dimakan", exact=True).click()
+            reveal("Waktu sudah ditinjau").click()
+            with page.expect_response(lambda r: r.url.endswith("/commit") and r.status == 200, timeout=120000):
+                reveal("Tinjau & kirim").click()
+            check("reviewed offline draft commits online without automatic logging")
+            page.screenshot(path=str(ROOT / "docs/evidence/offline-sync.png"))
         completed = True
     finally:
+        if not completed:
+            try:
+                print(page.evaluate("() => Object.keys(localStorage).filter(k=>k.includes('aibs.offline')).map(k=>{const v=JSON.parse(localStorage[k]); return {enabled:v.enabled,profile:!!v.profile,snapshot:!!v.snapshot,keys:Object.keys(v)}})"), flush=True)
+            except Exception:
+                pass
+            page.screenshot(path=str(Path(tempfile.gettempdir()) / "aibs-offline-failure.png"))
+            (Path(tempfile.gettempdir()) / "aibs-offline-aria.txt").write_text(page.locator("body").aria_snapshot(), encoding="utf-8")
         browser.close()
         # Only the anonymous UUIDs created by this run are eligible for cleanup.
         assert len(created) <= 3
@@ -115,7 +171,7 @@ from app.models import Base
 ids=[UUID(x) for x in json.load(sys.stdin)]
 assert 0 < len(ids) <= 3
 s=get_settings()
-engine=create_engine(s.database_url.get_secret_value(),hide_parameters=True,connect_args={'connect_timeout':10})
+engine=create_engine(s.database_url.get_secret_value(),hide_parameters=True,connect_args={'connect_timeout':10, 'options':'-c statement_timeout=30000 -c lock_timeout=5000'})
 with engine.begin() as c:
  for table in reversed(Base.metadata.sorted_tables):
   if 'owner_id' in table.c: c.execute(delete(table).where(table.c.owner_id.in_(ids)))
@@ -146,7 +202,8 @@ print('Cleaned only browser-run synthetic subjects.')
                 )
             print(result.stdout.strip(), flush=True)
         OUTPUT.parent.mkdir(parents=True, exist_ok=True)
-        OUTPUT.write_text(
+        result_path = OUTPUT if completed else OUTPUT.with_name("offline-smoke-incomplete.json")
+        result_path.write_text(
             json.dumps(
                 {
                     "web": BASE,

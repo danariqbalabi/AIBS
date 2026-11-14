@@ -8,10 +8,13 @@ import 'api_client.dart';
 import 'profile_repository.dart';
 import 'draft_review.dart';
 import 'photo_upload.dart';
+import 'offline_journal.dart';
 
 const symptomCodes = {
   'Nyeri perut': 'pain',
   'Kembung': 'bloating',
+  'Gas': 'gas',
+  'Urgensi BAB': 'urgency',
   'Mual': 'nausea',
   'Muntah': 'vomiting',
   'Diare': 'diarrhea',
@@ -54,7 +57,10 @@ Map<String, dynamic> eventTime(DateTime date, String time) {
 }
 
 class RecordsRepository {
-  RecordsRepository(this.api, this.profiles);
+  RecordsRepository(this.api, this.profiles, {this.offline});
+  final OfflineJournal? offline;
+  bool usingCache = false;
+  String? get cachedAt => offline?.data['cached_at'] as String?;
   final ApiClient api;
   final ProfileRepository profiles;
   List<AibsMenuItem> menus = [];
@@ -128,19 +134,42 @@ class RecordsRepository {
   }
 
   Future<void> load() async {
-    final results = await Future.wait([
-      api.request('GET', '/api/v1/menus'),
-      _all('/api/v1/events'),
-      api.request('GET', '/api/v1/shopping-items'),
-      api.request('GET', '/api/v1/meal-plans'),
-      _all('/api/v1/drafts'),
-      api.request('GET', '/api/v1/dashboard'),
-    ]);
+    List<dynamic> results;
+    try {
+      results = await Future.wait([
+        api.request('GET', '/api/v1/menus'),
+        _all('/api/v1/events'),
+        api.request('GET', '/api/v1/shopping-items'),
+        api.request('GET', '/api/v1/meal-plans'),
+        _all('/api/v1/drafts'),
+        api.request('GET', '/api/v1/dashboard'),
+      ]);
+      usingCache = false;
+      if (offline?.enabled == true) {
+        offline!.data['snapshot'] = results;
+        offline!.data['cached_at'] = DateTime.now().toIso8601String();
+        offline!.data['profile'] = profiles.rawProfile;
+        offline!.data['consent'] = profiles.consent;
+        offline!.data['assessment'] = profiles.assessment;
+        offline!.data['ingredients'] = profiles.ingredients;
+        await offline!.persist();
+      }
+    } on ApiFailure catch (error) {
+      if ((error.status != null && error.status! < 500) ||
+          offline?.enabled != true ||
+          offline!.data['snapshot'] == null) {
+        rethrow;
+      }
+      results = List<dynamic>.from(offline!.data['snapshot'] as List);
+      usingCache = true;
+    }
     final nextMenus = ((results[0] as Map)['items'] as List)
         .cast<Map<String, dynamic>>()
         .map(menuFromServer)
         .toList();
-    final events = results[1] as List<Map<String, dynamic>>;
+    final events = (results[1] as List)
+        .map((r) => Map<String, dynamic>.from(r as Map))
+        .toList();
     final nextMeals = <AibsMealLog>[];
     final nextSymptoms = <AibsSymptomLog>[];
     String time(Map payload) {
@@ -203,7 +232,7 @@ class RecordsRepository {
       );
     }
     final nextStories = <AibsStoryLog>[];
-    for (final row in results[4] as List<Map<String, dynamic>>) {
+    for (final row in (results[4] as List).cast<Map<String, dynamic>>()) {
       final content = row['content'] as Map;
       final date = DateTime.parse(row['created_at'] as String).toLocal();
       nextStories.add(
@@ -316,6 +345,8 @@ class RecordsRepository {
   ) async {
     final signature = jsonEncode(content);
     var pending = _pending[key];
+    final saved = (offline?.data['pending'] as Map?)?[key];
+    pending ??= saved == null ? null : Map<String, dynamic>.from(saved as Map);
     if (pending != null && pending['signature'] != signature) {
       if (pending['committed'] == true) {
         throw const ApiFailure(
@@ -343,6 +374,14 @@ class RecordsRepository {
       pending = {...draft, 'signature': signature};
       _pending[key] = pending;
     }
+    if (offline?.enabled == true) {
+      final states = Map<String, dynamic>.from(
+        offline!.data['pending'] as Map? ?? {},
+      );
+      states[key] = pending;
+      offline!.data['pending'] = states;
+      await offline!.persist();
+    }
     if (pending['committed'] == true) {
       return Map<String, dynamic>.from(pending['result'] as Map);
     }
@@ -354,7 +393,22 @@ class RecordsRepository {
     );
     pending['result'] = result;
     pending['committed'] = true;
+    if (offline?.enabled == true) {
+      (offline!.data['pending'] as Map)[key] = pending;
+      await offline!.persist();
+    }
     return result;
+  }
+
+  Future<void> commitLocal(String id, Map<String, dynamic> content) async {
+    final frozen = (offline?.data['pending'] as Map?)?[id] as Map?;
+    if (frozen != null && frozen['signature'] != jsonEncode(content)) {
+      throw const ApiFailure(
+        'Permintaan ini pernah dikirim. Coba kirim ulang isi yang sama sebelum mengedit.',
+      );
+    }
+    await _saveContent(id, content);
+    await offline!.removeDraft(id);
   }
 
   Future<String?> saveMeal(AibsMealLog meal) async {
@@ -379,6 +433,9 @@ class RecordsRepository {
     });
     return (result['food_event_ids'] as List?)?.firstOrNull as String?;
   }
+
+  Future<Map<String, dynamic>> suggestSwaps(Map<String, dynamic> card) =>
+      api.request('POST', '/api/v1/food-swaps', body: card);
 
   Future<Map<String, dynamic>> checkFood(
     List<String> labels,
@@ -443,6 +500,10 @@ class RecordsRepository {
     List<Map<String, dynamic>> cards,
     String requestId,
   ) async {
+    if (offline?.enabled == true) {
+      await offline!.draft(requestId, {'symptoms': cards});
+      return;
+    }
     final previous = _manualDrafts[requestId];
     _manualDrafts[requestId] = await api.request(
       previous == null ? 'POST' : 'PATCH',
@@ -459,6 +520,12 @@ class RecordsRepository {
     Map<String, dynamic> card,
     String requestId,
   ) async {
+    if (offline?.enabled == true) {
+      await offline!.draft(requestId, {
+        'foods': [card],
+      });
+      return;
+    }
     final previous = _manualDrafts[requestId];
     _manualDrafts[requestId] = await api.request(
       previous == null ? 'POST' : 'PATCH',
@@ -666,6 +733,22 @@ class RecordsRepository {
   Future<void> checkShopping(String label, bool checked) async {
     final row = shopping.where((r) => shoppingLabel(r) == label).firstOrNull;
     if (row == null) throw const ApiFailure('Muat ulang daftar belanja.');
+    if (usingCache && offline?.enabled == true) {
+      final pending = Map<String, dynamic>.from(
+        offline!.data['shopping_pending'] as Map? ?? {},
+      );
+      pending[row['id'] as String] = {
+        'version': row['version'],
+        'quantity': row['quantity'],
+        'checked': checked,
+      };
+      offline!.data['shopping_pending'] = pending;
+      row['checked'] = checked;
+      final snapshot = offline!.data['snapshot'] as List;
+      snapshot[2] = {'items': shopping};
+      await offline!.persist();
+      return;
+    }
     final updated = await api.request(
       'PATCH',
       '/api/v1/shopping-items/${row['id']}',
@@ -679,6 +762,40 @@ class RecordsRepository {
       for (final item in shopping)
         if (item['id'] == updated['id']) updated else item,
     ];
+  }
+
+  Future<void> syncShopping() async {
+    final pending = Map<String, dynamic>.from(
+      offline?.data['shopping_pending'] as Map? ?? {},
+    );
+    final current = await api.request('GET', '/api/v1/shopping-items');
+    for (final id in pending.keys.toList()) {
+      final action = pending[id] as Map;
+      final row =
+          (current['items'] as List).where((r) => r['id'] == id).firstOrNull
+              as Map?;
+      if (row == null) {
+        throw const ApiFailure(
+          'Item belanja sudah dihapus. Hapus perubahan lokal lalu muat ulang.',
+        );
+      }
+      if (row['checked'] != action['checked']) {
+        if (row['version'] != action['version']) {
+          throw const ApiFailure(
+            'Checklist berubah di perangkat lain. Hapus perubahan lokal lalu tinjau ulang.',
+          );
+        }
+        await api.request(
+          'PATCH',
+          '/api/v1/shopping-items/$id',
+          body: Map<String, dynamic>.from(action),
+        );
+      }
+      pending.remove(id);
+      offline!.data['shopping_pending'] = pending;
+      await offline!.persist();
+    }
+    await load();
   }
 
   Future<void> changeShoppingQuantity(String label, num quantity) async {

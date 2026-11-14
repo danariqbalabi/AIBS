@@ -105,6 +105,7 @@ abstract final class AibsSize {
   static const themeToggleHeight = 48.0;
   static const themeThumb = 36.0;
   static const themeStar = 12.0;
+  static const dailyChartHeight = 96.0;
   static const mobileViewport = 390.0;
   static const menuHero = 144.0;
   static const navigationClearance = 40.0;
