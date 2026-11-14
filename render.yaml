@@ -1,0 +1,31 @@
+# Secrets are entered in Render's dashboard; none are stored in this file.
+services:
+  - type: web
+    name: aibs-api
+    runtime: docker
+    plan: free
+    region: singapore
+    branch: feat/app-completion
+    dockerContext: ./backend
+    dockerfilePath: ./backend/Dockerfile
+    healthCheckPath: /ready
+    autoDeployTrigger: 'off'
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: SUPABASE_URL
+        value: https://fpaposwwnqdtvvjaelar.supabase.co
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: CORS_ORIGINS
+        value: '["http://localhost:5173","http://127.0.0.1:5173"]'
+      - key: STORAGE_BUCKET
+        value: aibs-food-photos
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        sync: false
+      - key: AI_DAILY_LIMIT
+        value: '20'
