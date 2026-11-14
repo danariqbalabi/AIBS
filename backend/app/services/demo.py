@@ -1,4 +1,5 @@
 from datetime import UTC, datetime, time, timedelta
+from uuid import uuid4
 from zoneinfo import ZoneInfo
 
 from sqlalchemy import select
@@ -10,12 +11,14 @@ from app.models.entities import (
     Draft,
     EventLink,
     FoodEvent,
+    Ingredient,
     Profile,
     RecordBatch,
     SymptomEvent,
 )
-from app.schemas.domain import DietProfile, FoodCard, FoodCheckInput, SymptomCard
-from app.services.catalog import check_food
+from app.rules.food import check
+from app.schemas.domain import DietProfile, FoodCard, SymptomCard
+from app.services.assessment import access_for
 from app.services.records import event_fields
 from seeds.catalog import stable_id
 
@@ -136,6 +139,9 @@ def seed_manda_history(session, profile):
             "certainty": "confirmed",
         }
 
+    known_ids = {str(value) for value in session.scalars(select(Ingredient.id))}
+    access = access_for(session, profile.owner_id)
+    drafts, batches, food_events, symptom_events, links = [], [], [], [], []
     for offset in range(13, -1, -1):
         day = now.date() - timedelta(days=offset)
         with_onion = offset % 3 == 0
@@ -184,6 +190,7 @@ def seed_manda_history(session, profile):
             }
         )
         draft = Draft(
+            id=uuid4(),
             owner_id=profile.owner_id,
             source="manual",
             intent="journal",
@@ -194,42 +201,46 @@ def seed_manda_history(session, profile):
                 "symptoms": [symptom.model_dump(mode="json")],
             },
         )
-        session.add(draft)
-        session.flush()
-        batch = RecordBatch(owner_id=profile.owner_id, draft_id=draft.id)
-        session.add(batch)
-        session.flush()
+        drafts.append(draft)
+        batch = RecordBatch(id=uuid4(), owner_id=profile.owner_id, draft_id=draft.id)
+        batches.append(batch)
         events = []
         for card in foods:
-            evaluation = check_food(
-                session,
-                profile.owner_id,
-                FoodCheckInput(
-                    profile_version=profile.version,
-                    ingredients=card.ingredients,
-                    ingredients_complete=card.ingredients_complete,
-                ),
+            evaluation = check(
+                profile,
+                card.ingredients,
+                card.ingredients_complete,
+                access,
+                known_ids,
             )
             evaluation["profile_snapshot"] = {"version": profile.version, "diet": profile.diet}
             created = card.time.occurred_at.astimezone(UTC)
             event = FoodEvent(
+                id=uuid4(),
                 owner_id=profile.owner_id,
                 batch_id=batch.id,
                 evaluation=evaluation,
                 created_at=created,
                 **event_fields(card, profile),
             )
-            session.add(event)
+            food_events.append(event)
             events.append(event)
         symptom_event = SymptomEvent(
-            owner_id=profile.owner_id, batch_id=batch.id, **event_fields(symptom, profile)
+            id=uuid4(),
+            owner_id=profile.owner_id,
+            batch_id=batch.id,
+            **event_fields(symptom, profile),
         )
-        session.add(symptom_event)
-        session.flush()
-        session.add(
+        symptom_events.append(symptom_event)
+        links.append(
             EventLink(
                 owner_id=profile.owner_id,
                 food_event_id=events[1].id,
                 symptom_event_id=symptom_event.id,
             )
         )
+
+    # Flush in foreign-key order, batching all days rather than each individual event.
+    for rows in (drafts, batches, food_events, symptom_events, links):
+        session.add_all(rows)
+        session.flush()

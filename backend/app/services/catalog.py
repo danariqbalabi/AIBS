@@ -19,30 +19,36 @@ def check_food(db, owner, payload):
     )
 
 
-def menu_ingredients(db, menu_id):
+def menu_ingredient_map(db, menu_ids):
+    grouped = {menu_id: [] for menu_id in menu_ids}
+    if not grouped:
+        return grouped
     rows = db.execute(
         select(MenuIngredient, Ingredient)
-        .join(
-            Ingredient,
-            Ingredient.id == MenuIngredient.ingredient_id,
-        )
-        .where(MenuIngredient.menu_id == menu_id)
+        .join(Ingredient, Ingredient.id == MenuIngredient.ingredient_id)
+        .where(MenuIngredient.menu_id.in_(grouped))
         .order_by(Ingredient.name)
     ).all()
-    return [
-        IngredientInput(
-            ingredient_id=ingredient.id,
-            display_name=ingredient.name,
-            quantity=link.quantity,
-            unit=link.unit,
-            certainty="confirmed",
+    for link, ingredient in rows:
+        grouped[link.menu_id].append(
+            IngredientInput(
+                ingredient_id=ingredient.id,
+                display_name=ingredient.name,
+                quantity=link.quantity,
+                unit=link.unit,
+                certainty="confirmed",
+            )
         )
-        for link, ingredient in rows
-    ]
+    return grouped
 
 
-def menu_view(db, profile, access, menu, known_ids):
-    ingredients = menu_ingredients(db, menu.id)
+def menu_ingredients(db, menu_id):
+    return menu_ingredient_map(db, [menu_id])[menu_id]
+
+
+def menu_view(db, profile, access, menu, known_ids, *, ingredients=None):
+    if ingredients is None:
+        ingredients = menu_ingredients(db, menu.id)
     diet = DietProfile.model_validate(profile.diet)
     evaluation = check(
         profile,
@@ -94,7 +100,12 @@ def list_menus(db, owner, *, query=None, kind=None, max_price=None, recommendati
     if max_price is not None:
         statement = statement.where(Menu.price_rupiah <= max_price)
     known_ids = {str(value) for value in db.scalars(select(Ingredient.id))}
-    items = [menu_view(db, profile, access, menu, known_ids) for menu in db.scalars(statement)]
+    menus = list(db.scalars(statement))
+    grouped = menu_ingredient_map(db, [menu.id for menu in menus])
+    items = [
+        menu_view(db, profile, access, menu, known_ids, ingredients=grouped[menu.id])
+        for menu in menus
+    ]
     if recommendations:
         items = [item for item in items if item["evaluation"]["status"] in ("ok", "warn")]
     diet = DietProfile.model_validate(profile.diet)

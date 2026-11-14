@@ -1,6 +1,7 @@
 from uuid import uuid4
 
 from fastapi.testclient import TestClient
+from sqlalchemy import event
 from sqlalchemy.orm import Session
 
 from app.core.auth import User, get_user
@@ -15,7 +16,20 @@ def test_manda_history_is_complete_isolated_and_seeded_only_once(settings, db_en
     owner = User(uuid4(), anonymous=True)
     app.dependency_overrides[get_user] = lambda: owner
     with TestClient(app) as client:
-        assert client.post("/api/v1/demo/sessions", json={"template": "manda"}).status_code == 200
+        selects = []
+
+        def collect(conn, cursor, statement, parameters, context, executemany):
+            if statement.lstrip().upper().startswith("SELECT"):
+                selects.append(statement)
+
+        event.listen(db_engine, "before_cursor_execute", collect)
+        try:
+            response = client.post("/api/v1/demo/sessions", json={"template": "manda"})
+        finally:
+            event.remove(db_engine, "before_cursor_execute", collect)
+        assert response.status_code == 200
+        # Fourteen days must not trigger repeated profile/catalog queries per food.
+        assert len(selects) < 14
         profile = client.get("/api/v1/me/profile").json()
         assert profile["display_name"] == "Manda"
         assert client.get("/api/v1/me/consents").json()["ai"] is False
