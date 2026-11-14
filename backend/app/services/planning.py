@@ -7,9 +7,9 @@ from sqlalchemy.exc import IntegrityError
 from app.core.errors import ApiError
 from app.models.entities import Ingredient, MealPlan, Menu, ShoppingItem
 from app.repositories.owned import owned
-from app.schemas.domain import ShoppingInput
+from app.schemas.domain import FoodCheckInput, ShoppingInput
 from app.services.assessment import access_for
-from app.services.catalog import menu_ingredients, menu_view
+from app.services.catalog import check_food, menu_ingredients, menu_view
 from app.services.profiles import profile_for, require_basic
 
 
@@ -36,7 +36,20 @@ def create_plan(db, owner, payload):
         "name": menu.name,
         "evaluation": snapshot["evaluation"],
         "ingredients": [item.model_dump(mode="json") for item in snapshot["ingredients"]],
+        "ingredients_complete": menu.ingredients_complete,
     }
+    if payload.ingredients is not None:
+        snapshot["ingredients"] = [item.model_dump(mode="json") for item in payload.ingredients]
+        snapshot["ingredients_complete"] = payload.ingredients_complete
+        snapshot["evaluation"] = check_food(
+            db,
+            owner,
+            FoodCheckInput(
+                profile_version=profile_for(db, owner).version,
+                ingredients=payload.ingredients,
+                ingredients_complete=payload.ingredients_complete,
+            ),
+        )
     row = MealPlan(
         owner_id=owner,
         menu_id=menu.id,
@@ -129,6 +142,17 @@ def add_from_menu(db, owner, payload):
     if db.get(Menu, payload.menu_id) is None:
         raise ApiError(404, "not_found", "Menu tidak ditemukan.")
     try:
+        ingredients = (
+            payload.ingredients
+            if payload.ingredients is not None
+            else menu_ingredients(db, payload.menu_id)
+        )
+        if not ingredients or any(
+            item.quantity is None or item.unit is None for item in ingredients
+        ):
+            raise ApiError(
+                422, "quantity_required", "Lengkapi jumlah dan satuan sebelum menambah belanja."
+            )
         inputs = [
             ShoppingInput(
                 ingredient_id=item.ingredient_id,
@@ -136,7 +160,7 @@ def add_from_menu(db, owner, payload):
                 quantity=item.quantity * payload.servings,
                 unit=item.unit,
             )
-            for item in menu_ingredients(db, payload.menu_id)
+            for item in ingredients
         ]
     except ValidationError as exc:
         raise ApiError(

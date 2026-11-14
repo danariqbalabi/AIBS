@@ -5,6 +5,49 @@ from app.models.entities import FoodEvent
 from seeds.catalog import seed_catalog, stable_id
 
 
+def test_edited_menu_plan_and_shopping_preserve_overrides_without_consumption(account, db_engine):
+    client, _ = account
+    with Session(db_engine) as db, db.begin():
+        seed_catalog(db)
+    ingredients = [
+        {
+            "ingredient_id": str(stable_id("rice")),
+            "display_name": "Nasi putih",
+            "quantity": 0.5,
+            "unit": "porsi",
+            "certainty": "confirmed",
+        }
+    ]
+    plan = client.post(
+        "/api/v1/meal-plans",
+        json={
+            "menu_id": str(stable_id("chicken-rice")),
+            "scheduled_at": "2026-11-14T19:00:00+07:00",
+            "ingredients": ingredients,
+            "ingredients_complete": False,
+        },
+    )
+    assert plan.status_code == 201
+    assert plan.json()["snapshot"]["ingredients"][0]["quantity"] == "0.5"
+    assert plan.json()["snapshot"]["ingredients_complete"] is False
+    shop = client.post(
+        "/api/v1/shopping-items/from-menu",
+        json={"menu_id": str(stable_id("chicken-rice")), "ingredients": ingredients},
+    )
+    assert shop.status_code == 201
+    assert len(shop.json()["items"]) == 1
+    assert float(shop.json()["items"][0]["quantity"]) == 0.5
+    assert client.get("/api/v1/events").json()["items"] == []
+    ingredients[0]["quantity"] = None
+    assert (
+        client.post(
+            "/api/v1/shopping-items/from-menu",
+            json={"menu_id": str(stable_id("chicken-rice")), "ingredients": ingredients},
+        ).status_code
+        == 422
+    )
+
+
 def test_schedule_and_shop_do_not_create_consumption(account, db_engine):
     client, _ = account
     with Session(db_engine) as db, db.begin():

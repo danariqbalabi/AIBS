@@ -3069,6 +3069,26 @@
             "type": "string",
             "format": "date-time",
             "title": "Scheduled At"
+          },
+          "ingredients": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/IngredientInput"
+                },
+                "type": "array",
+                "maxItems": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ingredients"
+          },
+          "ingredients_complete": {
+            "type": "boolean",
+            "title": "Ingredients Complete",
+            "default": false
           }
         },
         "additionalProperties": false,
@@ -3279,6 +3299,21 @@
             ],
             "title": "Servings",
             "default": "1"
+          },
+          "ingredients": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/IngredientInput"
+                },
+                "type": "array",
+                "maxItems": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ingredients"
           }
         },
         "additionalProperties": false,

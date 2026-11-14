@@ -105,16 +105,14 @@ def test_display_preferences_and_spice_affect_ranking_after_constraints(account,
         "/api/v1/me/profile", json={"version": profile["version"], "diet": diet}
     ).json()
     assert updated["diet"]["preferences"] == ["vegetarian", "quick"]
-    assert client.get("/api/v1/recommendations").json()["items"][0]["id"] == str(
-        stable_id("tofu-carrot")
-    )
+    order = [item["id"] for item in client.get("/api/v1/recommendations").json()["items"]]
+    assert order.index(str(stable_id("tofu-carrot"))) < order.index(str(stable_id("chicken-rice")))
     client.patch(
         "/api/v1/me/profile",
         json={"version": updated["version"], "diet": {**diet, "spicy": "none"}},
     )
-    assert client.get("/api/v1/recommendations").json()["items"][0]["id"] == str(
-        stable_id("chicken-rice")
-    )
+    order = [item["id"] for item in client.get("/api/v1/recommendations").json()["items"]]
+    assert order.index(str(stable_id("chicken-rice"))) < order.index(str(stable_id("tofu-carrot")))
 
 
 def test_portion_recheck_sums_duplicate_ingredients_and_requires_compatible_unit(

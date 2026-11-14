@@ -68,6 +68,14 @@ def menu_view(db, profile, access, menu, known_ids):
         "instructions": menu.instructions,
         "tags": menu.tags,
         "source": menu.source,
+        "preparation_minutes": next(
+            (
+                int(t.removeprefix("minutes_"))
+                for t in menu.tags
+                if t.startswith("minutes_") and t.removeprefix("minutes_").isdigit()
+            ),
+            None,
+        ),
         "evaluation": evaluation,
         "within_budget": diet.budget_rupiah is None or menu.price_rupiah <= diet.budget_rupiah,
     }
@@ -112,7 +120,10 @@ def list_menus(db, owner, *, query=None, kind=None, max_price=None, recommendati
             rank[item["evaluation"]["status"]],
             not item["within_budget"],
             spice_penalty(item),
-            -len(preferences.intersection(preference_code(tag) for tag in item["tags"])),
+            -(
+                len(preferences.intersection(preference_code(tag) for tag in item["tags"]))
+                + int("prefer_" + item["kind"] in preferences)
+            ),
             item["price_rupiah"],
             str(item["id"]),
         )

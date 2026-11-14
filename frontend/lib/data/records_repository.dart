@@ -93,6 +93,9 @@ class RecordsRepository {
           'Sesuai arahan yang tersimpan',
       ingredients: ingredients.map(ingredientLabel).toList(),
       serverIngredients: ingredients,
+      customized: row['customized'] == true,
+      ingredientsComplete: row['ingredients_complete'] == true,
+      preparationMinutes: row['preparation_minutes'] as int?,
       orderTips: row['kind'] == 'buy' ? [instructions] : [],
       cookSteps: row['kind'] == 'cook' ? [instructions] : [],
     );
@@ -238,7 +241,21 @@ class RecordsRepository {
       final menu = nextMenus.where((m) => m.id == row['menu_id']).firstOrNull;
       if (menu == null) continue;
       nextPlan = AibsMealPlan(
-        menu: menu,
+        menu: row['snapshot'] == null
+            ? menu
+            : menuFromServer({
+                'customized': true,
+                'id': menu.id,
+                'name': (row['snapshot'] as Map)['name'] ?? menu.name,
+                'kind': menu.kind == 'Beli' ? 'buy' : 'cook',
+                'price_rupiah': menu.price,
+                'ingredients': (row['snapshot'] as Map)['ingredients'],
+                'ingredients_complete':
+                    (row['snapshot'] as Map)['ingredients_complete'] ?? true,
+                'evaluation':
+                    row['current_evaluation'] ??
+                    (row['snapshot'] as Map)['evaluation'],
+              }),
         day: dateLabel(when),
         meal: when.hour < 11
             ? 'Pagi'
@@ -544,6 +561,10 @@ class RecordsRepository {
       '/api/v1/meal-plans',
       body: {
         'menu_id': plan.menu.id,
+        if (plan.menu.customized) ...{
+          'ingredients': plan.menu.serverIngredients,
+          'ingredients_complete': plan.menu.ingredientsComplete,
+        },
         'scheduled_at': plan.scheduledAt!.toUtc().toIso8601String(),
       },
     );
@@ -553,7 +574,11 @@ class RecordsRepository {
     await api.request(
       'POST',
       '/api/v1/shopping-items/from-menu',
-      body: {'menu_id': menu.id, 'servings': 1},
+      body: {
+        'menu_id': menu.id,
+        'servings': 1,
+        if (menu.customized) 'ingredients': menu.serverIngredients,
+      },
     );
   }
 
@@ -591,6 +616,24 @@ class RecordsRepository {
         'version': row['version'],
         'quantity': row['quantity'],
         'checked': checked,
+      },
+    );
+    shopping = [
+      for (final item in shopping)
+        if (item['id'] == updated['id']) updated else item,
+    ];
+  }
+
+  Future<void> changeShoppingQuantity(String label, num quantity) async {
+    final row = shopping.where((r) => shoppingLabel(r) == label).firstOrNull;
+    if (row == null) throw const ApiFailure('Muat ulang daftar belanja.');
+    final updated = await api.request(
+      'PATCH',
+      '/api/v1/shopping-items/${row['id']}',
+      body: {
+        'version': row['version'],
+        'quantity': quantity,
+        'checked': row['checked'],
       },
     );
     shopping = [

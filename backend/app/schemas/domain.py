@@ -18,6 +18,9 @@ PREFERENCE_ALIASES = {
     "high_protein": "high_protein",
     "masak ≤ 15 menit": "quick",
     "quick": "quick",
+    "tanpa daging merah": "no_red_meat",
+    "lebih suka beli": "prefer_buy",
+    "lebih suka masak": "prefer_cook",
 }
 
 
@@ -284,6 +287,8 @@ class SymptomEventPatch(Contract):
 class PlanInput(Contract):
     menu_id: UUID
     scheduled_at: AwareDatetime
+    ingredients: list[IngredientInput] | None = Field(default=None, max_length=100)
+    ingredients_complete: bool = False
 
 
 class PlanPatch(Contract):
@@ -307,6 +312,7 @@ class ShoppingPatch(Contract):
 class ShoppingFromMenu(Contract):
     menu_id: UUID
     servings: PositiveQuantity = Decimal(1)
+    ingredients: list[IngredientInput] | None = Field(default=None, max_length=100)
 
 
 class ErrorResponse(Contract):

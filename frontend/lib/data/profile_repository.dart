@@ -33,6 +33,9 @@ const preferenceCodes = {
   'Vegetarian': 'vegetarian',
   'Tinggi protein': 'high_protein',
   'Masak ≤ 15 menit': 'quick',
+  'Tanpa daging merah': 'no_red_meat',
+  'Lebih suka beli': 'prefer_buy',
+  'Lebih suka masak': 'prefer_cook',
 };
 const answerCodes = {'Ya': 'yes', 'Tidak': 'no', 'Tidak tahu': 'unknown'};
 

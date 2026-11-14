@@ -3514,6 +3514,78 @@
     "type": "object"
   },
   "PlanInput": {
+    "$defs": {
+      "IngredientInput": {
+        "additionalProperties": false,
+        "properties": {
+          "ingredient_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Ingredient Id"
+          },
+          "display_name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Display Name",
+            "type": "string"
+          },
+          "quantity": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "maximum": 10000.0,
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Quantity"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "maxLength": 30,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Unit"
+          },
+          "certainty": {
+            "default": "unknown",
+            "enum": [
+              "candidate",
+              "confirmed",
+              "unknown"
+            ],
+            "title": "Certainty",
+            "type": "string"
+          }
+        },
+        "required": [
+          "display_name"
+        ],
+        "title": "IngredientInput",
+        "type": "object"
+      }
+    },
     "additionalProperties": false,
     "properties": {
       "menu_id": {
@@ -3525,6 +3597,27 @@
         "format": "date-time",
         "title": "Scheduled At",
         "type": "string"
+      },
+      "ingredients": {
+        "anyOf": [
+          {
+            "items": {
+              "$ref": "#/$defs/IngredientInput"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Ingredients"
+      },
+      "ingredients_complete": {
+        "default": false,
+        "title": "Ingredients Complete",
+        "type": "boolean"
       }
     },
     "required": [
@@ -3640,6 +3733,78 @@
     "type": "object"
   },
   "ShoppingFromMenu": {
+    "$defs": {
+      "IngredientInput": {
+        "additionalProperties": false,
+        "properties": {
+          "ingredient_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Ingredient Id"
+          },
+          "display_name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Display Name",
+            "type": "string"
+          },
+          "quantity": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "maximum": 10000.0,
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Quantity"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "maxLength": 30,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Unit"
+          },
+          "certainty": {
+            "default": "unknown",
+            "enum": [
+              "candidate",
+              "confirmed",
+              "unknown"
+            ],
+            "title": "Certainty",
+            "type": "string"
+          }
+        },
+        "required": [
+          "display_name"
+        ],
+        "title": "IngredientInput",
+        "type": "object"
+      }
+    },
     "additionalProperties": false,
     "properties": {
       "menu_id": {
@@ -3660,6 +3825,22 @@
         ],
         "default": "1",
         "title": "Servings"
+      },
+      "ingredients": {
+        "anyOf": [
+          {
+            "items": {
+              "$ref": "#/$defs/IngredientInput"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Ingredients"
       }
     },
     "required": [

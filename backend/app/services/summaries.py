@@ -130,7 +130,7 @@ def dashboard(db, owner, day=None):
             FoodCheckInput(
                 profile_version=profile.version,
                 ingredients=row.snapshot["ingredients"],
-                ingredients_complete=True,
+                ingredients_complete=row.snapshot.get("ingredients_complete", True),
             ),
         )
         planned.append(item)

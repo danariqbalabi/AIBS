@@ -377,6 +377,9 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
               onOpenMenuItem: _openMenuItem,
             ),
             MenuHomePage(
+              onCheckMenu: _records?.checkCard,
+              ingredientId: widget.services?.profiles.ingredientId,
+              onShoppingQuantity: _records?.changeShoppingQuantity,
               menus: _menus,
               onAddMenuShopping: _records == null
                   ? null
@@ -580,6 +583,8 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => MenuDetailPage(
+          onCheckMenu: _records?.checkCard,
+          ingredientId: widget.services?.profiles.ingredientId,
           item: item,
           onAddShopping: _addShoppingIngredients,
           onStartMealRecord: _openMealRecord,
@@ -751,6 +756,7 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => ShoppingListPage(
+          onQuantity: _records?.changeShoppingQuantity,
           items: _shoppingItems,
           initialChecked: _records?.checkedShopping ?? {},
           onChecked: _records?.checkShopping,
