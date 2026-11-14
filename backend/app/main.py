@@ -13,6 +13,7 @@ from app.api.v1.catalog import router as catalog_router
 from app.api.v1.drafts import router as draft_router
 from app.api.v1.history import router as history_router
 from app.api.v1.media import router as media_router
+from app.api.v1.operations import router as operations_router
 from app.api.v1.planning import router as planning_router
 from app.api.v1.privacy import router as privacy_router
 from app.api.v1.profiles import router as profile_router
@@ -40,13 +41,14 @@ def create_app(settings: Settings | None = None, *, engine=None) -> FastAPI:
                     logging.getLogger(__name__).warning("Photo retention cleanup will retry")
                 await asyncio.sleep(900)
 
-        task = asyncio.create_task(retention())
+        task = asyncio.create_task(retention()) if settings.runtime_mode == "server" else None
         try:
             yield
         finally:
-            task.cancel()
-            with suppress(asyncio.CancelledError):
-                await task
+            if task is not None:
+                task.cancel()
+                with suppress(asyncio.CancelledError):
+                    await task
         if engine is None:
             database_engine.dispose()
 
@@ -67,6 +69,7 @@ def create_app(settings: Settings | None = None, *, engine=None) -> FastAPI:
     app.include_router(media_router)
     app.include_router(analysis_router)
     app.include_router(summary_router)
+    app.include_router(operations_router)
     install_error_handlers(app)
     app.add_middleware(
         CORSMiddleware,

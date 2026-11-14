@@ -1,0 +1,16 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "fastapi",
+  "regions": ["sin1"],
+  "functions": {
+    "index.py": { "maxDuration": 120 }
+  },
+  "env": {
+    "APP_ENV": "production",
+    "RUNTIME_MODE": "serverless",
+    "MAX_PHOTO_BYTES": "4000000"
+  },
+  "crons": [
+    { "path": "/api/internal/retention", "schedule": "0 3 * * *" }
+  ]
+}
