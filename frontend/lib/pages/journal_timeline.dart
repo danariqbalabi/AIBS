@@ -28,12 +28,22 @@ class _JournalTimelinePageState extends State<JournalTimelinePage> {
     final symptoms = widget.symptoms
         .where((s) => DateUtils.isSameDay(s.date, day))
         .toList();
-    final entries = <({String title, String time, int? severity, bool food})>[
-      for (final m in meals)
-        (title: m.name, time: m.time, severity: null, food: true),
-      for (final s in symptoms)
-        (title: s.name, time: s.time, severity: s.severity, food: false),
-    ]..sort((a, b) => a.time.compareTo(b.time));
+    final entries =
+        <({String title, String time, int? severity, bool food})>[
+          for (final m in meals)
+            (title: m.name, time: m.time, severity: null, food: true),
+          for (final s in symptoms)
+            (title: s.name, time: s.time, severity: s.severity, food: false),
+        ]..sort((a, b) {
+          int minutes(String value) {
+            final match = RegExp(r'^(\d{1,2})[:.](\d{2})$').firstMatch(value);
+            return match == null
+                ? 24 * 60
+                : int.parse(match[1]!) * 60 + int.parse(match[2]!);
+          }
+
+          return minutes(a.time).compareTo(minutes(b.time));
+        });
     final bins = List.generate(6, (_) => [0, 0]);
     int approximate = 0;
     for (final entry in entries) {

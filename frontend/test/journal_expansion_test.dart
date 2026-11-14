@@ -5,6 +5,26 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  testWidgets('timeline sorts mixed clock separators by actual time', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: JournalTimelinePage(
+          meals: [
+            AibsMealLog(name: 'Earlier', time: '09:15', date: DateTime.now()),
+            AibsMealLog(name: 'Later', time: '09.30', date: DateTime.now()),
+          ],
+          symptoms: [],
+        ),
+      ),
+    );
+    expect(
+      tester.getTopLeft(find.text('Earlier')).dy,
+      lessThan(tester.getTopLeft(find.text('Later')).dy),
+    );
+  });
+
   testWidgets('journal repeat copies the meal without mutating history', (
     tester,
   ) async {

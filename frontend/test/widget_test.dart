@@ -62,6 +62,8 @@ void main() {
       150,
       scrollable: find.byType(Scrollable).first,
     );
+    await tester.ensureVisible(find.text('Catat'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Catat'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Catat gejala'));
@@ -76,6 +78,8 @@ void main() {
       -150,
       scrollable: find.byType(Scrollable).first,
     );
+    await tester.ensureVisible(find.text('Ringkasan'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Ringkasan'));
     await tester.pumpAndSettle();
     expect(find.text('Catatannya belum cukup'), findsOneWidget);

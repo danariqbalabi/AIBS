@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:async';
 import 'dart:typed_data';
 
@@ -93,6 +94,12 @@ class _CameraFlowPageState extends State<CameraFlowPage> {
   String? _photoError;
   bool _picking = false;
   final _mealCard = <String, dynamic>{};
+  String? _reviewSource;
+  String get _manualSource => jsonEncode([
+    _foodController.text.trim(),
+    _ingredients,
+    _unknownIngredient,
+  ]);
   Map<String, dynamic> _draftCard() {
     final rows = _ingredients.map((label) {
       final parts = label.split('·');
@@ -116,7 +123,7 @@ class _CameraFlowPageState extends State<CameraFlowPage> {
       'consumed': false,
       'ingredients': rows,
       'ingredients_complete': !_unknownIngredient,
-      ..._mealCard,
+      ...(_reviewSource == _manualSource ? _mealCard : <String, dynamic>{}),
     };
   }
 
@@ -767,6 +774,9 @@ class _CameraFlowPageState extends State<CameraFlowPage> {
 
   Future<void> _saveMeal() async {
     if (_saving) return;
+    if (_reviewSource != _manualSource) {
+      _mealCard.clear();
+    }
     if (_mealCard.isEmpty) {
       final now = DateTime.now();
       _mealCard.addAll({
@@ -776,6 +786,7 @@ class _CameraFlowPageState extends State<CameraFlowPage> {
         'time': {...eventTime(now, clockLabel(now)), 'confirmed': false},
       });
     }
+    _reviewSource = _manualSource;
     final confirmed = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
@@ -843,7 +854,7 @@ class _CameraFlowPageState extends State<CameraFlowPage> {
       serverPayload: Map<String, dynamic>.from(_mealCard),
       status: CheckStatus.unknown,
       ingredients: List.unmodifiable(_ingredients),
-      note: _unknownIngredient ? 'Ada bahan yang belum diketahui' : null,
+      note: _mealCard['notes'] as String?,
     );
     try {
       await widget.onSaved(meal);

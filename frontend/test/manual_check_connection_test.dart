@@ -3,6 +3,40 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  testWidgets(
+    'editing the main meal after cancelling review refreshes the saved payload',
+    (tester) async {
+      String? saved;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: CameraFlowPage(
+            initialManualEntry: true,
+            initialFoodName: 'Nasi',
+            intent: MealIntent.eaten,
+            onSaved: (meal) {
+              saved = meal.serverPayload!['name'] as String;
+            },
+            onAddSymptom: () {},
+          ),
+        ),
+      );
+      await tester.tap(find.text('Simpan'));
+      await tester.pumpAndSettle();
+      Navigator.of(tester.element(find.text('Kapan dimakan?'))).pop();
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Nama makanan'),
+        'Bubur',
+      );
+      await tester.tap(find.text('Simpan'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Waktu sudah ditinjau'));
+      await tester.tap(find.text('Konfirmasi sudah dimakan'));
+      await tester.pumpAndSettle();
+      expect(saved, 'Bubur');
+    },
+  );
+
   testWidgets('manual consumption requires time confirmation before saving', (
     tester,
   ) async {

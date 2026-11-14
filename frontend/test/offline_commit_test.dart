@@ -10,6 +10,47 @@ import 'package:http/testing.dart';
 
 void main() {
   test(
+    'unreviewed or uneaten offline meals are rejected before any network write',
+    () async {
+      var writes = 0;
+      final api = ApiClient(
+        baseUrl: 'http://localhost',
+        accessToken: () async => 'token',
+        client: MockClient((_) async {
+          writes++;
+          return http.Response('{}', 200);
+        }),
+      );
+      final repo = RecordsRepository(api, ProfileRepository(api));
+      await expectLater(
+        repo.commitLocal('draft', {
+          'foods': [
+            {
+              'name': 'Nasi',
+              'consumed': true,
+              'time': {'confirmed': false},
+            },
+          ],
+        }),
+        throwsA(isA<ApiFailure>()),
+      );
+      await expectLater(
+        repo.commitLocal('draft', {
+          'foods': [
+            {
+              'name': 'Nasi',
+              'consumed': false,
+              'time': {'confirmed': true},
+            },
+          ],
+        }),
+        throwsA(isA<ApiFailure>()),
+      );
+      expect(writes, 0);
+    },
+  );
+
+  test(
     'cached history is used on network errors but never on denied access',
     () async {
       final local = OfflineJournal(
