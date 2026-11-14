@@ -6,7 +6,7 @@ Integrasi dikumpulkan di branch `feat/app-completion`. Setiap fitur dikerjakan p
 | --- | --- | --- |
 | OTP dan hubungkan email | feat/account-otp-recovery | Implementasi selesai; tes inbox menunggu SMTP |
 | Edit/hapus makanan dan gejala | feat/event-editor | Selesai; backend 83 tes dan Flutter 35 tes lulus |
-| NLP cerita dan editor review | feat/journal-nlp | Berikutnya |
+| NLP cerita dan editor review | feat/journal-nlp | Terhubung ke API, editor terstruktur dan replay commit; uji provider nyata belum selesai |
 | Kamera/galeri/analisis foto | feat/photo-analysis | Berikutnya |
 | Ekspor, hapus data, retensi foto | feat/data-privacy | Berikutnya |
 | Render Free dan APK Android | chore/demo-deployment | Blueprint dan panduan disiapkan; deployment menunggu koneksi akun Render, APK menunggu build |
