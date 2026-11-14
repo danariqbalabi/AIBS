@@ -1,5 +1,7 @@
 # Integrasi FE–BE dan pengujian AIBS
 
+Pembaruan alur terbaru: [pencatatan, makanan–gejala, dan edit profil](usability-polish.md).
+
 Status integrasi awal 14 November 2026. Pembaruan audit PRD ada di [kesiapan demo](hackathon-readiness.md); angka tes dan status deployment di bawah merupakan snapshot historis. Implementasi fitur sudah masuk `main` melalui PR #31–#33; pemeriksaan Flutter/web/APK masuk melalui PR #35. Target hosting beralih ke **Vercel Hobby** setelah verifikasi kartu Render gagal. Branch `feat/vercel-deployment` memuat adaptasi backend dan Flutter Web. Desain dipertahankan; deployment publik belum dinyatakan berhasil. Ikuti [panduan Vercel](vercel-deployment.md).
 
 ## Jalankan lokal

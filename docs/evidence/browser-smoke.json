@@ -1,13 +1,14 @@
 {
   "web": "http://127.0.0.1:5180",
-  "tested_at": "2026-11-14T09:35:24.415306+00:00",
-  "source_commit": "a18adf9949f99b20cf9bdfa90db157943fe1a41a",
+  "tested_at": "2026-11-14T10:31:09.348983+00:00",
+  "source_commit": "39758788d39000e60202d12a84f35e894b033af2",
   "completed": true,
   "viewport": "390x844",
   "checks": [
     "isolated anonymous demo reaches authenticated dashboard",
     "release browser reload restores the existing session",
     "manual meal review commits through the real backend",
+    "symptom prompt links to the exact saved meal through the backend",
     "saved meal remains visible in journal after reload"
   ],
   "requests": [
@@ -38,12 +39,12 @@
     },
     {
       "method": "GET",
-      "path": "/api/v1/meal-plans",
+      "path": "/api/v1/drafts",
       "status": 200
     },
     {
       "method": "GET",
-      "path": "/api/v1/drafts",
+      "path": "/api/v1/events",
       "status": 200
     },
     {
@@ -53,7 +54,7 @@
     },
     {
       "method": "GET",
-      "path": "/api/v1/events",
+      "path": "/api/v1/meal-plans",
       "status": 200
     },
     {
@@ -94,6 +95,46 @@
     {
       "method": "GET",
       "path": "/api/v1/shopping-items",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/events",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/drafts",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/menus",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/dashboard",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/drafts",
+      "status": 201
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/drafts/de8fde1c-f898-485b-8408-d1c1b4a30fb0/commit",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/shopping-items",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/meal-plans",
       "status": 200
     },
     {
@@ -123,7 +164,7 @@
     },
     {
       "method": "POST",
-      "path": "/api/v1/drafts/d8e07c8b-a49f-4396-a76a-4203a57e99f8/commit",
+      "path": "/api/v1/drafts/0a993660-c92f-41d5-bbde-5ab6e7f965fa/commit",
       "status": 200
     },
     {
@@ -148,17 +189,17 @@
     },
     {
       "method": "GET",
-      "path": "/api/v1/drafts",
-      "status": 200
-    },
-    {
-      "method": "GET",
       "path": "/api/v1/shopping-items",
       "status": 200
     },
     {
       "method": "GET",
       "path": "/api/v1/meal-plans",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/drafts",
       "status": 200
     },
     {
