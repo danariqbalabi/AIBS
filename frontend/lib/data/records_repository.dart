@@ -401,6 +401,30 @@ class RecordsRepository {
   }
 
   Future<void> commitLocal(String id, Map<String, dynamic> content) async {
+    final cards = [
+      ...(content['foods'] as List? ?? []),
+      ...(content['symptoms'] as List? ?? []),
+    ];
+    if (cards.isEmpty) {
+      throw const ApiFailure('Isi makanan atau gejala sebelum mengirim.');
+    }
+    for (final card in cards) {
+      final time = card['time'] as Map?;
+      if (time == null ||
+          time['confirmed'] != true ||
+          (time['precision'] == 'exact' && time['occurred_at'] == null)) {
+        throw const ApiFailure(
+          'Tinjau dan konfirmasi waktu setiap catatan sebelum mengirim.',
+        );
+      }
+    }
+    if ((content['foods'] as List? ?? []).any(
+      (card) => card['consumed'] != true,
+    )) {
+      throw const ApiFailure(
+        'Konfirmasi makanan sudah dimakan sebelum mencatat ke jurnal.',
+      );
+    }
     final frozen = (offline?.data['pending'] as Map?)?[id] as Map?;
     if (frozen != null && frozen['signature'] != jsonEncode(content)) {
       throw const ApiFailure(
@@ -427,7 +451,7 @@ class RecordsRepository {
               (meal.note == null &&
                   ingredients.isNotEmpty &&
                   ingredients.every((i) => i['certainty'] == 'confirmed')),
-          'notes': meal.note,
+          'notes': meal.serverPayload?['notes'] ?? meal.note,
         },
       ],
     });

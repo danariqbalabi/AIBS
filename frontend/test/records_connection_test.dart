@@ -10,6 +10,34 @@ import 'package:http/testing.dart';
 
 void main() {
   test(
+    'meal review notes survive persistence even when model notes are absent',
+    () async {
+      Map? saved;
+      final api = ApiClient(
+        baseUrl: 'http://localhost',
+        accessToken: () async => 'token',
+        client: MockClient((r) async {
+          if (r.url.path == '/api/v1/drafts') {
+            saved = jsonDecode(r.body) as Map;
+            return http.Response('{"id":"draft","version":1}', 201);
+          }
+          return http.Response('{"food_event_ids":["food"]}', 200);
+        }),
+      );
+      final repo = RecordsRepository(api, ProfileRepository(api));
+      await repo.saveMeal(
+        AibsMealLog(
+          name: 'Nasi',
+          time: '12:00',
+          date: DateTime.now(),
+          serverPayload: {'notes': 'Tanpa saus'},
+        ),
+      );
+      expect(saved!['content']['foods'][0]['notes'], 'Tanpa saus');
+    },
+  );
+
+  test(
     'a lost commit response retries the same draft and idempotency key',
     () async {
       var drafts = 0;

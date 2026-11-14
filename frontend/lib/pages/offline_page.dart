@@ -58,6 +58,30 @@ class _OfflinePageState extends State<OfflinePage> {
                       local.data['shell_ready'] = true;
                       await local.persist();
                     } else {
+                      if (local.drafts.isNotEmpty ||
+                          (local.data['shopping_pending'] as Map? ?? {})
+                              .isNotEmpty) {
+                        final discard = await showDialog<bool>(
+                          context: context,
+                          builder: (c) => AlertDialog(
+                            title: const Text('Hapus data offline?'),
+                            content: const Text(
+                              'Draft dan perubahan checklist yang belum dikirim akan hilang dari perangkat ini.',
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(c, false),
+                                child: const Text('Batal'),
+                              ),
+                              TextButton(
+                                onPressed: () => Navigator.pop(c, true),
+                                child: const Text('Hapus data lokal'),
+                              ),
+                            ],
+                          ),
+                        );
+                        if (discard != true) return;
+                      }
                       await local.clear();
                       await offlineShell(false);
                     }
