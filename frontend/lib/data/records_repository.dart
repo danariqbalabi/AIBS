@@ -325,7 +325,8 @@ class RecordsRepository {
         {
           'name': meal.name,
           'consumed': true,
-          'time': eventTime(meal.date, meal.time),
+          'time':
+              meal.serverPayload?['time'] ?? eventTime(meal.date, meal.time),
           'ingredients': ingredients,
           'ingredients_complete':
               meal.note == null &&

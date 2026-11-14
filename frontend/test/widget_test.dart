@@ -48,6 +48,9 @@ void main() {
     expect(find.text('Belum bisa dinilai'), findsOneWidget);
     await tester.tap(find.text('Tetap catat'));
     await tester.pumpAndSettle();
+    await tester.tap(find.text('Waktu sudah ditinjau'));
+    await tester.tap(find.text('Konfirmasi sudah dimakan'));
+    await tester.pumpAndSettle();
     expect(find.text('Tersimpan'), findsOneWidget);
     await tester.tap(find.text('Selesai'));
     await tester.pumpAndSettle();

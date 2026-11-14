@@ -19,6 +19,7 @@ import '../core/theme/aibs_tokens.dart';
 import '../shared/widgets/koala.dart';
 import '../shared/widgets/status_badge.dart';
 import '../widgets/aibs_widgets.dart';
+import '../widgets/record_card_form.dart';
 
 enum MealIntent { check, eaten }
 
@@ -71,7 +72,6 @@ class _CameraFlowPageState extends State<CameraFlowPage> {
   String _clarification = 'Nggak tahu';
   bool _unknownIngredient = true;
   AibsMealLog? _savedMeal;
-  AibsMealLog? _pendingMeal;
   final _requestId = const Uuid().v4();
   bool _saving = false;
   bool _checking = false;
@@ -80,6 +80,7 @@ class _CameraFlowPageState extends State<CameraFlowPage> {
   String _photoRequest = const Uuid().v4();
   String? _photoError;
   bool _picking = false;
+  final _mealCard = <String, dynamic>{};
 
   Future<void> _pickPhoto(ImageSource source) async {
     if (_picking) return;
@@ -652,19 +653,71 @@ class _CameraFlowPageState extends State<CameraFlowPage> {
 
   Future<void> _saveMeal() async {
     if (_saving) return;
+    if (_mealCard.isEmpty) {
+      final now = DateTime.now();
+      _mealCard.addAll({
+        'name': _foodController.text.trim(),
+        'consumed': true,
+        'time': {...eventTime(now, clockLabel(now)), 'confirmed': false},
+      });
+    }
+    final confirmed = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(
+            AibsSpace.s20,
+            AibsSpace.s20,
+            AibsSpace.s20,
+            MediaQuery.viewInsetsOf(sheetContext).bottom + AibsSpace.s24,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('Kapan dimakan?', style: AibsType.sheetTitle),
+                CardTimeForm(value: _mealCard),
+                AibsPrimaryButton(
+                  label: 'Konfirmasi sudah dimakan',
+                  onPressed: () {
+                    final time = _mealCard['time'] as Map;
+                    if (time['confirmed'] != true ||
+                        (time['precision'] == 'exact' &&
+                            time['occurred_at'] == null)) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Tinjau dan konfirmasi waktu makan.'),
+                        ),
+                      );
+                      return;
+                    }
+                    Navigator.pop(sheetContext, true);
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    if (confirmed != true || !mounted) return;
     _saving = true;
+    final time = _mealCard['time'] as Map<String, dynamic>;
+    final exact = DateTime.tryParse(time['occurred_at']?.toString() ?? '')
+        ?.toLocal();
     final meal = AibsMealLog(
       requestId: _requestId,
       name: _foodController.text.trim().isEmpty
           ? 'Makanan'
           : _foodController.text.trim(),
-      time: _pendingMeal?.time ?? TimeOfDay.now().format(context),
-      date: _pendingMeal?.date ?? DateTime.now(),
+      time: exact == null ? '${time['period']} · perkiraan' : clockLabel(exact),
+      date: DateTime.parse(time['date'] as String),
+      serverPayload: {'time': Map<String, dynamic>.from(time)},
       status: CheckStatus.unknown,
       ingredients: List.unmodifiable(_ingredients),
       note: _unknownIngredient ? 'Ada bahan yang belum diketahui' : null,
     );
-    _pendingMeal = meal;
     try {
       await widget.onSaved(meal);
     } catch (error) {
