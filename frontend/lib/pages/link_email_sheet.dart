@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 
 import '../core/theme/aibs_tokens.dart';
 import '../data/app_services.dart';
+import '../data/auth_config.dart';
 import '../widgets/aibs_widgets.dart';
 
 class LinkEmailSheet extends StatefulWidget {
@@ -12,9 +13,11 @@ class LinkEmailSheet extends StatefulWidget {
     super.key,
     required this.sendCode,
     required this.verifyCode,
+    this.otpLength = emailOtpLength,
   });
   final Future<void> Function(String) sendCode;
   final Future<void> Function(String, String) verifyCode;
+  final int otpLength;
   @override
   State<LinkEmailSheet> createState() => _LinkEmailSheetState();
 }
@@ -71,8 +74,8 @@ class _LinkEmailSheetState extends State<LinkEmailSheet> {
 
   Future<void> _verify() async {
     if (_busy) return;
-    if (!RegExp(r'^\d{6}$').hasMatch(_code.text)) {
-      setState(() => _error = 'Masukkan 6 digit kode.');
+    if (!RegExp('^[0-9]{${widget.otpLength}}\$').hasMatch(_code.text)) {
+      setState(() => _error = 'Masukkan ${widget.otpLength} digit kode.');
       return;
     }
     setState(() {
@@ -121,7 +124,8 @@ class _LinkEmailSheetState extends State<LinkEmailSheet> {
               TextField(
                 controller: _code,
                 keyboardType: TextInputType.number,
-                maxLength: 6,
+                maxLength: widget.otpLength,
+                autofillHints: const [AutofillHints.oneTimeCode],
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 decoration: const InputDecoration(labelText: 'Kode OTP'),
               ),

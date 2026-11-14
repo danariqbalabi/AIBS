@@ -13,6 +13,7 @@ void main() {
       MaterialApp(
         home: Scaffold(
           body: LinkEmailSheet(
+            otpLength: 6,
             sendCode: (email) async {
               sent = email;
             },

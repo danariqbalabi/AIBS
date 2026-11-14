@@ -54,7 +54,7 @@ Hari Ini (H1) · Menu (M1) · camera (opens F0 sheet over the current tab) · Ju
 
 ### A2v · Verifikasi kode
 - Title "Masukkan kode" + the email in 15/800 primaryStrong under it.
-- 6 OTP boxes (grid, gap 8). Auto-submits on the 6th digit → **A3**.
+- OTP boxes follow `EMAIL_OTP_LENGTH` (default 8 to match the deployed Supabase project; configurable 6–10). Grid gap 8; pasting distributes the complete code across boxes. "Lanjut" verifies the full code before **A3**.
 - Link "Kirim ulang kode".
 
 ### A3 · Izin data

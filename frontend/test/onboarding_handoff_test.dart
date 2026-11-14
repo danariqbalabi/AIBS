@@ -22,7 +22,7 @@ void main() {
     await tester.tap(find.text('Kirim kode'));
     await tester.pumpAndSettle();
 
-    for (var index = 0; index < 6; index++) {
+    for (var index = 0; index < 8; index++) {
       await tester.enterText(find.byType(TextField).at(index), '1');
     }
     tester.testTextInput.hide();
