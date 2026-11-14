@@ -1,3 +1,5 @@
+import 'package:flutter/services.dart';
+
 import 'dart:async';
 
 import '../data/app_services.dart';
@@ -364,7 +366,7 @@ class _MenuDetailPageState extends State<MenuDetailPage> {
           Stack(
             children: [
               Container(
-                height: 260,
+                height: AibsSize.menuHero,
                 width: double.infinity,
                 decoration: BoxDecoration(
                   gradient: AibsGradients.food(AibsColors.foodBlue),
@@ -438,6 +440,21 @@ class _MenuDetailPageState extends State<MenuDetailPage> {
                   ),
                 ),
                 const SizedBox(height: AibsSpace.s20),
+                if (item.kind == 'Beli')
+                  TextButton.icon(
+                    onPressed: () async {
+                      await Clipboard.setData(
+                        ClipboardData(text: item.orderTips.join('\n')),
+                      );
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Cara pesan disalin')),
+                        );
+                      }
+                    },
+                    icon: const Icon(Icons.copy),
+                    label: const Text('Salin cara pesan'),
+                  ),
                 Text('Bahan', style: AibsType.sectionTitle),
                 if (widget.onCheckMenu != null)
                   TextButton(
@@ -460,25 +477,26 @@ class _MenuDetailPageState extends State<MenuDetailPage> {
                   ),
                 ),
                 const SizedBox(height: AibsSpace.s12),
-                AibsSecondaryButton(
-                  label: 'Masukkan ke checklist belanja',
-                  onPressed: () async {
-                    try {
-                      await widget.onAddShopping(item);
-                    } catch (error) {
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(AppServices.message(error))),
-                        );
+                if (item.kind == 'Masak')
+                  AibsSecondaryButton(
+                    label: 'Masukkan ke checklist belanja',
+                    onPressed: () async {
+                      try {
+                        await widget.onAddShopping(item);
+                      } catch (error) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(AppServices.message(error))),
+                          );
+                        }
+                        return;
                       }
-                      return;
-                    }
-                    if (!context.mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Bahan ditambahkan')),
-                    );
-                  },
-                ),
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Bahan ditambahkan')),
+                      );
+                    },
+                  ),
               ],
             ),
           ),
@@ -506,7 +524,6 @@ class _MenuDetailPageState extends State<MenuDetailPage> {
                   ),
                   const SizedBox(width: AibsSpace.s10),
                   Expanded(
-                    flex: 2,
                     child: AibsPrimaryButton(
                       label: 'Sudah dimakan',
                       onPressed: () => widget.onStartMealRecord(item),
@@ -742,7 +759,9 @@ class _ScheduleSheetState extends State<_ScheduleSheet> {
                 title: const Text('Jam'),
                 trailing: TextButton(
                   onPressed: _pickTime,
-                  child: Text(_time.format(context)),
+                  child: Text(
+                    '${_time.hour.toString().padLeft(2, '0')}.${_time.minute.toString().padLeft(2, '0')}',
+                  ),
                 ),
               ),
               AibsPrimaryButton(
@@ -754,7 +773,8 @@ class _ScheduleSheetState extends State<_ScheduleSheet> {
                     menu: widget.menu,
                     day: _day,
                     meal: _meal,
-                    time: _time.format(context),
+                    time:
+                        '${_time.hour.toString().padLeft(2, '0')}.${_time.minute.toString().padLeft(2, '0')}',
                     scheduledAt: DateTime(
                       _anchor.year,
                       _anchor.month,

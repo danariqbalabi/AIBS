@@ -1251,7 +1251,7 @@ class _JournalPageState extends State<JournalPage> {
             await widget.onAddStory(
               AibsStoryLog(
                 text: text,
-                time: TimeOfDay.now().format(context),
+                time: clockLabel(DateTime.now()),
                 date: DateTime.now(),
               ),
             );
@@ -1907,7 +1907,9 @@ class _SymptomEntryPageState extends State<SymptomEntryPage> {
                     title: const Text('Mulai jam'),
                     trailing: TextButton(
                       onPressed: _pickTime,
-                      child: Text(_time.format(context)),
+                      child: Text(
+                        '${_time.hour.toString().padLeft(2, '0')}.${_time.minute.toString().padLeft(2, '0')}',
+                      ),
                     ),
                   ),
                   ListTile(
@@ -2007,7 +2009,8 @@ class _SymptomEntryPageState extends State<SymptomEntryPage> {
               ? null
               : _otherController.text.trim(),
           bristolType: _bristolType,
-          time: _time.format(context),
+          time:
+              '${_time.hour.toString().padLeft(2, '0')}.${_time.minute.toString().padLeft(2, '0')}',
           date: _date,
           severity: _severity,
           stress: _stress,
