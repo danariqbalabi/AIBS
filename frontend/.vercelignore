@@ -1,0 +1,8 @@
+.env
+.env.*
+.dart_tool/
+build/
+config/local.json
+config/*.local.json
+android/
+test/

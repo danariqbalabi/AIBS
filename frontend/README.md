@@ -20,13 +20,13 @@ data-behavior source of truth. Nunito is bundled locally for offline rendering.
   consent, screening, catalog/status and manual food-check use real APIs.
 - Manual meals/symptoms use draft/commit with idempotency; history, dashboard,
   summary, plans and shopping are loaded from the server after mutations/reload.
-- Camera/gallery capture, AI photo analysis, and AI story extraction are not
-  connected. Story text is saved as a server draft, without pretending NLP
-  extracted food/symptom events. Use Isi manual for this testing phase.
-- Privacy export copies the available profile fields to the clipboard.
-  Full export/deletion, PDF/share, photo retention and event editing are pending.
-  Connected mode rejects save-photos and delete-all until implemented; it does
-  not report a false successful deletion.
+- Camera/gallery and journal NLP use backend analysis, followed by editable
+  review and versioned commit. Server drafts can be resumed after refresh.
+- Owned event editing/deletion, ZIP export, PDF consultation sharing, and photo
+  preferences/retention use connected flows. SMTP inbox and device tests remain.
+- Deploy Flutter Web and FastAPI as two Vercel projects using the
+  [Vercel guide](../docs/vercel-deployment.md). Large photos are compressed locally
+  before upload to stay within the platform request limit.
 - Demo menu/catalog and summary data are illustrative, not medical guidance.
 
 Nunito is bundled locally as a variable font and licensed under the SIL Open
