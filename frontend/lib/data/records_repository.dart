@@ -355,15 +355,17 @@ class RecordsRepository {
     await _saveContent(meal.requestId ?? const Uuid().v4(), {
       'foods': [
         {
+          ...?meal.serverPayload,
           'name': meal.name,
           'consumed': true,
           'time':
               meal.serverPayload?['time'] ?? eventTime(meal.date, meal.time),
-          'ingredients': ingredients,
+          'ingredients': meal.serverPayload?['ingredients'] ?? ingredients,
           'ingredients_complete':
-              meal.note == null &&
-              ingredients.isNotEmpty &&
-              ingredients.every((i) => i['certainty'] == 'confirmed'),
+              meal.serverPayload?['ingredients_complete'] ??
+              (meal.note == null &&
+                  ingredients.isNotEmpty &&
+                  ingredients.every((i) => i['certainty'] == 'confirmed')),
           'notes': meal.note,
         },
       ],
@@ -428,6 +430,41 @@ class RecordsRepository {
     );
   }
 
+  final _manualDrafts = <String, Map<String, dynamic>>{};
+  Future<void> saveSymptomDraft(
+    List<Map<String, dynamic>> cards,
+    String requestId,
+  ) async {
+    final previous = _manualDrafts[requestId];
+    _manualDrafts[requestId] = await api.request(
+      previous == null ? 'POST' : 'PATCH',
+      previous == null ? '/api/v1/drafts' : '/api/v1/drafts/${previous['id']}',
+      body: {
+        if (previous != null) 'version': previous['version'],
+        'intent': 'journal',
+        'content': {'symptoms': cards},
+      },
+    );
+  }
+
+  Future<void> saveManualDraft(
+    Map<String, dynamic> card,
+    String requestId,
+  ) async {
+    final previous = _manualDrafts[requestId];
+    _manualDrafts[requestId] = await api.request(
+      previous == null ? 'POST' : 'PATCH',
+      previous == null ? '/api/v1/drafts' : '/api/v1/drafts/${previous['id']}',
+      body: {
+        if (previous != null) 'version': previous['version'],
+        'intent': 'journal',
+        'content': {
+          'foods': [card],
+        },
+      },
+    );
+  }
+
   Future<DraftReview> analyzeStory(String text, String requestId) async {
     final result = await api.request(
       'POST',
@@ -441,6 +478,18 @@ class RecordsRepository {
     );
     return DraftReview(api, result['draft'] as Map<String, dynamic>);
   }
+
+  Future<DraftReview> manualStory(String text) async => DraftReview(
+    api,
+    await api.request(
+      'POST',
+      '/api/v1/drafts',
+      body: {
+        'intent': 'journal',
+        'content': {'story': text, 'foods': [], 'symptoms': []},
+      },
+    ),
+  );
 
   Future<DraftReview> openDraft(String id) async =>
       DraftReview(api, await api.request('GET', '/api/v1/drafts/$id'));

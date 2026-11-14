@@ -7,6 +7,7 @@ import '../core/theme/aibs_tokens.dart';
 import '../data/app_services.dart';
 import '../widgets/aibs_widgets.dart';
 import '../widgets/record_card_form.dart';
+import '../widgets/unsaved_guard.dart';
 
 class EventEditorPage extends StatefulWidget {
   const EventEditorPage({
@@ -25,6 +26,7 @@ class EventEditorPage extends StatefulWidget {
 }
 
 class _EventEditorPageState extends State<EventEditorPage> {
+  final _exit = GlobalKey<UnsavedGuardState>();
   late final Map<String, dynamic> _event =
       jsonDecode(jsonEncode(widget.event)) as Map<String, dynamic>;
   bool _busy = false;
@@ -37,7 +39,7 @@ class _EventEditorPageState extends State<EventEditorPage> {
     });
     try {
       await widget.onSave(_event);
-      if (mounted) Navigator.pop(context, true);
+      if (mounted) await _exit.currentState!.leave(true);
     } catch (error) {
       if (mounted) setState(() => _error = AppServices.message(error));
     } finally {
@@ -46,40 +48,45 @@ class _EventEditorPageState extends State<EventEditorPage> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Edit catatan')),
-    body: Column(
-      children: [
-        Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(AibsSpace.s20),
-            child: RecordCardForm(
-              kind: _event['kind'] as String,
-              value: _event['payload'] as Map<String, dynamic>,
-              ingredientId: widget.ingredientId,
-              meals: widget.meals,
+  Widget build(BuildContext context) => UnsavedGuard(
+    key: _exit,
+    isDirty: () => jsonEncode(_event) != jsonEncode(widget.event),
+    busy: () => _busy,
+    child: Scaffold(
+      appBar: AppBar(title: const Text('Edit catatan')),
+      body: Column(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(AibsSpace.s20),
+              child: RecordCardForm(
+                kind: _event['kind'] as String,
+                value: _event['payload'] as Map<String, dynamic>,
+                ingredientId: widget.ingredientId,
+                meals: widget.meals,
+              ),
             ),
           ),
-        ),
-        if (_error != null)
-          Padding(
-            padding: const EdgeInsets.all(AibsSpace.s16),
-            child: Text(
-              _error!,
-              style: AibsType.caption.copyWith(color: AibsColors.badInk),
+          if (_error != null)
+            Padding(
+              padding: const EdgeInsets.all(AibsSpace.s16),
+              child: Text(
+                _error!,
+                style: AibsType.caption.copyWith(color: AibsColors.badInk),
+              ),
+            ),
+          SafeArea(
+            top: false,
+            child: Padding(
+              padding: AibsSpace.bottomActions,
+              child: AibsPrimaryButton(
+                label: _busy ? 'Menyimpan...' : 'Simpan perubahan',
+                onPressed: _busy ? null : _save,
+              ),
             ),
           ),
-        SafeArea(
-          top: false,
-          child: Padding(
-            padding: AibsSpace.bottomActions,
-            child: AibsPrimaryButton(
-              label: _busy ? 'Menyimpan...' : 'Simpan perubahan',
-              onPressed: _busy ? null : _save,
-            ),
-          ),
-        ),
-      ],
+        ],
+      ),
     ),
   );
 }

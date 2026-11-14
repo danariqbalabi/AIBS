@@ -393,6 +393,8 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
               onPlanSaved: _savePlan,
             ),
             JournalPage(
+              onManualStory: _records == null ? null : _reviewManualStory,
+              onSaveSymptomDraft: _records?.saveSymptomDraft,
               evidenceDate: _evidenceDate,
               evidenceSymptom: _evidenceSymptom,
               meals: _meals,
@@ -564,6 +566,8 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => CameraFlowPage(
+          onSaveDraft: _records?.saveManualDraft,
+          ingredientId: widget.services?.profiles.ingredientId,
           intent: intent,
           aiEnabled: widget.profile?.aiEnabled ?? true,
           initialManualEntry: initialManualEntry,
@@ -695,6 +699,7 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
           review: review,
           meals: _meals,
           ingredientId: widget.services!.profiles.ingredientId,
+          onCheckFood: _records!.checkCard,
         ),
       ),
     );
@@ -716,6 +721,23 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
       ),
     );
     await _reload();
+  }
+
+  Future<bool> _reviewManualStory(String text) async {
+    final review = await _records!.manualStory(text);
+    if (!mounted) return false;
+    final saved = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => DraftReviewPage(
+          review: review,
+          meals: _meals,
+          ingredientId: widget.services!.profiles.ingredientId,
+          onCheckFood: _records!.checkCard,
+        ),
+      ),
+    );
+    await _reload();
+    return saved == true;
   }
 
   Future<bool> _reviewPhoto(
@@ -769,7 +791,11 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
   void _openSymptomEntry() {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => SymptomEntryPage(meals: _meals, onSave: _addSymptom),
+        builder: (_) => SymptomEntryPage(
+          meals: _meals,
+          onSave: _addSymptom,
+          onSaveDraft: _records?.saveSymptomDraft,
+        ),
       ),
     );
   }

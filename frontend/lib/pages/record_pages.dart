@@ -20,6 +20,7 @@ import '../shared/widgets/koala.dart';
 import '../shared/widgets/status_badge.dart';
 import '../widgets/aibs_widgets.dart';
 import '../widgets/record_card_form.dart';
+import '../widgets/unsaved_guard.dart';
 
 enum MealIntent { check, eaten }
 
@@ -47,6 +48,8 @@ class CameraFlowPage extends StatefulWidget {
     this.initialIngredients = const [],
     this.onCheckFood,
     this.onReviewPhoto,
+    this.onSaveDraft,
+    this.ingredientId,
   });
 
   final FutureOr<void> Function(AibsMealLog) onSaved;
@@ -59,12 +62,15 @@ class CameraFlowPage extends StatefulWidget {
   final List<String> initialIngredients;
   final Future<Map<String, dynamic>> Function(List<String>, bool)? onCheckFood;
   final Future<bool> Function(Uint8List, String, bool)? onReviewPhoto;
+  final Future<void> Function(Map<String, dynamic>, String)? onSaveDraft;
+  final String? Function(String)? ingredientId;
 
   @override
   State<CameraFlowPage> createState() => _CameraFlowPageState();
 }
 
 class _CameraFlowPageState extends State<CameraFlowPage> {
+  final _exit = GlobalKey<UnsavedGuardState>();
   late _CameraStep _step;
   late final TextEditingController _foodController;
   final _ingredientController = TextEditingController();
@@ -81,6 +87,32 @@ class _CameraFlowPageState extends State<CameraFlowPage> {
   String? _photoError;
   bool _picking = false;
   final _mealCard = <String, dynamic>{};
+  Map<String, dynamic> _draftCard() {
+    final rows = _ingredients.map((label) {
+      final parts = label.split('·');
+      final name = parts.first.trim();
+      final amount = parts.length > 1
+          ? RegExp(r'^(\d+(?:[.,]\d+)?)\s+(.+)$').firstMatch(parts[1].trim())
+          : null;
+      final id = widget.ingredientId?.call(name);
+      return <String, dynamic>{
+        'display_name': name,
+        'ingredient_id': id,
+        'certainty': id == null ? 'unknown' : 'confirmed',
+        if (amount != null) 'quantity': amount[1]!.replaceAll(',', '.'),
+        if (amount != null) 'unit': amount[2],
+      };
+    }).toList();
+    return {
+      'name': _foodController.text.trim().isEmpty
+          ? 'Makanan'
+          : _foodController.text.trim(),
+      'consumed': false,
+      'ingredients': rows,
+      'ingredients_complete': !_unknownIngredient,
+      ..._mealCard,
+    };
+  }
 
   Future<void> _pickPhoto(ImageSource source) async {
     if (_picking) return;
@@ -122,25 +154,37 @@ class _CameraFlowPageState extends State<CameraFlowPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: _step == _CameraStep.camera
-          ? AibsColors.ink
-          : AibsColors.surface,
-      body: SafeArea(
-        child: AnimatedSwitcher(
-          duration: MediaQuery.disableAnimationsOf(context)
-              ? AibsMotion.reduced
-              : AibsMotion.page,
-          child: switch (_step) {
-            _CameraStep.camera => _buildCamera(),
-            _CameraStep.preview => _buildPreview(),
-            _CameraStep.processing => _buildProcessing(),
-            _CameraStep.failed => _buildFailure(),
-            _CameraStep.manual => _buildManualEntry(),
-            _CameraStep.clarify => _buildClarification(),
-            _CameraStep.result => _buildResult(),
-            _CameraStep.saved => _buildSaved(),
-          },
+    return UnsavedGuard(
+      key: _exit,
+      isDirty: () =>
+          _step != _CameraStep.saved &&
+          (_foodController.text.isNotEmpty ||
+              _ingredients.isNotEmpty ||
+              _photo != null),
+      busy: () => _saving || _checking || _step == _CameraStep.processing,
+      onSaveDraft: widget.onSaveDraft == null
+          ? null
+          : () => widget.onSaveDraft!(_draftCard(), _requestId),
+      child: Scaffold(
+        backgroundColor: _step == _CameraStep.camera
+            ? AibsColors.ink
+            : AibsColors.surface,
+        body: SafeArea(
+          child: AnimatedSwitcher(
+            duration: MediaQuery.disableAnimationsOf(context)
+                ? AibsMotion.reduced
+                : AibsMotion.page,
+            child: switch (_step) {
+              _CameraStep.camera => _buildCamera(),
+              _CameraStep.preview => _buildPreview(),
+              _CameraStep.processing => _buildProcessing(),
+              _CameraStep.failed => _buildFailure(),
+              _CameraStep.manual => _buildManualEntry(),
+              _CameraStep.clarify => _buildClarification(),
+              _CameraStep.result => _buildResult(),
+              _CameraStep.saved => _buildSaved(),
+            },
+          ),
         ),
       ),
     );
@@ -576,7 +620,7 @@ class _CameraFlowPageState extends State<CameraFlowPage> {
       );
       if (!mounted) return;
       if (saved) {
-        Navigator.pop(context);
+        await _exit.currentState!.leave();
       } else {
         setState(() => _step = _CameraStep.preview);
       }
@@ -656,6 +700,7 @@ class _CameraFlowPageState extends State<CameraFlowPage> {
     if (_mealCard.isEmpty) {
       final now = DateTime.now();
       _mealCard.addAll({
+        ..._draftCard(),
         'name': _foodController.text.trim(),
         'consumed': true,
         'time': {...eventTime(now, clockLabel(now)), 'confirmed': false},
@@ -677,6 +722,17 @@ class _CameraFlowPageState extends State<CameraFlowPage> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text('Kapan dimakan?', style: AibsType.sheetTitle),
+                ExpansionTile(
+                  title: const Text('Tinjau bahan & porsi'),
+                  children: [
+                    RecordCardForm(
+                      kind: 'food',
+                      value: _mealCard,
+                      ingredientId: widget.ingredientId,
+                      showConsumptionAndTime: false,
+                    ),
+                  ],
+                ),
                 CardTimeForm(value: _mealCard),
                 AibsPrimaryButton(
                   label: 'Konfirmasi sudah dimakan',
@@ -708,12 +764,10 @@ class _CameraFlowPageState extends State<CameraFlowPage> {
         ?.toLocal();
     final meal = AibsMealLog(
       requestId: _requestId,
-      name: _foodController.text.trim().isEmpty
-          ? 'Makanan'
-          : _foodController.text.trim(),
+      name: _mealCard['name'] as String,
       time: exact == null ? '${time['period']} · perkiraan' : clockLabel(exact),
       date: DateTime.parse(time['date'] as String),
-      serverPayload: {'time': Map<String, dynamic>.from(time)},
+      serverPayload: Map<String, dynamic>.from(_mealCard),
       status: CheckStatus.unknown,
       ingredients: List.unmodifiable(_ingredients),
       note: _unknownIngredient ? 'Ada bahan yang belum diketahui' : null,
@@ -882,7 +936,9 @@ class JournalPage extends StatefulWidget {
     this.onEditEvent,
     this.ingredientId,
     this.onAnalyzeStory,
+    this.onManualStory,
     this.onResumeDraft,
+    this.onSaveSymptomDraft,
     this.evidenceDate,
     this.evidenceSymptom,
     super.key,
@@ -901,7 +957,10 @@ class JournalPage extends StatefulWidget {
   final Future<void> Function(Map<String, dynamic>)? onEditEvent;
   final String? Function(String)? ingredientId;
   final Future<bool> Function(String, String)? onAnalyzeStory;
+  final Future<bool> Function(String)? onManualStory;
   final Future<void> Function(String)? onResumeDraft;
+  final Future<void> Function(List<Map<String, dynamic>>, String)?
+  onSaveSymptomDraft;
   final DateTime? evidenceDate;
   final String? evidenceSymptom;
 
@@ -1176,6 +1235,7 @@ class _JournalPageState extends State<JournalPage> {
           initialText: initialText ?? '',
           persistDraft: widget.onResumeDraft != null,
           onReview: widget.aiEnabled ? widget.onAnalyzeStory : null,
+          onManualReview: widget.onManualStory,
           onDraftChanged: (draft) => setState(() => _storyDraft = draft),
           onSave: (text) async {
             await widget.onAddStory(
@@ -1202,8 +1262,11 @@ class _JournalPageState extends State<JournalPage> {
   void _openSymptom(BuildContext context) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) =>
-            SymptomEntryPage(meals: widget.meals, onSave: widget.onAddSymptom),
+        builder: (_) => SymptomEntryPage(
+          meals: widget.meals,
+          onSave: widget.onAddSymptom,
+          onSaveDraft: widget.onSaveSymptomDraft,
+        ),
       ),
     );
   }
@@ -1363,12 +1426,14 @@ class _StoryEntryPage extends StatefulWidget {
     required this.onDraftChanged,
     required this.onSave,
     this.onReview,
+    this.onManualReview,
     this.persistDraft = false,
   });
   final String initialText;
   final ValueChanged<String?> onDraftChanged;
   final FutureOr<void> Function(String) onSave;
   final Future<bool> Function(String, String)? onReview;
+  final Future<bool> Function(String)? onManualReview;
   final bool persistDraft;
 
   @override
@@ -1377,6 +1442,14 @@ class _StoryEntryPage extends StatefulWidget {
 
 class _StoryEntryPageState extends State<_StoryEntryPage> {
   bool _saving = false;
+  bool _allowExit = false;
+  Future<void> _closeStory([bool? result]) async {
+    if (!mounted) return;
+    setState(() => _allowExit = true);
+    await WidgetsBinding.instance.endOfFrame;
+    if (mounted) Navigator.pop(context, result);
+  }
+
   String? _analysisRequest;
   String? _analysisText;
   String? _error;
@@ -1398,7 +1471,7 @@ class _StoryEntryPageState extends State<_StoryEntryPage> {
         widget.onDraftChanged(null);
         _controller.clear();
         setState(() {});
-        Navigator.pop(context);
+        await _closeStory();
       }
     } catch (error) {
       if (error is ApiFailure && error.code == 'analysis_already_attempted') {
@@ -1432,7 +1505,7 @@ class _StoryEntryPageState extends State<_StoryEntryPage> {
         title: const Text('Ceritain hari ini'),
       ),
       body: PopScope<Object?>(
-        canPop: _controller.text.trim().isEmpty,
+        canPop: _allowExit || _controller.text.trim().isEmpty,
         onPopInvokedWithResult: (didPop, _) {
           if (!didPop) _showDraftOptions();
         },
@@ -1462,7 +1535,36 @@ class _StoryEntryPageState extends State<_StoryEntryPage> {
                       ),
                     ),
                   TextButton(
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: _saving
+                        ? null
+                        : () async {
+                            if (widget.onManualReview == null) {
+                              Navigator.pop(context);
+                              return;
+                            }
+                            setState(() {
+                              _saving = true;
+                              _error = null;
+                            });
+                            try {
+                              final saved = await widget.onManualReview!(
+                                _controller.text.trim(),
+                              );
+                              if (saved && mounted && context.mounted) {
+                                _controller.clear();
+                                widget.onDraftChanged(null);
+                                await _closeStory();
+                              }
+                            } catch (error) {
+                              if (mounted) {
+                                setState(
+                                  () => _error = AppServices.message(error),
+                                );
+                              }
+                            } finally {
+                              if (mounted) setState(() => _saving = false);
+                            }
+                          },
                     child: const Text('Isi manual aja'),
                   ),
                 ],
@@ -1610,12 +1712,12 @@ class _StoryEntryPageState extends State<_StoryEntryPage> {
                       if (!mounted || !sheetContext.mounted) return;
                       Navigator.pop(sheetContext);
                       setState(() {});
-                      Navigator.pop(context);
+                      await _closeStory();
                       return;
                     }
                     widget.onDraftChanged(_controller.text.trim());
                     Navigator.pop(sheetContext);
-                    Navigator.pop(context, true);
+                    _closeStory(true);
                   },
                   child: const Text('Simpan draft'),
                 ),
@@ -1625,7 +1727,7 @@ class _StoryEntryPageState extends State<_StoryEntryPage> {
                   onPressed: () {
                     widget.onDraftChanged(null);
                     Navigator.pop(sheetContext);
-                    Navigator.pop(context, true);
+                    _closeStory(true);
                   },
                   child: Text(
                     'Buang draft',
@@ -1646,15 +1748,19 @@ class SymptomEntryPage extends StatefulWidget {
     super.key,
     required this.meals,
     required this.onSave,
+    this.onSaveDraft,
   });
   final List<AibsMealLog> meals;
   final FutureOr<void> Function(AibsSymptomLog) onSave;
+  final Future<void> Function(List<Map<String, dynamic>>, String)? onSaveDraft;
 
   @override
   State<SymptomEntryPage> createState() => _SymptomEntryPageState();
 }
 
 class _SymptomEntryPageState extends State<SymptomEntryPage> {
+  final _exit = GlobalKey<UnsavedGuardState>();
+  DateTime _date = DateTime.now();
   static const _options = [
     'Kembung',
     'Nyeri perut',
@@ -1675,6 +1781,32 @@ class _SymptomEntryPageState extends State<SymptomEntryPage> {
   bool _saving = false;
   final _requestId = const Uuid().v4();
 
+  List<Map<String, dynamic>> _draftSymptoms() => [
+    for (final name in _selected)
+      {
+        'code': symptomCodes[name],
+        'present': true,
+        'severity': _severity,
+        'time': eventTime(
+          _date,
+          '${_time.hour}:${_time.minute.toString().padLeft(2, '0')}',
+        ),
+        if (name == 'Lainnya' && _otherController.text.trim().isNotEmpty)
+          'label': _otherController.text.trim(),
+        if (name == 'BAB') 'bristol_type': _bristolType,
+        'linked_food_event_id': widget.meals
+            .where((m) => m.id == _linkedMeal)
+            .firstOrNull
+            ?.id,
+        'notes': _noteController.text.trim(),
+        'stress': {
+          'Rendah': 'low',
+          'Sedang': 'medium',
+          'Tinggi': 'high',
+        }[_stress],
+      },
+  ];
+
   @override
   void dispose() {
     _noteController.dispose();
@@ -1684,129 +1816,156 @@ class _SymptomEntryPageState extends State<SymptomEntryPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Catat gejala')),
-      body: Column(
-        children: [
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(AibsSpace.s20),
-              children: [
-                Text('Apa yang kamu rasain?', style: AibsType.sectionTitle),
-                const SizedBox(height: AibsSpace.s12),
-                Wrap(
-                  spacing: AibsSpace.s8,
-                  runSpacing: AibsSpace.s8,
-                  children: [
-                    for (final option in _options)
-                      AibsChoiceChip(
-                        label: option,
-                        selected: _selected.contains(option),
-                        onTap: () => setState(() {
-                          if (!_selected.add(option)) _selected.remove(option);
-                        }),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: AibsSpace.s20),
-                Text('Seberapa ganggu?', style: AibsType.sectionTitle),
-                if (_selected.contains('Lainnya'))
-                  TextField(
-                    controller: _otherController,
-                    decoration: const InputDecoration(
-                      labelText: 'Nama gejala lain',
-                    ),
-                  ),
-                if (_selected.contains('BAB'))
-                  DropdownButtonFormField<int>(
-                    initialValue: _bristolType,
-                    decoration: const InputDecoration(labelText: 'Bristol'),
-                    items: [
-                      const DropdownMenuItem<int>(
-                        value: null,
-                        child: Text('Belum diisi'),
-                      ),
-                      for (var i = 1; i <= 7; i++)
-                        DropdownMenuItem(value: i, child: Text('$i')),
-                    ],
-                    onChanged: (v) => _bristolType = v,
-                  ),
-                const SizedBox(height: AibsSpace.s12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    for (var value = 1; value <= 5; value++)
-                      _ScaleDot(
-                        value: value,
-                        selected: _severity == value,
-                        onTap: () => setState(() => _severity = value),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: AibsSpace.s12),
-                AibsCard(
-                  child: Text(
-                    '$_severity · ${_severityLabel(_severity)}',
-                    style: AibsType.bodyStrong,
-                  ),
-                ),
-                const SizedBox(height: AibsSpace.s16),
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('Mulai jam'),
-                  trailing: TextButton(
-                    onPressed: _pickTime,
-                    child: Text(_time.format(context)),
-                  ),
-                ),
-                Text('Stres', style: AibsType.caption),
-                const SizedBox(height: AibsSpace.s8),
-                Wrap(
-                  spacing: AibsSpace.s8,
-                  children: [
-                    for (final value in ['Rendah', 'Sedang', 'Tinggi'])
-                      AibsChoiceChip(
-                        label: value,
-                        selected: _stress == value,
-                        onTap: () => setState(() => _stress = value),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: AibsSpace.s16),
-                TextField(
-                  controller: _noteController,
-                  decoration: const InputDecoration(labelText: 'Catatan'),
-                ),
-                if (widget.meals.isNotEmpty) ...[
-                  const SizedBox(height: AibsSpace.s16),
-                  Text('Hubungkan makanan', style: AibsType.caption),
-                  DropdownButtonFormField<String>(
-                    initialValue: _linkedMeal,
-                    items: [
-                      const DropdownMenuItem(
-                        value: null,
-                        child: Text('Tidak dihubungkan'),
-                      ),
-                      for (final meal in widget.meals)
-                        DropdownMenuItem(
-                          value: meal.id ?? meal.name,
-                          child: Text(meal.name),
+    return UnsavedGuard(
+      key: _exit,
+      isDirty: () => _selected.isNotEmpty || _noteController.text.isNotEmpty,
+      busy: () => _saving,
+      onSaveDraft: widget.onSaveDraft == null
+          ? null
+          : () => widget.onSaveDraft!(_draftSymptoms(), _requestId),
+      child: Scaffold(
+        appBar: AppBar(title: const Text('Catat gejala')),
+        body: Column(
+          children: [
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.all(AibsSpace.s20),
+                children: [
+                  Text('Apa yang kamu rasain?', style: AibsType.sectionTitle),
+                  const SizedBox(height: AibsSpace.s12),
+                  Wrap(
+                    spacing: AibsSpace.s8,
+                    runSpacing: AibsSpace.s8,
+                    children: [
+                      for (final option in _options)
+                        AibsChoiceChip(
+                          label: option,
+                          selected: _selected.contains(option),
+                          onTap: () => setState(() {
+                            if (!_selected.add(option)) {
+                              _selected.remove(option);
+                            }
+                          }),
                         ),
                     ],
-                    onChanged: (value) => setState(() => _linkedMeal = value),
                   ),
+                  const SizedBox(height: AibsSpace.s20),
+                  Text('Seberapa ganggu?', style: AibsType.sectionTitle),
+                  if (_selected.contains('Lainnya'))
+                    TextField(
+                      controller: _otherController,
+                      decoration: const InputDecoration(
+                        labelText: 'Nama gejala lain',
+                      ),
+                    ),
+                  if (_selected.contains('BAB'))
+                    DropdownButtonFormField<int>(
+                      initialValue: _bristolType,
+                      decoration: const InputDecoration(labelText: 'Bristol'),
+                      items: [
+                        const DropdownMenuItem<int>(
+                          value: null,
+                          child: Text('Belum diisi'),
+                        ),
+                        for (var i = 1; i <= 7; i++)
+                          DropdownMenuItem(value: i, child: Text('$i')),
+                      ],
+                      onChanged: (v) => _bristolType = v,
+                    ),
+                  const SizedBox(height: AibsSpace.s12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      for (var value = 1; value <= 5; value++)
+                        _ScaleDot(
+                          value: value,
+                          selected: _severity == value,
+                          onTap: () => setState(() => _severity = value),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: AibsSpace.s12),
+                  AibsCard(
+                    child: Text(
+                      '$_severity · ${_severityLabel(_severity)}',
+                      style: AibsType.bodyStrong,
+                    ),
+                  ),
+                  const SizedBox(height: AibsSpace.s16),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Mulai jam'),
+                    trailing: TextButton(
+                      onPressed: _pickTime,
+                      child: Text(_time.format(context)),
+                    ),
+                  ),
+                  ListTile(
+                    title: const Text('Tanggal gejala'),
+                    trailing: TextButton(
+                      child: Text(dateLabel(_date)),
+                      onPressed: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: _date,
+                          firstDate: DateTime(2000),
+                          lastDate: DateTime.now(),
+                        );
+                        if (picked != null && mounted) {
+                          setState(() => _date = picked);
+                        }
+                      },
+                    ),
+                  ),
+                  Text('Stres', style: AibsType.caption),
+                  const SizedBox(height: AibsSpace.s8),
+                  Wrap(
+                    spacing: AibsSpace.s8,
+                    children: [
+                      for (final value in ['Rendah', 'Sedang', 'Tinggi'])
+                        AibsChoiceChip(
+                          label: value,
+                          selected: _stress == value,
+                          onTap: () => setState(() => _stress = value),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: AibsSpace.s16),
+                  TextField(
+                    controller: _noteController,
+                    decoration: const InputDecoration(labelText: 'Catatan'),
+                  ),
+                  if (widget.meals.isNotEmpty) ...[
+                    const SizedBox(height: AibsSpace.s16),
+                    Text('Hubungkan makanan', style: AibsType.caption),
+                    DropdownButtonFormField<String>(
+                      initialValue: _linkedMeal,
+                      items: [
+                        const DropdownMenuItem(
+                          value: null,
+                          child: Text('Tidak dihubungkan'),
+                        ),
+                        for (final meal in widget.meals)
+                          DropdownMenuItem(
+                            value: meal.id ?? meal.name,
+                            child: Text(meal.name),
+                          ),
+                      ],
+                      onChanged: (value) => setState(() => _linkedMeal = value),
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
-          ),
-          SafeArea(
-            top: false,
-            child: Padding(
-              padding: AibsSpace.bottomActions,
-              child: AibsPrimaryButton(label: 'Simpan', onPressed: _save),
+            SafeArea(
+              top: false,
+              child: Padding(
+                padding: AibsSpace.bottomActions,
+                child: AibsPrimaryButton(label: 'Simpan', onPressed: _save),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -1839,7 +1998,7 @@ class _SymptomEntryPageState extends State<SymptomEntryPage> {
               : _otherController.text.trim(),
           bristolType: _bristolType,
           time: _time.format(context),
-          date: DateTime.now(),
+          date: _date,
           severity: _severity,
           stress: _stress,
           note: _noteController.text.trim().isEmpty
@@ -1860,7 +2019,7 @@ class _SymptomEntryPageState extends State<SymptomEntryPage> {
       return;
     }
     _saving = false;
-    if (mounted) Navigator.pop(context);
+    if (mounted) await _exit.currentState!.leave();
   }
 
   String _severityLabel(int value) => const [
