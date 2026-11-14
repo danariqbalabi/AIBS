@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:aibs_app/main.dart';
+import 'package:aibs_app/pages/onboarding_flow.dart';
 
 void main() {
   testWidgets('onboarding flow reaches the home screen', (tester) async {
@@ -39,7 +40,8 @@ void main() {
 
     await tester.tap(find.text('Simpan profil'));
     await tester.pumpAndSettle();
-    expect(find.text('Hai, Nadia!'), findsOneWidget);
+    expect(find.text('Hai, Nadia'), findsOneWidget);
+    expect(find.text('Mau catat apa hari ini?'), findsOneWidget);
 
     await tester.tap(find.text('Profil'));
     await tester.pumpAndSettle();
@@ -113,6 +115,10 @@ void main() {
     await tester.tap(find.text('Simpan catatan'));
     await tester.pumpAndSettle();
 
+    await tester.tap(find.text('Hari Ini'));
+    await tester.pumpAndSettle();
+    expect(find.text('Catatan makanan'), findsOneWidget);
+
     await tester.tap(find.text('Jurnal'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Ceritakan harimu'));
@@ -134,5 +140,35 @@ void main() {
     await tester.tap(find.text('Lihat ringkasan'));
     await tester.pumpAndSettle();
     expect(find.text('Belum ada pola yang cukup'), findsOneWidget);
+  });
+
+  testWidgets('empty profile becomes active after saving a meal', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: AibsHomeShell(
+          profile: OnboardingProfile(name: 'Nadia', hasDietProfile: true),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Lihat 12 menu yang sesuai'), findsOneWidget);
+    await tester.ensureVisible(find.text('Catat makan pertama'));
+    await tester.tap(find.text('Catat makan pertama'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Isi manual'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).first, 'Sup ayam jahe');
+    tester.testTextInput.hide();
+    await tester.tap(find.text('Cek makanan'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Simpan catatan'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('7 hari terakhir'), findsOneWidget);
+    expect(find.text('Ada keluhan setelah makan pagi tadi?'), findsOneWidget);
   });
 }

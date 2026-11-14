@@ -15,10 +15,17 @@ enum _Step {
   review,
 }
 
+class OnboardingProfile {
+  const OnboardingProfile({required this.name, required this.hasDietProfile});
+
+  final String name;
+  final bool hasDietProfile;
+}
+
 class OnboardingFlow extends StatefulWidget {
   const OnboardingFlow({required this.onComplete, super.key});
 
-  final VoidCallback onComplete;
+  final ValueChanged<OnboardingProfile> onComplete;
 
   @override
   State<OnboardingFlow> createState() => _OnboardingFlowState();
@@ -67,7 +74,16 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
       return;
     }
     if (_step == _Step.review) {
-      widget.onComplete();
+      widget.onComplete(
+        OnboardingProfile(
+          name: _nameController.text.trim().isEmpty
+              ? 'Kamu'
+              : _nameController.text.trim(),
+          hasDietProfile:
+              _condition == 'Sudah didiagnosis IBS dan punya arahan makan' &&
+              _dietType != null,
+        ),
+      );
       return;
     }
     setState(() {

@@ -5,9 +5,14 @@ import '../theme/aibs_theme.dart';
 import '../widgets/aibs_widgets.dart';
 
 class CameraFlowPage extends StatefulWidget {
-  const CameraFlowPage({super.key, this.initialManualEntry = false});
+  const CameraFlowPage({
+    super.key,
+    this.initialManualEntry = false,
+    this.onRecordSaved,
+  });
 
   final bool initialManualEntry;
+  final ValueChanged<String>? onRecordSaved;
 
   @override
   State<CameraFlowPage> createState() => _CameraFlowPageState();
@@ -231,6 +236,10 @@ class _CameraFlowPageState extends State<CameraFlowPage> {
         AibsPrimaryButton(
           label: 'Simpan catatan',
           onPressed: () {
+            final title = _foodController.text.trim();
+            widget.onRecordSaved?.call(
+              title.isEmpty ? 'Catatan makanan' : title,
+            );
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Catatan tersimpan untuk sesi ini')),
             );
@@ -251,7 +260,9 @@ class _CameraFlowPageState extends State<CameraFlowPage> {
 }
 
 class JournalPage extends StatefulWidget {
-  const JournalPage({super.key});
+  const JournalPage({super.key, this.onRecordSaved});
+
+  final ValueChanged<String>? onRecordSaved;
 
   @override
   State<JournalPage> createState() => _JournalPageState();
@@ -456,6 +467,14 @@ class _JournalPageState extends State<JournalPage> {
               AibsPrimaryButton(
                 label: 'Simpan catatan',
                 onPressed: () {
+                  final title = _foodController.text.trim();
+                  widget.onRecordSaved?.call(
+                    title.isNotEmpty
+                        ? title
+                        : _symptoms.isNotEmpty
+                        ? _symptoms.join(', ')
+                        : 'Catatan gejala',
+                  );
                   Navigator.pop(context);
                   ScaffoldMessenger.of(this.context).showSnackBar(
                     const SnackBar(
@@ -489,6 +508,10 @@ class _JournalPageState extends State<JournalPage> {
           FilledButton(
             onPressed: () {
               Navigator.pop(context);
+              final story = _storyController.text.trim();
+              widget.onRecordSaved?.call(
+                story.isEmpty ? 'Cerita harian' : story,
+              );
               ScaffoldMessenger.of(this.context).showSnackBar(
                 const SnackBar(
                   content: Text('Catatan tersimpan untuk sesi ini'),
