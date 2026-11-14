@@ -385,6 +385,9 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
               onAddSymptom: _addSymptom,
               onAddStory: _addStory,
               onDeleteMeal: _deleteMeal,
+              onDeleteSymptom: _records == null ? null : _deleteSymptom,
+              onEditEvent: _records == null ? null : _editEvent,
+              ingredientId: widget.services?.profiles.ingredientId,
               onOpenSummary: _openSummary,
             ),
             ProfilePage(
@@ -559,6 +562,16 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
       return;
     }
     setState(() => _symptoms.add(symptom));
+  }
+
+  Future<void> _editEvent(Map<String, dynamic> event) async {
+    await _records!.updateEvent(event);
+    await _reload();
+  }
+
+  Future<void> _deleteSymptom(AibsSymptomLog symptom) async {
+    await _records!.deleteSymptom(symptom);
+    await _reload();
   }
 
   Future<void> _deleteMeal(AibsMealLog meal) async {

@@ -15,7 +15,7 @@ from app.models.entities import (
     SymptomEvent,
 )
 from app.repositories.owned import owned
-from app.schemas.domain import DraftContent, FoodCheckInput
+from app.schemas.domain import DraftContent, EventTime, FoodCheckInput
 from app.services.catalog import check_food
 from app.services.drafts import get_draft
 from app.services.profiles import require_basic, versioned_update
@@ -58,6 +58,36 @@ def event_fields(card, profile):
         "local_date": local_date,
         "occurred_at": event_time.occurred_at,
     }
+
+
+def validate_food_precedes_symptom(food_time, symptom_time, timezone):
+    food_date = (
+        food_time.occurred_at.astimezone(ZoneInfo(timezone)).date()
+        if food_time.occurred_at
+        else food_time.date
+    )
+    symptom_date = (
+        symptom_time.occurred_at.astimezone(ZoneInfo(timezone)).date()
+        if symptom_time.occurred_at
+        else symptom_time.date
+    )
+    invalid = (
+        food_time.occurred_at > symptom_time.occurred_at
+        if food_time.occurred_at and symptom_time.occurred_at
+        else food_date > symptom_date
+    )
+    if invalid:
+        raise ApiError(422, "invalid_food_link", "Pilih makanan sebelum gejala.")
+
+
+def validate_existing_food_link(db, owner, symptom, profile):
+    if symptom.linked_food_event_id is None:
+        return None
+    food = owned(db, FoodEvent, symptom.linked_food_event_id, owner)
+    validate_food_precedes_symptom(
+        EventTime.model_validate(food.payload["time"]), symptom.time, profile.timezone
+    )
+    return food
 
 
 def commit(db, owner, draft_id, payload, key):
@@ -131,17 +161,7 @@ def commit(db, owner, draft_id, payload, key):
         db.flush()
         foods.append(event)
     for symptom in content.symptoms:
-        linked_food = None
-        if symptom.linked_food_event_id is not None:
-            linked_food = owned(db, FoodEvent, symptom.linked_food_event_id, owner)
-            if linked_food.local_date > symptom.time.date:
-                raise ApiError(422, "invalid_food_link", "Pilih makanan sebelum gejala.")
-            linked_time = linked_food.payload.get("time", {}).get("occurred_at")
-            if linked_time and symptom.time.occurred_at:
-                from datetime import datetime
-
-                if datetime.fromisoformat(linked_time) > symptom.time.occurred_at:
-                    raise ApiError(422, "invalid_food_link", "Pilih makanan sebelum gejala.")
+        linked_food = validate_existing_food_link(db, owner, symptom, profile)
         event = SymptomEvent(owner_id=owner, batch_id=batch.id, **event_fields(symptom, profile))
         db.add(event)
         db.flush()

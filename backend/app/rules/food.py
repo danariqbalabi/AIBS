@@ -16,7 +16,7 @@ def check(profile, ingredients, complete, access, known_ids, *, directive_suppor
     }
     if any(str(key) not in known_ids for key in profile_ids):
         missing.append("Profil memiliki bahan yang belum dikenal katalog.")
-    if not complete:
+    if not complete or not ingredients:
         missing.append("Komposisi makanan belum lengkap.")
     totals = {}
     for item in ingredients:

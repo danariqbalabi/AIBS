@@ -15,6 +15,7 @@ const symptomCodes = {
   'Diare': 'diarrhea',
   'Sembelit': 'constipation',
   'BAB': 'bowel',
+  'Lainnya': 'other',
 };
 CheckStatus statusFor(Object? value) => switch (value) {
   'ok' => CheckStatus.ok,
@@ -149,6 +150,7 @@ class RecordsRepository {
         AibsMealLog(
           id: row['id'] as String,
           version: row['version'] as int,
+          serverPayload: Map<String, dynamic>.from(payload),
           name: payload['name'] as String,
           date: DateTime.parse(row['local_date'] as String),
           time: time(payload),
@@ -173,11 +175,15 @@ class RecordsRepository {
           id: row['id'] as String,
           version: row['version'] as int,
           name:
+              (payload['code'] == 'other'
+                  ? payload['label'] as String?
+                  : null) ??
               labelFor(symptomCodes, payload['code']) ??
               payload['code'].toString(),
           date: DateTime.parse(row['local_date'] as String),
           time: time(payload),
-          severity: payload['severity'] as int? ?? 1,
+          severity: payload['severity'] as int?,
+          serverPayload: Map<String, dynamic>.from(payload),
           note: payload['notes'] as String?,
           mealId: linked,
           mealName: nextMeals.where((m) => m.id == linked).firstOrNull?.name,
@@ -405,6 +411,28 @@ class RecordsRepository {
     await api.request(
       'DELETE',
       '/api/v1/events/${meal.id}?version=${meal.version}',
+    );
+  }
+
+  Future<void> deleteSymptom(AibsSymptomLog symptom) async {
+    if (symptom.id == null || symptom.version == null) {
+      throw const ApiFailure('Muat ulang catatan terlebih dahulu.');
+    }
+    await api.request(
+      'DELETE',
+      '/api/v1/events/${symptom.id}?version=${symptom.version}',
+    );
+  }
+
+  Future<void> updateEvent(Map<String, dynamic> event) async {
+    await api.request(
+      'PATCH',
+      '/api/v1/events/${event['id']}',
+      body: {
+        'kind': event['kind'],
+        'version': event['version'],
+        'payload': event['payload'],
+      },
     );
   }
 
