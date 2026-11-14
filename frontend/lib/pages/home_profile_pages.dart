@@ -31,6 +31,8 @@ class TodayPage extends StatelessWidget {
     super.key,
     this.plan,
     this.menus,
+    this.serverMode,
+    this.plans = const [],
   });
 
   final VoidCallback onOpenCamera;
@@ -47,13 +49,17 @@ class TodayPage extends StatelessWidget {
   final bool showSymptomPrompt;
   final AibsMealPlan? plan;
   final List<AibsMenuItem>? menus;
+  final String? serverMode;
+  final List<AibsMealPlan> plans;
 
   @override
   Widget build(BuildContext context) {
     final name = profile?.displayName;
     final greetingName = name == null || name.isEmpty ? 'Nadia' : name;
-    final hasDiet =
-        profile?.dietType != null && profile!.dietType != 'Belum ada arahan';
+    final hasDiet = serverMode != null
+        ? serverMode == 'diet_support'
+        : profile?.dietType != null && profile!.dietType != 'Belum ada arahan';
+    final visiblePlans = plans.isNotEmpty ? plans : [?plan];
     final mealLabel = _mealLabel(DateTime.now().hour);
     final hasMeals = meals.any(
       (meal) => DateUtils.isSameDay(meal.date, DateTime.now()),
@@ -78,7 +84,7 @@ class TodayPage extends StatelessWidget {
         const SizedBox(height: AibsSpace.s24),
         if (!hasDiet)
           _DietPrompt(onOpenProfile: onOpenProfile)
-        else if (!hasMeals && plan == null)
+        else if (!hasMeals && visiblePlans.isEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AibsSpace.s20),
             child: Column(
@@ -113,13 +119,13 @@ class TodayPage extends StatelessWidget {
             onSeeAll: onOpenMenu,
             menus: menus,
           ),
-          if (plan != null) ...[
+          for (final scheduled in visiblePlans) ...[
             const SizedBox(height: AibsSpace.s20),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: AibsSpace.s20),
               child: _PlanCard(
-                plan: plan!,
-                onTap: () => onOpenMenuItem(plan!.menu),
+                plan: scheduled,
+                onTap: () => onOpenMenuItem(scheduled.menu),
               ),
             ),
           ],

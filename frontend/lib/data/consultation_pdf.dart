@@ -11,6 +11,7 @@ Future<Uint8List> consultationPdf({
   required List<AibsMealLog> meals,
   required List<AibsSymptomLog> symptoms,
   required List<String> questions,
+  List<String> screening = const [],
 }) async {
   final font = pw.Font.ttf(
     await rootBundle.load('assets/fonts/Nunito-Variable.ttf'),
@@ -30,6 +31,10 @@ Future<Uint8List> consultationPdf({
           text: 'Catatan pengguna. Belum tentu penyebab. Bukan pengganti saran dokter.',
         ),
         pw.Header(level: 1, text: 'Makanan'),
+        if (screening.isNotEmpty) ...[
+          pw.Header(level: 1, text: 'Pengecekan awal (laporan pengguna)'),
+          for (final answer in screening) pw.Paragraph(text: answer),
+        ],
         for (final meal in meals)
           pw.Paragraph(
             text:

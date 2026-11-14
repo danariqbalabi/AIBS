@@ -883,6 +883,8 @@ class JournalPage extends StatefulWidget {
     this.ingredientId,
     this.onAnalyzeStory,
     this.onResumeDraft,
+    this.evidenceDate,
+    this.evidenceSymptom,
     super.key,
   });
 
@@ -900,6 +902,8 @@ class JournalPage extends StatefulWidget {
   final String? Function(String)? ingredientId;
   final Future<bool> Function(String, String)? onAnalyzeStory;
   final Future<void> Function(String)? onResumeDraft;
+  final DateTime? evidenceDate;
+  final String? evidenceSymptom;
 
   @override
   State<JournalPage> createState() => _JournalPageState();
@@ -911,6 +915,20 @@ class _JournalPageState extends State<JournalPage> {
   DateTime _selectedDate = DateTime.now();
   _JournalFilter _filter = _JournalFilter.all;
   String? _storyDraft;
+  String? _evidenceFilter;
+
+  @override
+  void didUpdateWidget(covariant JournalPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.evidenceDate != oldWidget.evidenceDate &&
+        widget.evidenceDate != null) {
+      _selectedDate = widget.evidenceDate!;
+      _evidenceFilter = widget.evidenceSymptom;
+      _filter = widget.evidenceSymptom == null
+          ? _JournalFilter.all
+          : _JournalFilter.symptoms;
+    }
+  }
 
   bool _isSameDay(DateTime first, DateTime second) =>
       first.year == second.year &&
@@ -952,6 +970,9 @@ class _JournalPageState extends State<JournalPage> {
     final records = allRecords.where((record) {
       final date = record.entryDate;
       if (!_isSameDay(date, _selectedDate)) return false;
+      if (_evidenceFilter != null && record.symptom?.name != _evidenceFilter) {
+        return false;
+      }
       return switch (_filter) {
         _JournalFilter.all => true,
         _JournalFilter.meals => record.meal != null,
@@ -1009,6 +1030,11 @@ class _JournalPageState extends State<JournalPage> {
           ],
         ),
         const SizedBox(height: AibsSpace.s8),
+        if (_evidenceFilter != null)
+          InputChip(
+            label: Text(_evidenceFilter!),
+            onDeleted: () => setState(() => _evidenceFilter = null),
+          ),
         Wrap(
           spacing: AibsSpace.s8,
           children: [
@@ -1963,7 +1989,7 @@ class _JournalDetailPage extends StatelessWidget {
                   if (symptom.mealName != null) ...[
                     const SizedBox(height: AibsSpace.s12),
                     Text(
-                      'Sebelum ${symptom.mealName}',
+                      'Setelah ${symptom.mealName}',
                       style: AibsType.bodyStrong,
                     ),
                     const Text('Belum tentu penyebab'),

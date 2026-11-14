@@ -63,6 +63,8 @@ class RecordsRepository {
   List<AibsStoryLog> stories = [];
   List<Map<String, dynamic>> shopping = [];
   AibsMealPlan? plan;
+  List<AibsMealPlan> todayPlans = [];
+  List<Map<String, dynamic>> negativeObservations = [];
   Map<String, dynamic> dashboard = {};
   bool noSymptomsForLatestMeal = false;
   final _pending = <String, Map<String, dynamic>>{};
@@ -218,16 +220,21 @@ class RecordsRepository {
         ),
       );
     }
-    final plans = ((results[3] as Map)['items'] as List)
-        .cast<Map<String, dynamic>>();
+    final nextDashboard = results[5] as Map<String, dynamic>;
+    final plans =
+        ((nextDashboard['plans'] ?? (results[3] as Map)['items']) as List)
+            .cast<Map<String, dynamic>>();
     plans.sort(
       (a, b) =>
           (a['scheduled_at'] as String).compareTo(b['scheduled_at'] as String),
     );
     AibsMealPlan? nextPlan;
+    final nextPlans = <AibsMealPlan>[];
     for (final row in plans) {
       final when = DateTime.parse(row['scheduled_at'] as String).toLocal();
-      if (when.isBefore(DateTime.now())) continue;
+      if (nextDashboard['plans'] == null && when.isBefore(DateTime.now())) {
+        continue;
+      }
       final menu = nextMenus.where((m) => m.id == row['menu_id']).firstOrNull;
       if (menu == null) continue;
       nextPlan = AibsMealPlan(
@@ -241,16 +248,24 @@ class RecordsRepository {
         time: clockLabel(when),
         scheduledAt: when,
       );
-      break;
+      nextPlans.add(nextPlan);
     }
     menus = nextMenus;
     meals = nextMeals;
     symptoms = nextSymptoms;
     stories = nextStories;
-    plan = nextPlan;
+    todayPlans = nextPlans;
+    plan = nextPlans.firstOrNull;
     shopping = ((results[2] as Map)['items'] as List)
         .cast<Map<String, dynamic>>();
-    dashboard = results[5] as Map<String, dynamic>;
+    dashboard = nextDashboard;
+    negativeObservations = events
+        .where(
+          (r) =>
+              r['kind'] == 'symptom' &&
+              (r['payload'] as Map)['present'] == false,
+        )
+        .toList();
     final latest = nextMeals.firstOrNull?.id;
     noSymptomsForLatestMeal =
         latest != null &&

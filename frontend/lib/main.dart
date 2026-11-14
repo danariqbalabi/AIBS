@@ -256,6 +256,8 @@ class AibsHomeShell extends StatefulWidget {
 
 class _AibsHomeShellState extends State<AibsHomeShell> {
   int _selectedIndex = 0;
+  DateTime? _evidenceDate;
+  String? _evidenceSymptom;
   RecordsRepository? _records;
   List<AibsMenuItem>? _menus;
   bool _loading = false;
@@ -357,6 +359,8 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
           index: _selectedIndex,
           children: [
             TodayPage(
+              serverMode: _records?.dashboard['mode'] as String?,
+              plans: _records?.todayPlans ?? const [],
               menus: _menus,
               profile: widget.profile,
               meals: _meals,
@@ -386,6 +390,8 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
               onPlanSaved: _savePlan,
             ),
             JournalPage(
+              evidenceDate: _evidenceDate,
+              evidenceSymptom: _evidenceSymptom,
               meals: _meals,
               symptoms: _symptoms,
               stories: _stories,
@@ -770,7 +776,19 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
           symptoms: _symptoms,
           profile: widget.profile,
           loadSummary: _records?.summary,
-          onOpenJournal: () => setState(() => _selectedIndex = 2),
+          onOpenJournal: () {
+            Navigator.of(context).popUntil((route) => route.isFirst);
+            setState(() => _selectedIndex = 2);
+          },
+          negativeObservations: _records?.negativeObservations ?? const [],
+          onOpenEvidence: (date, symptom) {
+            Navigator.of(context).popUntil((route) => route.isFirst);
+            setState(() {
+              _selectedIndex = 2;
+              _evidenceDate = date;
+              _evidenceSymptom = symptom;
+            });
+          },
         ),
       ),
     );
