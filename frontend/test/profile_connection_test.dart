@@ -9,6 +9,7 @@ import 'package:http/testing.dart';
 
 ProfileSetupAnswers profile({
   List<String> allergies = const [],
+  List<String> preferences = const [],
   int? serverVersion,
 }) => ProfileSetupAnswers(
   displayName: 'Tester',
@@ -26,7 +27,7 @@ ProfileSetupAnswers profile({
   tolerances: const [],
   budget: null,
   spicy: null,
-  preferences: const [],
+  preferences: preferences,
   aiEnabled: false,
   serverVersion: serverVersion,
 );
@@ -36,6 +37,7 @@ void main() {
     'saving onboarding persists its range answers without manufacturing months',
     () async {
       Map? savedAnswers;
+      Map? savedDiet;
       final raw = <String, dynamic>{
         'id': 'profile',
         'version': 1,
@@ -56,6 +58,9 @@ void main() {
         accessToken: () async => 'token',
         client: MockClient((request) async {
           final path = request.url.path;
+          if (path.endsWith('/profile') && request.method == 'PATCH') {
+            savedDiet = jsonDecode(request.body)['diet'] as Map;
+          }
           Object result = raw;
           if (path.endsWith('/consents')) result = {'basic': true, 'ai': false};
           if (path.endsWith('/assessment')) {
@@ -73,7 +78,8 @@ void main() {
         ..ingredients = [
           {'id': 'catalog-item', 'name': 'Nasi', 'aliases': []},
         ];
-      await repo.save(profile());
+      await repo.save(profile(preferences: ['Vegetarian', 'Masak ≤ 15 menit']));
+      expect(savedDiet!['preferences'], ['vegetarian', 'quick']);
       expect(savedAnswers!['q3_months'], isNull);
       expect(savedAnswers!['q3_band'], '6_12');
       expect(savedAnswers!['q2_band'], '3_4');

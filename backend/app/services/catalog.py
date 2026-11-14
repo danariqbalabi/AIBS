@@ -3,7 +3,7 @@ from sqlalchemy import select
 from app.core.errors import ApiError
 from app.models.entities import Ingredient, Menu, MenuIngredient
 from app.rules.food import check
-from app.schemas.domain import DietProfile, IngredientInput
+from app.schemas.domain import DietProfile, IngredientInput, preference_code
 from app.services.assessment import access_for
 from app.services.profiles import profile_for, require_basic
 
@@ -89,13 +89,30 @@ def list_menus(db, owner, *, query=None, kind=None, max_price=None, recommendati
     items = [menu_view(db, profile, access, menu, known_ids) for menu in db.scalars(statement)]
     if recommendations:
         items = [item for item in items if item["evaluation"]["status"] in ("ok", "warn")]
-    preferences = set(DietProfile.model_validate(profile.diet).preferences)
+    diet = DietProfile.model_validate(profile.diet)
+    preferences = set(diet.preferences)
+    spice_levels = {"none": 0, "little": 1, "medium": 2, "hot": 3}
+
+    def spice_penalty(item):
+        if diet.spicy is None:
+            return 0
+        level = next(
+            (
+                spice_levels[tag.removeprefix("spicy_")]
+                for tag in item["tags"]
+                if tag.startswith("spicy_") and tag.removeprefix("spicy_") in spice_levels
+            ),
+            None,
+        )
+        return 1 if level is None else max(0, level - spice_levels[diet.spicy]) * 2
+
     rank = {"ok": 0, "warn": 1, "unknown": 2, "bad": 3}
     items.sort(
         key=lambda item: (
             rank[item["evaluation"]["status"]],
             not item["within_budget"],
-            -len(preferences.intersection(item["tags"])),
+            spice_penalty(item),
+            -len(preferences.intersection(preference_code(tag) for tag in item["tags"])),
             item["price_rupiah"],
             str(item["id"]),
         )

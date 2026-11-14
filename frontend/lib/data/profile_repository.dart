@@ -28,6 +28,12 @@ const spicyCodes = {
   'Sedang': 'medium',
   'Pedas banget': 'hot',
 };
+const preferenceCodes = {
+  'Halal': 'halal',
+  'Vegetarian': 'vegetarian',
+  'Tinggi protein': 'high_protein',
+  'Masak ≤ 15 menit': 'quick',
+};
 const answerCodes = {'Ya': 'yes', 'Tidak': 'no', 'Tidak tahu': 'unknown'};
 
 String? labelFor(Map<String, String> codes, Object? code) {
@@ -160,7 +166,9 @@ class ProfileRepository {
           ? null
           : formatRupiah(diet['budget_rupiah'] as int),
       spicy: labelFor(spicyCodes, diet['spicy']),
-      preferences: (diet['preferences'] as List? ?? []).cast<String>(),
+      preferences: (diet['preferences'] as List? ?? [])
+          .map((v) => labelFor(preferenceCodes, v) ?? v.toString())
+          .toList(),
       aiEnabled: consent['ai'] == true,
       savePhotos: row['save_photos'] == true,
       serverVersion: row['version'] as int?,
@@ -220,7 +228,9 @@ class ProfileRepository {
           ? null
           : int.tryParse(profile.budget!.replaceAll(RegExp(r'[^0-9]'), '')),
       'spicy': spicyCodes[profile.spicy],
-      'preferences': profile.preferences,
+      'preferences': profile.preferences
+          .map((v) => preferenceCodes[v] ?? v.trim().toLowerCase())
+          .toList(),
     };
     await ensureConsent(profile.aiEnabled);
     consentUpdates++;

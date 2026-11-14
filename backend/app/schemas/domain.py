@@ -11,6 +11,20 @@ AgeBand = Literal["under_18", "18_29", "30_39", "40_49", "50_plus"]
 Intent = Literal["before_meal", "consumed", "journal"]
 PositiveQuantity = Annotated[Decimal, Field(gt=0, le=10000, max_digits=10, decimal_places=3)]
 
+PREFERENCE_ALIASES = {
+    "halal": "halal",
+    "vegetarian": "vegetarian",
+    "tinggi protein": "high_protein",
+    "high_protein": "high_protein",
+    "masak ≤ 15 menit": "quick",
+    "quick": "quick",
+}
+
+
+def preference_code(value):
+    value = value.strip().casefold()
+    return PREFERENCE_ALIASES.get(value, value)
+
 
 class Contract(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
@@ -149,6 +163,11 @@ class DietProfile(Contract):
         default_factory=list, max_length=100
     )
     custom_portion_limits: list[CustomPortionLimit] = Field(default_factory=list, max_length=100)
+
+    @field_validator("preferences")
+    @classmethod
+    def normalize_preferences(cls, values):
+        return list(dict.fromkeys(preference_code(value) for value in values))
 
 
 class ProfilePatch(Contract):
