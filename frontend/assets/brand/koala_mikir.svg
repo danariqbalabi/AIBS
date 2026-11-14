@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-label="Maskot koala AIBS, lagi mikir">
+<defs>
+<radialGradient id="fur" cx="38%" cy="28%" r="85%"><stop offset="0" stop-color="#CDD5E3"/><stop offset="1" stop-color="#8C98AE"/></radialGradient>
+<radialGradient id="ear" cx="50%" cy="45%" r="60%"><stop offset="0" stop-color="#FFE3EA"/><stop offset="1" stop-color="#F5A3BB"/></radialGradient>
+<radialGradient id="belly" cx="50%" cy="30%" r="75%"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#DCE3EF"/></radialGradient>
+<linearGradient id="nose" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4B5672"/><stop offset="1" stop-color="#1B2236"/></linearGradient>
+<linearGradient id="scarf" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#78AAFF"/><stop offset="1" stop-color="#2F6FED"/></linearGradient>
+</defs>
+<ellipse cx="120" cy="228" rx="60" ry="7" fill="#14233F" opacity=".10"/>
+<ellipse cx="120" cy="182" rx="58" ry="46" fill="url(#fur)"/>
+<ellipse cx="95" cy="222" rx="18" ry="9" fill="#8C98AE"/>
+<ellipse cx="145" cy="222" rx="18" ry="9" fill="#8C98AE"/>
+<ellipse cx="120" cy="192" rx="34" ry="30" fill="url(#belly)"/>
+<circle cx="52" cy="58" r="40" fill="url(#fur)"/>
+<circle cx="188" cy="58" r="40" fill="url(#fur)"/>
+<circle cx="24" cy="46" r="11" fill="#B7C0D0"/>
+<circle cx="216" cy="46" r="11" fill="#B7C0D0"/>
+<circle cx="54" cy="60" r="24" fill="url(#ear)"/>
+<circle cx="186" cy="60" r="24" fill="url(#ear)"/>
+<ellipse cx="120" cy="98" rx="76" ry="64" fill="url(#fur)"/>
+<ellipse cx="98" cy="54" rx="30" ry="11" fill="#FFFFFF" opacity=".28"/>
+<path d="M66 156 Q120 182 174 156 L176 170 Q120 198 64 170 Z" fill="url(#scarf)"/>
+<path d="M150 172 L170 202 L151 199 L142 176 Z" fill="#2F6FED"/>
+<ellipse cx="74" cy="118" rx="12" ry="8" fill="#F5A3BB" opacity=".6"/>
+<ellipse cx="166" cy="118" rx="12" ry="8" fill="#F5A3BB" opacity=".6"/>
+<ellipse cx="90" cy="92" rx="9" ry="11" fill="#1B2236"/>
+<ellipse cx="154" cy="92" rx="9" ry="11" fill="#1B2236"/>
+<circle cx="94" cy="86" r="3.5" fill="#FFFFFF"/>
+<circle cx="158" cy="86" r="3.5" fill="#FFFFFF"/>
+<path d="M140 72 Q152 66 164 72" stroke="#5B6A85" stroke-width="4" stroke-linecap="round" fill="none"/>
+<path d="M120 94 C137 94 141 106 139 118 C137 131 130 138 120 138 C110 138 103 131 101 118 C99 106 103 94 120 94 Z" fill="url(#nose)"/>
+<ellipse cx="112" cy="104" rx="7" ry="4" fill="#FFFFFF" opacity=".35"/>
+<path d="M112 150 Q122 146 130 150" stroke="#1B2236" stroke-width="4" stroke-linecap="round" fill="none"/>
+<ellipse cx="150" cy="168" rx="14" ry="26" transform="rotate(-35 150 168)" fill="#97A3B8"/>
+<circle cx="200" cy="40" r="7" fill="#78AAFF"/>
+<circle cx="214" cy="22" r="10" fill="#2F6FED"/>
+<circle cx="190" cy="56" r="4" fill="#B9D2FF"/>
+</svg>
