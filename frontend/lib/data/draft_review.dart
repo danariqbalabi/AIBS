@@ -18,6 +18,32 @@ class DraftReview {
   Map<String, dynamic>? _patchSnapshot;
   bool get commitPending => _pendingCommit != null || _patchUncertain;
 
+  Future<void> saveDraft() async {
+    if (commitPending) {
+      throw const ApiFailure('Periksa status simpan terlebih dahulu.');
+    }
+    final current = await api.request(
+      'PATCH',
+      '/api/v1/drafts/${draft['id']}',
+      body: {
+        'version': draft['version'],
+        'intent': draft['intent'],
+        'content': content,
+      },
+    );
+    draft['version'] = current['version'];
+  }
+
+  Future<void> discard() async {
+    if (commitPending) {
+      throw const ApiFailure('Periksa status simpan terlebih dahulu.');
+    }
+    await api.request(
+      'DELETE',
+      '/api/v1/drafts/${draft['id']}?version=${draft['version']}',
+    );
+  }
+
   Future<void> save() async {
     final path = '/api/v1/drafts/${draft['id']}';
     if (_pendingCommit == null) {

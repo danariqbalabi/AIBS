@@ -29,6 +29,45 @@ class DraftReviewPage extends StatefulWidget {
 class _DraftReviewPageState extends State<DraftReviewPage> {
   bool _busy = false;
   String? _error;
+  Future<void> _draftAction({bool discard = false}) async {
+    if (_busy || widget.review.commitPending) return;
+    if (discard) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (c) => AlertDialog(
+          title: const Text('Hapus draft ini?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(c, false),
+              child: const Text('Batal'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(c, true),
+              child: const Text('Hapus'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true || !mounted) return;
+    }
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      if (discard) {
+        await widget.review.discard();
+      } else {
+        await widget.review.saveDraft();
+      }
+      if (mounted) Navigator.pop(context, false);
+    } catch (error) {
+      if (mounted) setState(() => _error = AppServices.message(error));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   Future<void> _check(int index, Map<String, dynamic> card) async {
     setState(() {
       _busy = true;
@@ -84,12 +123,23 @@ class _DraftReviewPageState extends State<DraftReviewPage> {
   @override
   Widget build(BuildContext context) {
     final content = widget.review.content;
-    final foods = (content['foods'] as List? ?? [])
+    final foods = (content.putIfAbsent('foods', () => []) as List)
         .cast<Map<String, dynamic>>();
-    final symptoms = (content['symptoms'] as List? ?? [])
+    final symptoms = (content.putIfAbsent('symptoms', () => []) as List)
         .cast<Map<String, dynamic>>();
     return Scaffold(
-      appBar: AppBar(title: const Text('Cek sebelum simpan')),
+      appBar: AppBar(
+        title: const Text('Cek sebelum simpan'),
+        actions: [
+          IconButton(
+            tooltip: 'Hapus draft',
+            onPressed: _busy || widget.review.commitPending
+                ? null
+                : () => _draftAction(discard: true),
+            icon: const Icon(Icons.delete_outline),
+          ),
+        ],
+      ),
       body: Column(
         children: [
           Expanded(
@@ -196,6 +246,31 @@ class _DraftReviewPageState extends State<DraftReviewPage> {
                         },
                       ),
                   ],
+                  Wrap(
+                    children: [
+                      TextButton(
+                        onPressed: () => setState(
+                          () => foods.add({
+                            'name': '',
+                            'consumed': false,
+                            'ingredients': <dynamic>[],
+                            'ingredients_complete': false,
+                          }),
+                        ),
+                        child: const Text('Tambah makanan'),
+                      ),
+                      TextButton(
+                        onPressed: () => setState(
+                          () => symptoms.add({
+                            'code': 'pain',
+                            'present': true,
+                            'severity': null,
+                          }),
+                        ),
+                        child: const Text('Tambah gejala'),
+                      ),
+                    ],
+                  ),
                   if (foods.isEmpty && symptoms.isEmpty)
                     const Text(
                       'Belum ada makanan atau gejala. Kembali dan isi manual.',
@@ -224,11 +299,22 @@ class _DraftReviewPageState extends State<DraftReviewPage> {
             top: false,
             child: Padding(
               padding: AibsSpace.bottomActions,
-              child: AibsPrimaryButton(
-                label: _busy ? 'Menyimpan...' : 'Simpan semua',
-                onPressed: _busy || (foods.isEmpty && symptoms.isEmpty)
-                    ? null
-                    : _save,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextButton(
+                    onPressed: _busy || widget.review.commitPending
+                        ? null
+                        : _draftAction,
+                    child: const Text('Simpan draft'),
+                  ),
+                  AibsPrimaryButton(
+                    label: _busy ? 'Menyimpan...' : 'Simpan semua',
+                    onPressed: _busy || (foods.isEmpty && symptoms.isEmpty)
+                        ? null
+                        : _save,
+                  ),
+                ],
               ),
             ),
           ),
