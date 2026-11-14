@@ -126,6 +126,7 @@ class RecordsRepository {
       final result = await api.request(
         'GET',
         '$path?limit=100${cursor == null ? '' : '&cursor=${Uri.encodeQueryComponent(cursor)}'}',
+        timeout: const Duration(seconds: 45),
       );
       rows.addAll((result['items'] as List).cast<Map<String, dynamic>>());
       cursor = result['next_cursor'] as String?;
@@ -137,12 +138,28 @@ class RecordsRepository {
     List<dynamic> results;
     try {
       results = await Future.wait([
-        api.request('GET', '/api/v1/menus'),
+        api.request(
+          'GET',
+          '/api/v1/menus',
+          timeout: const Duration(seconds: 45),
+        ),
         _all('/api/v1/events'),
-        api.request('GET', '/api/v1/shopping-items'),
-        api.request('GET', '/api/v1/meal-plans'),
+        api.request(
+          'GET',
+          '/api/v1/shopping-items',
+          timeout: const Duration(seconds: 45),
+        ),
+        api.request(
+          'GET',
+          '/api/v1/meal-plans',
+          timeout: const Duration(seconds: 45),
+        ),
         _all('/api/v1/drafts'),
-        api.request('GET', '/api/v1/dashboard'),
+        api.request(
+          'GET',
+          '/api/v1/dashboard',
+          timeout: const Duration(seconds: 45),
+        ),
       ]);
       usingCache = false;
       if (offline?.enabled == true) {

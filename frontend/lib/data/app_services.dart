@@ -124,7 +124,33 @@ class AppServices {
     profiles.clear();
   }
 
+  Future<ProfileSetupAnswers>? _openingDemo;
+  String? _openingTemplate;
+
   Future<ProfileSetupAnswers> openDemo(String template) async {
+    final pending = _openingDemo;
+    if (pending != null) {
+      if (_openingTemplate != template) {
+        throw const ApiFailure(
+          'Pembukaan demo masih berjalan. Tunggu sebentar.',
+        );
+      }
+      return pending;
+    }
+    _openingTemplate = template;
+    final task = _openDemo(template);
+    _openingDemo = task;
+    try {
+      return await task;
+    } finally {
+      if (identical(_openingDemo, task)) {
+        _openingDemo = null;
+        _openingTemplate = null;
+      }
+    }
+  }
+
+  Future<ProfileSetupAnswers> _openDemo(String template) async {
     if (identity.hasSession) {
       if (!identity.isAnonymous) {
         throw const ApiFailure(
@@ -148,6 +174,7 @@ class AppServices {
       'POST',
       '/api/v1/demo/sessions',
       body: {'template': template},
+      timeout: const Duration(seconds: 60),
     );
     final profile = await profiles.restore(identity.email);
     if (profile == null) {
