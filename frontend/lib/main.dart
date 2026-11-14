@@ -393,6 +393,7 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
               onAddSymptom: _addSymptom,
               onAddStory: _addStory,
               onAnalyzeStory: _records == null ? null : _reviewStory,
+              onResumeDraft: _records == null ? null : _resumeDraft,
               onDeleteMeal: _deleteMeal,
               onDeleteSymptom: _records == null ? null : _deleteSymptom,
               onEditEvent: _records == null ? null : _editEvent,
@@ -650,8 +651,24 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
         ),
       ),
     );
-    if (saved == true) await _reload();
+    await _reload();
     return saved == true;
+  }
+
+  Future<void> _resumeDraft(String id) async {
+    final review = await _records!.openDraft(id);
+    if (!mounted) return;
+    await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => DraftReviewPage(
+          review: review,
+          meals: _meals,
+          ingredientId: widget.services!.profiles.ingredientId,
+          onCheckFood: _records!.checkCard,
+        ),
+      ),
+    );
+    await _reload();
   }
 
   Future<bool> _reviewPhoto(
@@ -671,7 +688,7 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
         ),
       ),
     );
-    if (saved == true) await _reload();
+    await _reload();
     return saved == true;
   }
 
