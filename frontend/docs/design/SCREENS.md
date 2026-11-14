@@ -353,3 +353,7 @@ P1 ─► B6 · P2 ─► P3 · C10 · M5 · P4 · Keluar ─► Main
 ```
 
 Suggested go_router paths: `/welcome`, `/demo`, `/login`, `/login/code`, `/consent`, `/screening/:step`, `/screening/result`, `/screening/help`, `/diet/:step`, `/diet/review`, `/today`, `/menu`, `/menu/:id`, `/shopping`, `/camera`, `/camera/preview`, `/check/processing`, `/check/review`, `/check/clarify`, `/check/result`, `/check/saved`, `/journal`, `/journal/:id`, `/journal/new`, `/journal/story`, `/journal/story/review`, `/journal/symptom`, `/summary`, `/summary/pattern/:id`, `/summary/consult`, `/profile`, `/profile/diet`, `/profile/privacy`. Overlays (F0, M6, J6h, J7, P3) are sheets/dialogs, not routes. Back = `context.pop()`.
+
+## Perluasan jurnal dan offline (permintaan pengguna)
+
+Alur catat ulang, pengganti bahan, grafik, CSV, dan penyimpanan offline dijelaskan di [panduan fitur](../../../docs/journal-offline-expansion.md). Offline menggunakan banner waktu cache, pilihan penyimpanan lokal, dan peninjauan sebelum kirim; hasil tersimpan tidak dinyatakan sebagai penilaian terbaru.

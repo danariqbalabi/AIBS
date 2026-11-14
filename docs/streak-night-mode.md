@@ -10,7 +10,7 @@ Hari Ini menampilkan streak dan rekor terbaik dari backend. Menekan kartu membuk
 
 ## Night mode
 
-Buka **Profil → Tampilan**, pilih **Ikuti perangkat**, **Terang**, atau **Gelap**. Pilihan awal mengikuti perangkat. Pengaturan disimpan lokal lewat shared_preferences dan dipulihkan sebelum app tampil. Pilihan tetap ada setelah logout; berbeda browser, perangkat, atau domain memiliki penyimpanan terpisah. Jika penyimpanan gagal, tema sebelumnya dipertahankan dan pesan retry ditampilkan.
+Buka **Profil → Tampilan**. Tekan toggle matahari/bulan untuk berpindah Terang/Gelap; saat gelap, latar toggle menampilkan bintang. Aktifkan switch **Ikuti perangkat** untuk kembali ke tema sistem. Menekan toggle utama memilih tema secara manual dan mematikan mode mengikuti perangkat. Pilihan awal mengikuti perangkat. Pengaturan disimpan lokal lewat shared_preferences dan dipulihkan sebelum app tampil. Pilihan tetap ada setelah logout; berbeda browser, perangkat, atau domain memiliki penyimpanan terpisah. Jika penyimpanan gagal, tema sebelumnya dipertahankan dan pesan retry ditampilkan.
 
 Palet malam ada di `AibsDarkColors`. Widget menggunakan token warna/teks sesuai Theme; MaterialApp menyediakan tema gelap untuk form, dropdown, dialog, dan sheet. Gradien tombol brand serta ilustrasi mempertahankan warnanya, tanpa filter inversi gambar. Perubahan visual ini merupakan perluasan handoff yang diminta pengguna.
 

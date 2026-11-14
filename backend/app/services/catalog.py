@@ -129,3 +129,66 @@ def list_menus(db, owner, *, query=None, kind=None, max_price=None, recommendati
         )
     )
     return {"items": items, "next_cursor": None, "profile_version": profile.version}
+
+
+# Culinary suggestions only; every complete replacement is evaluated afresh.
+SWAPS = {
+    "Bawang putih": ["Jahe"],
+    "Bawang bombay": ["Jahe"],
+    "Udang": ["Ayam", "Ikan", "Tahu"],
+    "Ayam": ["Ikan", "Tahu"],
+    "Susu sapi": ["Air"],
+    "Santan": ["Air"],
+    "Gandum": ["Nasi putih"],
+}
+
+
+def food_swaps(db, owner, card):
+    from app.schemas.domain import FoodCheckInput
+
+    require_basic(db, owner)
+    profile = profile_for(db, owner)
+    ingredients = {str(row.id): row for row in db.scalars(select(Ingredient))}
+    by_name = {row.name: row for row in ingredients.values()}
+    original = card.model_dump(mode="json")
+    items = []
+    for index, part in enumerate(card.ingredients):
+        known = ingredients.get(str(part.ingredient_id))
+        if known is None:
+            continue
+        for name in SWAPS.get(known.name, []):
+            target = by_name.get(name)
+            if target is None:
+                continue
+            replacement = card.model_copy(deep=True)
+            replacement.ingredients[index] = part.model_copy(
+                update={
+                    "ingredient_id": target.id,
+                    "display_name": target.name,
+                    "certainty": "confirmed",
+                }
+            )
+            evaluation = check_food(
+                db,
+                owner,
+                FoodCheckInput(
+                    profile_version=profile.version,
+                    ingredients=replacement.ingredients,
+                    ingredients_complete=replacement.ingredients_complete,
+                ),
+            )
+            if evaluation["status"] == "ok":
+                items.append(
+                    {
+                        "from": known.name,
+                        "to": target.name,
+                        "card": replacement.model_dump(mode="json"),
+                        "evaluation": evaluation,
+                    }
+                )
+    return {
+        "items": items,
+        "profile_version": profile.version,
+        "original": original,
+        "notice": "Alternatif bahan masak; tinjau porsi dan cara olah. Bukan nilai FODMAP terukur.",
+    }

@@ -20,6 +20,7 @@ import '../shared/widgets/koala.dart';
 import '../shared/widgets/status_badge.dart';
 import '../widgets/aibs_widgets.dart';
 import '../widgets/record_card_form.dart';
+import 'food_swaps_page.dart';
 import '../widgets/unsaved_guard.dart';
 
 enum MealIntent { check, eaten }
@@ -50,6 +51,7 @@ class CameraFlowPage extends StatefulWidget {
     this.onReviewPhoto,
     this.onSaveDraft,
     this.ingredientId,
+    this.onSuggestSwaps,
     this.onFindAlternatives,
   });
 
@@ -66,6 +68,8 @@ class CameraFlowPage extends StatefulWidget {
   final Future<void> Function(Map<String, dynamic>, String)? onSaveDraft;
   final String? Function(String)? ingredientId;
   final VoidCallback? onFindAlternatives;
+  final Future<Map<String, dynamic>> Function(Map<String, dynamic>)?
+  onSuggestSwaps;
 
   @override
   State<CameraFlowPage> createState() => _CameraFlowPageState();
@@ -552,6 +556,35 @@ class _CameraFlowPageState extends State<CameraFlowPage> {
                 label: 'Lengkapi bahan',
                 onPressed: () => setState(() => _step = _CameraStep.clarify),
               ),
+              if (widget.onSuggestSwaps != null)
+                TextButton.icon(
+                  icon: const Icon(Icons.swap_horiz),
+                  label: const Text('Saran pengganti bahan'),
+                  onPressed: () async {
+                    final card = await Navigator.push<Map<String, dynamic>>(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => FoodSwapsPage(
+                          card: _draftCard(),
+                          load: widget.onSuggestSwaps!,
+                        ),
+                      ),
+                    );
+                    if (card == null || !mounted) return;
+                    setState(() {
+                      _ingredients
+                        ..clear()
+                        ..addAll(
+                          (card['ingredients'] as List).map(
+                            (r) => RecordsRepository.ingredientLabel(r as Map),
+                          ),
+                        );
+                      _unknownIngredient = card['ingredients_complete'] != true;
+                      _mealCard.clear();
+                    });
+                    await _checkResult();
+                  },
+                ),
               if (widget.onFindAlternatives != null)
                 TextButton(
                   onPressed: () async {
@@ -988,6 +1021,7 @@ class JournalPage extends StatefulWidget {
     required this.onAddStory,
     required this.onDeleteMeal,
     required this.onOpenSummary,
+    this.onRepeatMeal,
     this.onOpenCapture,
     this.onDeleteSymptom,
     this.onEditEvent,
@@ -1005,6 +1039,7 @@ class JournalPage extends StatefulWidget {
   final List<AibsSymptomLog> symptoms;
   final List<AibsStoryLog> stories;
   final VoidCallback? onOpenCapture;
+  final ValueChanged<AibsMealLog>? onRepeatMeal;
   final bool aiEnabled;
   final VoidCallback onAddMeal;
   final FutureOr<void> Function(AibsSymptomLog) onAddSymptom;
@@ -1370,6 +1405,9 @@ class JournalPageState extends State<JournalPage> {
       MaterialPageRoute<void>(
         builder: (_) => _JournalDetailPage(
           record: record,
+          onRepeat: record.meal == null || widget.onRepeatMeal == null
+              ? null
+              : () => widget.onRepeatMeal!(record.meal!),
           onEdit: !canEdit
               ? null
               : () async {
@@ -1854,6 +1892,8 @@ class _SymptomEntryPageState extends State<SymptomEntryPage> {
   DateTime _date = DateTime.now();
   static const _options = [
     'Kembung',
+    'Gas',
+    'Urgensi BAB',
     'Nyeri perut',
     'Diare',
     'Sembelit',
@@ -2217,10 +2257,16 @@ class _SeverityDot extends StatelessWidget {
 }
 
 class _JournalDetailPage extends StatelessWidget {
-  const _JournalDetailPage({required this.record, this.onDelete, this.onEdit});
+  const _JournalDetailPage({
+    required this.record,
+    this.onDelete,
+    this.onEdit,
+    this.onRepeat,
+  });
   final _JournalRecord record;
   final VoidCallback? onDelete;
   final VoidCallback? onEdit;
+  final VoidCallback? onRepeat;
 
   @override
   Widget build(BuildContext context) {
@@ -2291,6 +2337,13 @@ class _JournalDetailPage extends StatelessWidget {
                   ],
                 ],
               ),
+            ),
+          ],
+          if (onRepeat != null) ...[
+            const SizedBox(height: AibsSpace.s20),
+            AibsPrimaryButton(
+              label: 'Catat ulang makanan',
+              onPressed: onRepeat,
             ),
           ],
           if (onEdit != null) ...[

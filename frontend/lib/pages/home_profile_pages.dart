@@ -3,6 +3,7 @@ import 'dart:async';
 import '../data/app_services.dart';
 import '../data/profile_repository.dart';
 import '../data/theme_preferences.dart';
+import '../widgets/theme_toggle.dart';
 import '../widgets/unsaved_guard.dart';
 
 import 'package:flutter/material.dart';
@@ -674,6 +675,7 @@ class ProfilePage extends StatefulWidget {
     super.key,
     this.profile,
     this.onProfileSaved,
+    this.onOpenOffline,
     this.onOpenShopping,
     this.onLogout,
     this.onDeleteAll,
@@ -686,6 +688,7 @@ class ProfilePage extends StatefulWidget {
   final ProfileSetupAnswers? profile;
   final FutureOr<void> Function(ProfileSetupAnswers)? onProfileSaved;
   final VoidCallback? onOpenShopping;
+  final VoidCallback? onOpenOffline;
   final VoidCallback? onLogout;
   final VoidCallback? onLinkEmail;
   final VoidCallback? onResumeScreening;
@@ -836,54 +839,17 @@ class _ProfilePageState extends State<ProfilePage> {
           onTap: widget.onOpenShopping,
         ),
         const SizedBox(height: AibsSpace.s12),
-        if (themePreferences != null) ...[
-          AibsCard(
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'Tampilan',
-                    style: context.aibsText(AibsType.bodyStrong),
-                  ),
-                ),
-                DropdownButton<ThemeMode>(
-                  value: themePreferences.mode,
-                  onChanged: themePreferences.saving
-                      ? null
-                      : (value) async {
-                          if (value == null) return;
-                          try {
-                            await themePreferences.setMode(value);
-                          } catch (_) {
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Pilihan tampilan belum tersimpan. Coba lagi.',
-                                  ),
-                                ),
-                              );
-                            }
-                          }
-                        },
-                  items: const [
-                    DropdownMenuItem(
-                      value: ThemeMode.system,
-                      child: Text('Ikuti perangkat'),
-                    ),
-                    DropdownMenuItem(
-                      value: ThemeMode.light,
-                      child: Text('Terang'),
-                    ),
-                    DropdownMenuItem(
-                      value: ThemeMode.dark,
-                      child: Text('Gelap'),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+        if (widget.onOpenOffline != null) ...[
+          _ProfileSection(
+            title: 'Data offline',
+            value: 'Draft, jurnal & resep',
+            detail: 'Simpan di perangkat ini',
+            onTap: widget.onOpenOffline,
           ),
+          const SizedBox(height: AibsSpace.s12),
+        ],
+        if (themePreferences != null) ...[
+          ThemeToggleCard(preferences: themePreferences),
           const SizedBox(height: AibsSpace.s12),
         ],
         _ProfileSection(

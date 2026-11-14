@@ -8,6 +8,8 @@ import '../widgets/aibs_widgets.dart';
 import 'profile_setup_flow.dart';
 import '../data/consultation_pdf.dart';
 import '../data/export_file.dart';
+import '../data/journal_csv.dart';
+import 'journal_timeline.dart';
 import '../data/app_services.dart';
 
 class SummaryPage extends StatefulWidget {
@@ -58,13 +60,85 @@ class _SummaryPageState extends State<SummaryPage> {
       builder: (context, snapshot) {
         if (snapshot.connectionState != ConnectionState.done) {
           return Scaffold(
-            appBar: AppBar(title: const Text('Ringkasan')),
+            appBar: AppBar(
+              title: const Text('Ringkasan'),
+              actions: [
+                IconButton(
+                  tooltip: 'Grafik harian',
+                  icon: const Icon(Icons.timeline),
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => JournalTimelinePage(
+                        meals: widget.meals,
+                        symptoms: widget.symptoms,
+                        onOpenEvidence: widget.onOpenEvidence,
+                      ),
+                    ),
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Export CSV',
+                  icon: const Icon(Icons.download_outlined),
+                  onPressed: () async {
+                    try {
+                      await exportFile(
+                        journalCsv(_mealsInPeriod, _symptomsInPeriod),
+                        'aibs-jurnal-$_period-hari.csv',
+                        'text/csv',
+                      );
+                    } catch (error) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(AppServices.message(error))),
+                        );
+                      }
+                    }
+                  },
+                ),
+              ],
+            ),
             body: const Center(child: CircularProgressIndicator()),
           );
         }
         if (snapshot.hasError) {
           return Scaffold(
-            appBar: AppBar(title: const Text('Ringkasan')),
+            appBar: AppBar(
+              title: const Text('Ringkasan'),
+              actions: [
+                IconButton(
+                  tooltip: 'Grafik harian',
+                  icon: const Icon(Icons.timeline),
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => JournalTimelinePage(
+                        meals: widget.meals,
+                        symptoms: widget.symptoms,
+                        onOpenEvidence: widget.onOpenEvidence,
+                      ),
+                    ),
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Export CSV',
+                  icon: const Icon(Icons.download_outlined),
+                  onPressed: () async {
+                    try {
+                      await exportFile(
+                        journalCsv(_mealsInPeriod, _symptomsInPeriod),
+                        'aibs-jurnal-$_period-hari.csv',
+                        'text/csv',
+                      );
+                    } catch (error) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(AppServices.message(error))),
+                        );
+                      }
+                    }
+                  },
+                ),
+              ],
+            ),
             body: Center(
               child: AibsSecondaryButton(
                 label: 'Coba lagi',
@@ -91,7 +165,43 @@ class _SummaryPageState extends State<SummaryPage> {
         : _report!['status'] != 'insufficient_data';
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Ringkasan')),
+      appBar: AppBar(
+        title: const Text('Ringkasan'),
+        actions: [
+          IconButton(
+            tooltip: 'Grafik harian',
+            icon: const Icon(Icons.timeline),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => JournalTimelinePage(
+                  meals: widget.meals,
+                  symptoms: widget.symptoms,
+                  onOpenEvidence: widget.onOpenEvidence,
+                ),
+              ),
+            ),
+          ),
+          IconButton(
+            tooltip: 'Export CSV',
+            icon: const Icon(Icons.download_outlined),
+            onPressed: () async {
+              try {
+                await exportFile(
+                  journalCsv(_mealsInPeriod, _symptomsInPeriod),
+                  'aibs-jurnal-$_period-hari.csv',
+                  'text/csv',
+                );
+              } catch (error) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(AppServices.message(error))),
+                  );
+                }
+              }
+            },
+          ),
+        ],
+      ),
       body: enoughData
           ? _buildSummary(context, meals, symptoms)
           : _buildEmpty(
@@ -354,6 +464,8 @@ class _SummaryPageState extends State<SummaryPage> {
       const {
         'pain': 'nyeri perut',
         'bloating': 'kembung',
+        'gas': 'gas',
+        'urgency': 'urgensi BAB',
         'nausea': 'mual',
         'vomiting': 'muntah',
         'diarrhea': 'diare',

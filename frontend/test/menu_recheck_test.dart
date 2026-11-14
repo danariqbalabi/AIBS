@@ -62,6 +62,8 @@ void main() {
       find.text('Masukkan ke checklist belanja'),
       180,
     );
+    await tester.ensureVisible(find.text('Masukkan ke checklist belanja'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Masukkan ke checklist belanja'));
     await tester.pumpAndSettle();
     expect(shopping!.customized, true);
