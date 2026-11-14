@@ -67,6 +67,11 @@ ulang dari FastAPI. Mengubah dart-define memerlukan stop/run ulang.
 
 Tes awal: **Coba Demo → Nadia → catat makanan manual → Jurnal → refresh**.
 Catatan harus tetap ada. Logout lalu pilih Raka membuat subject demo baru.
+Saat refresh, tunggu pemulihan sesi/data; jika gagal pilih Coba lagi. Pilihan
+Nadia tidak lagi otomatis mengganti sesi aktif. Logout anonymous tidak dapat
+dipakai untuk kembali ke subject lama hanya dengan memilih nama demo; gunakan
+akun email OTP untuk login ulang ke akun yang sama. Pakai origin/port dan profil
+Chrome yang sama saat mengetes F5. Data anonymous lama tidak digabung otomatis.
 OTP memerlukan SMTP/template Supabase yang sesuai. Bahan di luar katalog dan
 gejala Lainnya belum didukung mapper; input ditolak, tidak dihilangkan diam-diam.
 Minimum Dart: 3.13.5. APK/iOS/hosting HTTPS belum diverifikasi tahap ini.

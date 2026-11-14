@@ -16,6 +16,7 @@ import 'pages/record_pages.dart';
 import 'pages/summary_pages.dart';
 import 'theme/aibs_theme.dart';
 import 'widgets/aibs_tab_bar.dart';
+import 'widgets/load_gate.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,11 +38,14 @@ class _AibsAppState extends State<AibsApp> {
   ProfileSetupAnswers? _profile;
   ProfileSetupAnswers? _savedProfile;
   bool _saving = false;
+  bool _restoring = false;
+  String? _restoreError;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _restore());
+    _restoring = widget.services?.identity.hasSession ?? false;
+    WidgetsBinding.instance.addPostFrameCallback((_) => _restore(gate: true));
   }
 
   void _error(Object error) {
@@ -52,14 +56,27 @@ class _AibsAppState extends State<AibsApp> {
   }
 
   final contextForMessages = GlobalKey<ScaffoldMessengerState>();
+  final navigatorKey = GlobalKey<NavigatorState>();
 
-  Future<bool> _restore() async {
+  Future<bool> _restore({bool gate = false}) async {
     final services = widget.services;
-    if (services?.auth?.auth.currentSession == null) return false;
+    if (services == null || !services.identity.hasSession) {
+      if (gate && mounted) {
+        setState(() {
+          _restoring = false;
+          _restoreError = null;
+        });
+      }
+      return false;
+    }
+    if (gate && mounted) {
+      setState(() {
+        _restoring = true;
+        _restoreError = null;
+      });
+    }
     try {
-      final profile = await services!.profiles.restore(
-        services.auth!.auth.currentUser?.email ?? '',
-      );
+      final profile = await services.profiles.restore(services.identity.email);
       if (!mounted || profile == null) return false;
       setState(() {
         _profile = profile;
@@ -67,24 +84,16 @@ class _AibsAppState extends State<AibsApp> {
       });
       return true;
     } catch (error) {
-      _error(error);
+      if (!gate) rethrow;
+      if (mounted) setState(() => _restoreError = AppServices.message(error));
       return false;
+    } finally {
+      if (gate && mounted) setState(() => _restoring = false);
     }
   }
 
   Future<ProfileSetupAnswers> _demo(String template) async {
-    final services = widget.services!;
-    final client = services.client;
-    final previous = client.auth.currentUser;
-    if (previous != null) await services.signOut();
-    await client.auth.signInAnonymously();
-    await services.api.request(
-      'POST',
-      '/api/v1/demo/sessions',
-      body: {'template': template},
-    );
-    final profile = await services.profiles.restore('');
-    if (profile == null) throw StateError('Demo profile missing');
+    final profile = await widget.services!.openDemo(template);
     _savedProfile = profile;
     return profile;
   }
@@ -117,6 +126,29 @@ class _AibsAppState extends State<AibsApp> {
   }
 
   Future<void> _logout() async {
+    if (widget.services?.identity.isAnonymous == true) {
+      final navigatorContext = navigatorKey.currentState!.overlay!.context;
+      final confirmed = await showDialog<bool>(
+        context: navigatorContext,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Keluar dari demo?'),
+          content: const Text(
+            'Catatan tersimpan untuk sesi demo ini. Setelah keluar, memilih Nadia atau Raka membuat sesi baru. Gunakan login email untuk akun yang bisa dimasuki kembali.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Batal'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Keluar'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true) return;
+    }
     try {
       await widget.services?.signOut();
       if (mounted) {
@@ -124,6 +156,7 @@ class _AibsAppState extends State<AibsApp> {
           _profile = null;
           _onboardingComplete = false;
           _savedProfile = null;
+          _restoreError = null;
         });
       }
     } catch (error) {
@@ -136,9 +169,17 @@ class _AibsAppState extends State<AibsApp> {
     return MaterialApp(
       title: 'AIBS',
       scaffoldMessengerKey: contextForMessages,
+      navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
       theme: AibsTheme.light,
-      home: _onboardingComplete
+      home: (_restoring || _restoreError != null)
+          ? LoadGate(
+              busy: _restoring,
+              message: _restoreError ?? 'Memulihkan sesi...',
+              onRetry: () => _restore(gate: true),
+              onLogout: _logout,
+            )
+          : _onboardingComplete
           ? AibsHomeShell(
               services: widget.services,
               profile: _profile,
@@ -185,6 +226,9 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
   RecordsRepository? _records;
   List<AibsMenuItem>? _menus;
   bool _loading = false;
+  bool _hasLoaded = false;
+  bool _reloadAgain = false;
+  String? _loadError;
 
   @override
   void initState() {
@@ -207,12 +251,20 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
   }
 
   Future<void> _reload() async {
-    if (_records == null || _loading) return;
-    _loading = true;
+    if (_records == null) return;
+    if (_loading) {
+      _reloadAgain = true;
+      return;
+    }
+    setState(() {
+      _loading = true;
+      _loadError = null;
+    });
     try {
       await _records!.load();
       if (!mounted) return;
       setState(() {
+        _hasLoaded = true;
         _menus = _records!.menus;
         _meals
           ..clear()
@@ -231,11 +283,16 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
       });
     } catch (error) {
       if (mounted) {
+        setState(() => _loadError = AppServices.message(error));
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(AppServices.message(error))));
       }
     } finally {
-      _loading = false;
+      if (mounted) setState(() => _loading = false);
+    }
+    if (_reloadAgain && mounted) {
+      _reloadAgain = false;
+      await _reload();
     }
   }
 
@@ -253,6 +310,14 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
 
   @override
   Widget build(BuildContext context) {
+    if (_records != null && !_hasLoaded) {
+      return LoadGate(
+        busy: _loading || _loadError == null,
+        message: _loadError ?? 'Memuat catatan tersimpan...',
+        onRetry: _reload,
+        onLogout: widget.onLogout,
+      );
+    }
     return Scaffold(
       body: SafeArea(
         child: IndexedStack(
