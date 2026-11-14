@@ -34,7 +34,7 @@ Perbaikan audit PRD dikumpulkan di `feat/hackathon-readiness`, PR #40. Dokumen i
 
 ## Langkah release
 
-1. Pastikan backend matrix, Flutter checks, web dan Android hijau. Review lalu merge PR #40; tidak perlu merge branch kecil satu per satu.
+1. Pastikan backend matrix, Flutter checks, web dan Android hijau. Pastikan perubahan yang akan dikumpulkan sudah masuk branch submission dan catat commit final.
 2. Tunggu backend/frontend Vercel Ready dari commit sama. Periksa readiness dan refresh frontend.
 3. Download `aibs-android-demo`; periksa `connected=true`, commit dan SHA-256. Variabel repository berisi konfigurasi client publik; secret server tidak masuk APK.
 4. Uji Android: instal, demo/login, kamera/galeri, koreksi, simpan, tutup/buka, edit/hapus, offline/fallback dan ekspor. Perangkat/emulator belum tersedia di sesi ini.

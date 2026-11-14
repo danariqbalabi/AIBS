@@ -1,5 +1,7 @@
 # AIBS
 
+**Kategori:** Web dan Mobile (Android). **Nama tim resmi:** belum dikonfirmasi; lengkapi sesuai pendaftaran sebelum submission.
+
 Pendamping menu dan jurnal makanan/gejala untuk orang dewasa, mengikuti arahan makan yang dilaporkan pengguna. LOGICODIX 2026 · Inclusive Health & Well-being.
 
 **Bukan alat diagnosis atau penentu pemicu gejala.** Katalog, harga, profil demo dan aturan merupakan data sintetis. Hasil “Sesuai” dibatasi pada bahan dan arahan yang dikonfirmasi, bukan jaminan keamanan makanan.
@@ -7,12 +9,24 @@ Pendamping menu dan jurnal makanan/gejala untuk orang dewasa, mengikuti arahan m
 ## Coba demo
 
 - [Aplikasi web](https://aibs-frontend.vercel.app) · [API/Swagger](https://aibs-gilt.vercel.app/docs) · [Readiness](https://aibs-gilt.vercel.app/ready).
-- **Coba Demo → Nadia atau Raka** membuat sesi anonymous privat; tidak membutuhkan OTP anggota tim.
+- **Coba Demo → Manda, Nadia, atau Raka** membuat sesi anonymous privat; tidak membutuhkan OTP anggota tim.
+- Manda, 23: **Mahasiswa KKI 26**, Low FODMAP, alergi udang, budget Rp25.000, dengan 14 hari riwayat makan/gejala sintetis untuk mencoba ringkasan.
 - Nadia: Low FODMAP, alergi udang, budget Rp25.000. Raka: rendah lemak, alergi kacang tanah, budget Rp35.000. Katalog sama menghasilkan status/alasan berbeda.
 - Aktifkan Bantuan AI di Profil → Privasi jika ingin mencoba foto/cerita. Manual tetap tersedia.
 - F5 memulihkan sesi yang sama. Untuk login ulang sesudah logout, hubungkan email dan verifikasi kode dahulu. Memilih Nadia sesudah logout membuat sesi baru, bukan membuka akun bersama.
 
-Production mengikuti branch yang digabung pemilik. Perbaikan audit terkumpul di [PR #40](https://github.com/danariqbalabi/AIBS/pull/40); tunggu kedua deployment Vercel Ready setelah merge. Lihat [kesiapan demo](docs/hackathon-readiness.md) dan [skenario rekaman](docs/demo-script.md).
+Production mengikuti deployment terakhir yang berhasil, sehingga dapat tertinggal dari `main` jika build gagal atau kuota deployment habis. Cocokkan commit sumber, deployment dan APK sebelum demo. Lihat [kesiapan demo](docs/hackathon-readiness.md) dan [skenario rekaman](docs/demo-script.md).
+
+## Masalah, solusi, dan fitur
+
+Target pengguna adalah orang dewasa yang membutuhkan bantuan memilih makanan mengikuti arahan makan yang mereka miliki, serta mencatat konsumsi dan gejala secara teratur. AIBS menyatukan pilihan menu, pemeriksaan bahan dan jurnal agar catatan dapat ditinjau kembali bersama tenaga kesehatan.
+
+- Profil, alergi, preferensi, persetujuan AI dan pengecekan awal.
+- Menu personal, cek bahan/porsi, saran pengganti bahan, rencana makan dan checklist belanja.
+- Catatan makan manual, cerita atau foto dengan review sebelum simpan; catat ulang dari riwayat.
+- Catatan gejala termasuk gas dan urgensi BAB, serta hubungan dengan catatan makan.
+- Jurnal, grafik waktu makan dan gejala, ringkasan 7/30 hari dan ekspor CSV/PDF.
+- Streak harian, mode gelap dan draft offline yang ditinjau sebelum dikirim saat online.
 
 ## Alur produk dan arsitektur
 
@@ -24,6 +38,37 @@ Production mengikuti branch yang digabung pemilik. Perbaikan audit terkumpul di 
 Flutter Android/Web memakai Supabase Auth untuk sesi dan FastAPI/Pydantic untuk fitur. Backend menangani rules, ranking, ownership, idempotency dan PostgreSQL. Gemini melalui backend hanya membuat draft; foto disimpan di Storage privat. Secret Gemini/service-role tidak masuk client. Alembic, RLS dan filter owner melindungi tabel aplikasi.
 
 OCR dokumen, merchant, suara dan pengingat adalah pasca-MVP PRD. Ekspor ZIP dan PDF konsultasi sudah tersedia.
+
+```mermaid
+flowchart LR
+  User[Pengguna] --> Client[Flutter Web / Android]
+  Client --> Auth[Supabase Auth]
+  Client --> API[FastAPI: validasi, rules, ownership]
+  API --> DB[(Supabase PostgreSQL)]
+  API --> Storage[Supabase Storage privat]
+  API --> AI[Gemini: ekstraksi draft]
+  API --> Client
+```
+
+Alur AI: pengguna memberi izin dan mengirim cerita/foto -> backend meminta draft terstruktur -> pengguna mengoreksi bahan/waktu/porsi -> backend memeriksa dan menyimpan. Hubungan makan dan gejala bersifat deskriptif, bukan kesimpulan penyebab.
+
+| Bagian | Teknologi dan layanan |
+| --- | --- |
+| Client | Flutter/Dart, flutter_svg, Supabase Flutter, http, image_picker, shared_preferences, pdf, share_plus, audioplayers |
+| API | Python, FastAPI, Pydantic, SQLAlchemy, psycopg, Alembic, Uvicorn |
+| Data dan sesi | Supabase Auth, PostgreSQL, Storage; RLS dan pembatasan pemilik |
+| AI produk | Google Gemini melalui backend; model ditentukan `GEMINI_MODEL` |
+| Build dan hosting | GitHub Actions, Vercel; Docker tersedia untuk backend |
+
+## Struktur repository
+
+```text
+backend/       API, migrasi database, seed sintetis, dan tes
+frontend/      Flutter Android/Web, aset aplikasi, panduan desain, dan tes
+docs/          Kontrak API, setup layanan, panduan demo, dan bukti pengujian
+scripts/       Pengujian integrasi browser
+.github/       Workflow verifikasi dan build APK
+```
 
 ## Setup lokal
 
@@ -55,6 +100,24 @@ flutter run -d chrome --web-port 5173 --dart-define-from-file=config/local.json
 ```
 
 Pada Android, localhost mengacu ke perangkat; gunakan backend HTTPS dalam konfigurasi APK. Key publishable boleh di client, secret server tidak boleh. [Panduan Vercel](docs/vercel-deployment.md).
+
+Konfigurasi lengkap backend tersedia di [`backend/.env.example`](backend/.env.example), client di [`frontend/config/example.json`](frontend/config/example.json).
+
+| Lingkungan | Variabel | Kegunaan |
+| --- | --- | --- |
+| Backend | `DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Database, verifikasi sesi dan operasi server |
+| Backend | `CORS_ORIGINS`, `APP_ENV`, `RUNTIME_MODE` | Origin client dan lingkungan eksekusi |
+| Backend | `GEMINI_API_KEY`, `GEMINI_MODEL`, `AI_DAILY_LIMIT` | Ekstraksi draft AI dan batas penggunaan |
+| Backend | `STORAGE_BUCKET`, `MAX_PHOTO_BYTES`, `CRON_SECRET` | Penyimpanan foto, ukuran upload dan cleanup terproteksi |
+| Client | `API_BASE_URL`, `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `EMAIL_OTP_LENGTH` | API HTTPS, sesi pengguna dan panjang OTP |
+
+Untuk build Android lokal dari `frontend/`:
+
+```powershell
+flutter build apk --release --target-platform android-arm64 --dart-define-from-file=config/local.json
+```
+
+Hasil: `frontend/build/app/outputs/flutter-apk/app-release.apk`. Pindahkan ke Android ARM64 dan izinkan instalasi dari sumber tersebut jika diminta. Build demo memakai debug signing; belum untuk distribusi Play Store.
 
 ## Verifikasi dan APK
 
@@ -99,6 +162,12 @@ uv run python evaluate_ai.py --live --output ../docs/evidence/ai-nlp-evaluation.
 
 Ketua sesuai pendaftaran: **menunggu konfirmasi tim**. Video aplikasi berjalan 3–5 menit, APK publik, surat orisinalitas/atribusi dan commit final harus dilengkapi sebelum submission. Ikuti [checklist release](docs/hackathon-readiness.md).
 
+## Penggunaan AI dan atribusi
+
+Google Gemini digunakan untuk ekstraksi draft cerita/foto di backend, bukan diagnosis atau penentu akhir kesesuaian makanan. Model dipilih melalui `GEMINI_MODEL`; evaluasi sintetis yang disimpan menggunakan `gemini-3.5-flash-lite`. AI dapat dimatikan, dan alur manual tetap tersedia.
+
 OpenAI Codex digunakan sebagai coding assistant untuk analisis, implementasi dan pengujian. Tim wajib meninjau dan mampu menjelaskan kode. Tidak memakai proyek aplikasi lengkap pihak lain. Nunito dibundel dengan [SIL Open Font License](frontend/assets/fonts/OFL.txt); ilustrasi dari handoff pengguna. Lisensi kode tim dan atribusi aset lain memerlukan keputusan pemilik.
+
+Aset SVG/ilustrasi berasal dari handoff desain yang diberikan tim; salinan runtime berada di `frontend/assets/`. Bunyi UI dibuat secara prosedural melalui `frontend/tool/generate_sounds.dart`. Data menu, harga dan demo disediakan sebagai seed sintetis di `backend/seeds/` dan layanan demo; bukan dataset klinis. Framework, library dan versi dependensi dicatat dalam `frontend/pubspec.yaml`, `frontend/pubspec.lock`, `backend/pyproject.toml` dan `backend/uv.lock`.
 
 Sumber kebutuhan: PRD, guidebook dan hi-fi pengguna, terpisah dari otorisasi tindakan pada layanan eksternal. [Kontrak API](docs/api/README.md) · [Integrasi FE–BE](docs/frontend-backend-integration.md) · [Riwayat pengerjaan](docs/app-completion.md).
