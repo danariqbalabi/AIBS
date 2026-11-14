@@ -47,7 +47,10 @@ class UnsavedGuardState extends State<UnsavedGuard> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('Perubahan belum disimpan', style: AibsType.sheetTitle),
+              Text(
+                'Perubahan belum disimpan',
+                style: context.aibsText(AibsType.sheetTitle),
+              ),
               TextButton(
                 onPressed: () => Navigator.pop(c),
                 child: const Text('Lanjut isi'),

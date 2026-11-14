@@ -7,6 +7,7 @@ import 'core/demo_data.dart';
 import 'data/app_services.dart';
 import 'data/records_repository.dart';
 import 'data/app_config.dart';
+import 'data/theme_preferences.dart';
 import 'pages/home_profile_pages.dart';
 import 'pages/menu_flow.dart';
 import 'pages/onboarding_flow.dart';
@@ -27,19 +28,38 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await PhotoPicker.recover();
   final services = await AppServices.create(const AppConfig());
-  runApp(AibsApp(services: services));
+  final themePreferences = ThemePreferences();
+  try {
+    await themePreferences.load();
+  } catch (_) {
+    /* Use system theme if storage is unavailable. */
+  }
+  runApp(AibsApp(services: services, themePreferences: themePreferences));
 }
 
 class AibsApp extends StatefulWidget {
-  const AibsApp({super.key, this.services});
+  const AibsApp({super.key, this.services, this.themePreferences});
 
   final AppServices? services;
+  final ThemePreferences? themePreferences;
 
   @override
   State<AibsApp> createState() => _AibsAppState();
 }
 
 class _AibsAppState extends State<AibsApp> {
+  late final ThemePreferences _themePreferences;
+  void _themeChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _themePreferences.removeListener(_themeChanged);
+    if (widget.themePreferences == null) _themePreferences.dispose();
+    super.dispose();
+  }
+
   bool _onboardingComplete = false;
   ProfileSetupAnswers? _profile;
   ProfileSetupAnswers? _savedProfile;
@@ -50,6 +70,8 @@ class _AibsAppState extends State<AibsApp> {
   @override
   void initState() {
     super.initState();
+    _themePreferences = widget.themePreferences ?? ThemePreferences.memory();
+    _themePreferences.addListener(_themeChanged);
     _restoring = widget.services?.identity.hasSession ?? false;
     WidgetsBinding.instance.addPostFrameCallback((_) => _restore(gate: true));
   }
@@ -187,64 +209,69 @@ class _AibsAppState extends State<AibsApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'AIBS',
-      scaffoldMessengerKey: contextForMessages,
-      navigatorKey: navigatorKey,
-      debugShowCheckedModeBanner: false,
-      theme: AibsTheme.light,
-      builder: (context, child) => ColoredBox(
-        color: AibsColors.line,
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxWidth: AibsSize.mobileViewport,
-            ),
-            child: LayoutBuilder(
-              builder: (context, constraints) => MediaQuery(
-                data: MediaQuery.of(context)
-                    .copyWith(size: constraints.biggest),
-                child: ClipRect(child: child ?? const SizedBox.shrink()),
+    return ThemeSettings(
+      preferences: _themePreferences,
+      child: MaterialApp(
+        title: 'AIBS',
+        scaffoldMessengerKey: contextForMessages,
+        navigatorKey: navigatorKey,
+        debugShowCheckedModeBanner: false,
+        theme: AibsTheme.light,
+        darkTheme: AibsTheme.dark,
+        themeMode: _themePreferences.mode,
+        builder: (context, child) => ColoredBox(
+          color: context.aibsColor(AibsColors.line),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxWidth: AibsSize.mobileViewport,
+              ),
+              child: LayoutBuilder(
+                builder: (context, constraints) => MediaQuery(
+                  data: MediaQuery.of(context)
+                      .copyWith(size: constraints.biggest),
+                  child: ClipRect(child: child ?? const SizedBox.shrink()),
+                ),
               ),
             ),
           ),
         ),
+        home: (_restoring || _restoreError != null)
+            ? LoadGate(
+                busy: _restoring,
+                message: _restoreError ?? 'Memulihkan sesi...',
+                onRetry: () => _restore(gate: true),
+                onLogout: _logout,
+              )
+            : _onboardingComplete
+            ? AibsHomeShell(
+                services: widget.services,
+                profile: _profile,
+                onProfileSaved: _saveProfile,
+                onDataDeleted: () => _logout(dataDeleted: true),
+                onLinkEmail: widget.services?.identity.isAnonymous == true
+                    ? _linkEmail
+                    : null,
+                onLogout: _logout,
+              )
+            : OnboardingFlow(
+                initialProgress:
+                    widget.services?.profiles.onboardingProgress ?? const {},
+                sessionEmail: widget.services?.identity.email ?? '',
+                onProgress: widget.services?.profiles.saveProgress,
+                onComplete: _complete,
+                onAssess: widget.services?.profiles.assess,
+                onDemo: widget.services == null ? null : _demo,
+                onSendCode: widget.services?.sendCode,
+                onVerifyCode: widget.services == null
+                    ? null
+                    : (email, code) async {
+                        await widget.services!.verifyCode(email, code);
+                        return _restore();
+                      },
+                onConsent: widget.services?.profiles.ensureConsent,
+              ),
       ),
-      home: (_restoring || _restoreError != null)
-          ? LoadGate(
-              busy: _restoring,
-              message: _restoreError ?? 'Memulihkan sesi...',
-              onRetry: () => _restore(gate: true),
-              onLogout: _logout,
-            )
-          : _onboardingComplete
-          ? AibsHomeShell(
-              services: widget.services,
-              profile: _profile,
-              onProfileSaved: _saveProfile,
-              onDataDeleted: () => _logout(dataDeleted: true),
-              onLinkEmail: widget.services?.identity.isAnonymous == true
-                  ? _linkEmail
-                  : null,
-              onLogout: _logout,
-            )
-          : OnboardingFlow(
-              initialProgress:
-                  widget.services?.profiles.onboardingProgress ?? const {},
-              sessionEmail: widget.services?.identity.email ?? '',
-              onProgress: widget.services?.profiles.saveProgress,
-              onComplete: _complete,
-              onAssess: widget.services?.profiles.assess,
-              onDemo: widget.services == null ? null : _demo,
-              onSendCode: widget.services?.sendCode,
-              onVerifyCode: widget.services == null
-                  ? null
-                  : (email, code) async {
-                      await widget.services!.verifyCode(email, code);
-                      return _restore();
-                    },
-              onConsent: widget.services?.profiles.ensureConsent,
-            ),
     );
   }
 }
@@ -539,7 +566,10 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
               Row(
                 children: [
                   Expanded(
-                    child: Text('Mau catat apa?', style: AibsType.sheetTitle),
+                    child: Text(
+                      'Mau catat apa?',
+                      style: context.aibsText(AibsType.sheetTitle),
+                    ),
                   ),
                   IconButton(
                     tooltip: 'Tutup',
@@ -906,7 +936,7 @@ class _CameraIntentCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final foreground = highlighted
         ? AibsColors.onPrimary
-        : AibsColors.primaryStrong;
+        : context.aibsColor(AibsColors.primaryStrong);
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -914,12 +944,15 @@ class _CameraIntentCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(AibsRadius.xl),
         child: Ink(
           decoration: BoxDecoration(
-            color: highlighted ? null : AibsColors.card,
+            color: highlighted ? null : context.aibsColor(AibsColors.card),
             gradient: highlighted ? AibsGradients.brand : null,
             borderRadius: BorderRadius.circular(AibsRadius.xl),
             border: highlighted
                 ? null
-                : Border.all(color: AibsColors.line, width: 2),
+                : Border.all(
+                    color: context.aibsColor(AibsColors.line),
+                    width: 2,
+                  ),
             boxShadow: highlighted ? AibsShadows.glow : null,
           ),
           child: Padding(
@@ -933,7 +966,7 @@ class _CameraIntentCard extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: highlighted
                         ? AibsColors.onPrimary.withValues(alpha: 0.2)
-                        : AibsColors.primarySoft,
+                        : context.aibsColor(AibsColors.primarySoft),
                     borderRadius: BorderRadius.circular(AibsRadius.md),
                   ),
                   child: SvgPicture.asset(
@@ -950,17 +983,21 @@ class _CameraIntentCard extends StatelessWidget {
                     children: [
                       Text(
                         title,
-                        style: AibsType.bodyStrong.copyWith(
-                          color: highlighted ? AibsColors.onPrimary : null,
-                        ),
+                        style: context
+                            .aibsText(AibsType.bodyStrong)
+                            .copyWith(
+                              color: highlighted ? AibsColors.onPrimary : null,
+                            ),
                       ),
                       Text(
                         subtitle,
-                        style: AibsType.caption.copyWith(
-                          color: highlighted
-                              ? AibsColors.primaryTint
-                              : AibsColors.inkMuted,
-                        ),
+                        style: context
+                            .aibsText(AibsType.caption)
+                            .copyWith(
+                              color: highlighted
+                                  ? context.aibsColor(AibsColors.primaryTint)
+                                  : context.aibsColor(AibsColors.inkMuted),
+                            ),
                       ),
                     ],
                   ),

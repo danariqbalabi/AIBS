@@ -2,6 +2,7 @@ import 'dart:async';
 
 import '../data/app_services.dart';
 import '../data/profile_repository.dart';
+import '../data/theme_preferences.dart';
 import '../widgets/unsaved_guard.dart';
 
 import 'package:flutter/material.dart';
@@ -76,11 +77,14 @@ class TodayPage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Hai, $greetingName', style: AibsType.greeting),
+              Text(
+                'Hai, $greetingName',
+                style: context.aibsText(AibsType.greeting),
+              ),
               const SizedBox(height: AibsSpace.s2),
               Text(
                 hasDiet ? 'Mau $mealLabel apa?' : 'Mau catat apa hari ini?',
-                style: AibsType.title,
+                style: context.aibsText(AibsType.title),
               ),
             ],
           ),
@@ -95,9 +99,9 @@ class TodayPage extends StatelessWidget {
               child: AibsCard(
                 child: Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.local_fire_department_outlined,
-                      color: AibsColors.primary,
+                      color: context.aibsColor(AibsColors.primary),
                     ),
                     const SizedBox(width: AibsSpace.s12),
                     Expanded(
@@ -106,13 +110,13 @@ class TodayPage extends StatelessWidget {
                         children: [
                           Text(
                             '${streak!['current_days']} hari berturut-turut',
-                            style: AibsType.bodyStrong,
+                            style: context.aibsText(AibsType.bodyStrong),
                           ),
                           Text(
                             streak!['completed_today'] == true
                                 ? 'Catatan hari ini sudah tersimpan'
                                 : 'Catat makan hari ini untuk lanjut',
-                            style: AibsType.caption,
+                            style: context.aibsText(AibsType.caption),
                           ),
                         ],
                       ),
@@ -120,7 +124,7 @@ class TodayPage extends StatelessWidget {
                     const SizedBox(width: AibsSpace.s8),
                     Text(
                       'Terbaik ${streak!['best_days']}',
-                      style: AibsType.small,
+                      style: context.aibsText(AibsType.small),
                     ),
                   ],
                 ),
@@ -148,7 +152,10 @@ class TodayPage extends StatelessWidget {
                     children: [
                       const Koala(KoalaMood.senang, size: 120),
                       const SizedBox(height: AibsSpace.s8),
-                      Text('Belum ada catatan', style: AibsType.verdict),
+                      Text(
+                        'Belum ada catatan',
+                        style: context.aibsText(AibsType.verdict),
+                      ),
                       const SizedBox(height: AibsSpace.s12),
                       AibsSecondaryButton(
                         label: 'Catat makan pertama',
@@ -249,7 +256,7 @@ class _DietPrompt extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(AibsSpace.s16),
         decoration: BoxDecoration(
-          color: AibsColors.primarySoft,
+          color: context.aibsColor(AibsColors.primarySoft),
           borderRadius: BorderRadius.circular(AibsRadius.lg),
         ),
         child: Column(
@@ -283,7 +290,7 @@ class _OpenMenuCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AibsColors.card,
+      color: context.aibsColor(AibsColors.card),
       borderRadius: BorderRadius.circular(AibsRadius.lg),
       child: InkWell(
         onTap: onTap,
@@ -295,10 +302,13 @@ class _OpenMenuCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   'Lihat $count menu yang sesuai',
-                  style: AibsType.bodyStrong,
+                  style: context.aibsText(AibsType.bodyStrong),
                 ),
               ),
-              const Icon(Icons.chevron_right, color: AibsColors.inkMuted),
+              Icon(
+                Icons.chevron_right,
+                color: context.aibsColor(AibsColors.inkMuted),
+              ),
             ],
           ),
         ),
@@ -334,7 +344,7 @@ class _RecommendationSlider extends StatelessWidget {
             const SizedBox(width: AibsSpace.s12),
           ],
           Material(
-            color: AibsColors.primarySoft,
+            color: context.aibsColor(AibsColors.primarySoft),
             borderRadius: BorderRadius.circular(AibsRadius.lg),
             child: InkWell(
               onTap: onSeeAll,
@@ -344,15 +354,18 @@ class _RecommendationSlider extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const CircleAvatar(
-                      backgroundColor: AibsColors.card,
+                    CircleAvatar(
+                      backgroundColor: context.aibsColor(AibsColors.card),
                       child: Icon(
                         Icons.arrow_forward,
-                        color: AibsColors.primaryStrong,
+                        color: context.aibsColor(AibsColors.primaryStrong),
                       ),
                     ),
                     const SizedBox(height: AibsSpace.s8),
-                    Text('Lihat semua', style: AibsType.label),
+                    Text(
+                      'Lihat semua',
+                      style: context.aibsText(AibsType.label),
+                    ),
                   ],
                 ),
               ),
@@ -372,7 +385,7 @@ class _RecommendationCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AibsColors.card,
+      color: context.aibsColor(AibsColors.card),
       borderRadius: BorderRadius.circular(AibsRadius.lg),
       child: InkWell(
         onTap: onTap,
@@ -407,11 +420,11 @@ class _RecommendationCard extends StatelessWidget {
                       item.name,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: AibsType.bodyStrong,
+                      style: context.aibsText(AibsType.bodyStrong),
                     ),
                     Text(
                       '${item.kind} · ${item.priceLabel}',
-                      style: AibsType.small,
+                      style: context.aibsText(AibsType.small),
                     ),
                     const SizedBox(height: AibsSpace.s4),
                     const StatusBadge(CheckStatus.ok),
@@ -438,18 +451,27 @@ class _PlanCard extends StatelessWidget {
         onTap: onTap,
         child: Row(
           children: [
-            Text(plan.time, style: AibsType.bodyStrong),
+            Text(plan.time, style: context.aibsText(AibsType.bodyStrong)),
             const SizedBox(width: AibsSpace.s12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('${plan.day} · ${plan.meal}', style: AibsType.small),
-                  Text(plan.menu.name, style: AibsType.bodyStrong),
+                  Text(
+                    '${plan.day} · ${plan.meal}',
+                    style: context.aibsText(AibsType.small),
+                  ),
+                  Text(
+                    plan.menu.name,
+                    style: context.aibsText(AibsType.bodyStrong),
+                  ),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: AibsColors.inkMuted),
+            Icon(
+              Icons.chevron_right,
+              color: context.aibsColor(AibsColors.inkMuted),
+            ),
           ],
         ),
       ),
@@ -467,7 +489,7 @@ class _SymptomPrompt extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AibsSpace.s12),
       decoration: BoxDecoration(
-        color: AibsColors.primarySoft,
+        color: context.aibsColor(AibsColors.primarySoft),
         borderRadius: BorderRadius.circular(AibsRadius.lg),
       ),
       child: Column(
@@ -524,11 +546,14 @@ class _WeekCard extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: Text('7 hari terakhir', style: AibsType.bodyStrong),
+                child: Text(
+                  '7 hari terakhir',
+                  style: context.aibsText(AibsType.bodyStrong),
+                ),
               ),
               Text(
                 '${daysWithSymptoms.length} hari ada gejala',
-                style: AibsType.caption,
+                style: context.aibsText(AibsType.caption),
               ),
             ],
           ),
@@ -586,18 +611,22 @@ class _DayDot extends StatelessWidget {
           height: 30,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: hasSymptom ? AibsColors.primary : AibsColors.unknownSoft,
+            color: hasSymptom
+                ? context.aibsColor(AibsColors.primary)
+                : context.aibsColor(AibsColors.unknownSoft),
             shape: BoxShape.circle,
           ),
           child: hasSymptom
               ? Text(
                   '${date.day}',
-                  style: AibsType.small.copyWith(color: AibsColors.onPrimary),
+                  style: context
+                      .aibsText(AibsType.small)
+                      .copyWith(color: AibsColors.onPrimary),
                 )
               : null,
         ),
         const SizedBox(height: AibsSpace.s4),
-        Text(labels[date.weekday % 7], style: AibsType.micro),
+        Text(labels[date.weekday % 7], style: context.aibsText(AibsType.micro)),
       ],
     );
   }
@@ -612,19 +641,25 @@ class _TodayLogCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return AibsCard(
       child: Material(
-        color: AibsColors.card,
+        color: context.aibsColor(AibsColors.card),
         borderRadius: BorderRadius.circular(AibsRadius.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Hari ini', style: AibsType.sectionTitle),
+            Text('Hari ini', style: context.aibsText(AibsType.sectionTitle)),
             const SizedBox(height: AibsSpace.s8),
             for (final meal in meals)
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 onTap: onTap,
-                title: Text(meal.name, style: AibsType.bodyStrong),
-                leading: Text(meal.time, style: AibsType.small),
+                title: Text(
+                  meal.name,
+                  style: context.aibsText(AibsType.bodyStrong),
+                ),
+                leading: Text(
+                  meal.time,
+                  style: context.aibsText(AibsType.small),
+                ),
                 trailing: const Icon(Icons.chevron_right),
               ),
           ],
@@ -680,6 +715,7 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     final profileData = _profile;
+    final themePreferences = ThemeSettings.maybeOf(context);
     final name = profileData?.displayName;
     final displayName = name == null || name.isEmpty ? 'Nadia' : name;
     final email = profileData?.email;
@@ -725,10 +761,10 @@ class _ProfilePageState extends State<ProfilePage> {
             children: [
               CircleAvatar(
                 radius: 28,
-                backgroundColor: AibsColors.primarySoft,
+                backgroundColor: context.aibsColor(AibsColors.primarySoft),
                 child: Icon(
                   Icons.person_outline,
-                  color: AibsColors.primaryStrong,
+                  color: context.aibsColor(AibsColors.primaryStrong),
                   size: 30,
                 ),
               ),
@@ -738,7 +774,10 @@ class _ProfilePageState extends State<ProfilePage> {
                 children: [
                   Text(
                     email == null || email.isEmpty ? 'Nama panggilan' : email,
-                    style: TextStyle(color: AibsColors.inkMuted, fontSize: 12),
+                    style: TextStyle(
+                      color: context.aibsColor(AibsColors.inkMuted),
+                      fontSize: 12,
+                    ),
                   ),
                   SizedBox(height: 3),
                   Text(
@@ -797,6 +836,56 @@ class _ProfilePageState extends State<ProfilePage> {
           onTap: widget.onOpenShopping,
         ),
         const SizedBox(height: AibsSpace.s12),
+        if (themePreferences != null) ...[
+          AibsCard(
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Tampilan',
+                    style: context.aibsText(AibsType.bodyStrong),
+                  ),
+                ),
+                DropdownButton<ThemeMode>(
+                  value: themePreferences.mode,
+                  onChanged: themePreferences.saving
+                      ? null
+                      : (value) async {
+                          if (value == null) return;
+                          try {
+                            await themePreferences.setMode(value);
+                          } catch (_) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Pilihan tampilan belum tersimpan. Coba lagi.',
+                                  ),
+                                ),
+                              );
+                            }
+                          }
+                        },
+                  items: const [
+                    DropdownMenuItem(
+                      value: ThemeMode.system,
+                      child: Text('Ikuti perangkat'),
+                    ),
+                    DropdownMenuItem(
+                      value: ThemeMode.light,
+                      child: Text('Terang'),
+                    ),
+                    DropdownMenuItem(
+                      value: ThemeMode.dark,
+                      child: Text('Gelap'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AibsSpace.s12),
+        ],
         _ProfileSection(
           title: 'Privasi & AI',
           value: profileData?.aiEnabled == false
@@ -810,7 +899,9 @@ class _ProfilePageState extends State<ProfilePage> {
           onPressed: widget.onLogout,
           child: Text(
             'Keluar',
-            style: AibsType.label.copyWith(color: AibsColors.badInk),
+            style: context
+                .aibsText(AibsType.label)
+                .copyWith(color: context.aibsColor(AibsColors.badInk)),
           ),
         ),
       ],
@@ -1121,7 +1212,10 @@ class _ProfileSection extends StatelessWidget {
                 ),
               ),
               if (onTap != null)
-                const Icon(Icons.chevron_right, color: AibsColors.inkMuted),
+                Icon(
+                  Icons.chevron_right,
+                  color: context.aibsColor(AibsColors.inkMuted),
+                ),
             ],
           ),
         ),
@@ -1631,7 +1725,10 @@ class _EditPreferencesPageState extends State<_EditPreferencesPage> {
                   }),
                 ),
                 const SizedBox(height: AibsSpace.s20),
-                Text('Preferensi', style: AibsType.sectionTitle),
+                Text(
+                  'Preferensi',
+                  style: context.aibsText(AibsType.sectionTitle),
+                ),
                 const SizedBox(height: AibsSpace.s12),
                 Wrap(
                   spacing: AibsSpace.s8,

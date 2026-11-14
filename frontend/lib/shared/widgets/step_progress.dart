@@ -26,7 +26,7 @@ class StepProgress extends StatelessWidget {
         child: SizedBox(
           height: AibsSize.progress,
           child: ColoredBox(
-            color: AibsColors.line,
+            color: context.aibsColor(AibsColors.line),
             child: TweenAnimationBuilder<double>(
               tween: Tween(end: value),
               duration: reduce ? Duration.zero : AibsMotion.progress,
@@ -34,9 +34,9 @@ class StepProgress extends StatelessWidget {
               builder: (context, v, _) => FractionallySizedBox(
                 alignment: Alignment.centerLeft,
                 widthFactor: v,
-                child: const DecoratedBox(
+                child: DecoratedBox(
                   decoration: BoxDecoration(
-                    color: AibsColors.primary,
+                    color: context.aibsColor(AibsColors.primary),
                     borderRadius: BorderRadius.all(
                       Radius.circular(AibsSize.progress / 2),
                     ),

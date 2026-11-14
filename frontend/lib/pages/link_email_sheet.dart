@@ -106,11 +106,14 @@ class _LinkEmailSheetState extends State<LinkEmailSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Hubungkan email', style: AibsType.sheetTitle),
+            Text(
+              'Hubungkan email',
+              style: context.aibsText(AibsType.sheetTitle),
+            ),
             const SizedBox(height: AibsSpace.s12),
             Text(
               'Gunakan email untuk masuk kembali ke catatan yang sama.',
-              style: AibsType.body,
+              style: context.aibsText(AibsType.body),
             ),
             const SizedBox(height: AibsSpace.s16),
             TextField(
@@ -135,7 +138,9 @@ class _LinkEmailSheetState extends State<LinkEmailSheet> {
                 padding: const EdgeInsets.symmetric(vertical: AibsSpace.s12),
                 child: Text(
                   _error!,
-                  style: AibsType.caption.copyWith(color: AibsColors.badInk),
+                  style: context
+                      .aibsText(AibsType.caption)
+                      .copyWith(color: context.aibsColor(AibsColors.badInk)),
                 ),
               ),
             const SizedBox(height: AibsSpace.s16),

@@ -68,16 +68,16 @@ class KoalaBubble extends StatelessWidget {
               horizontal: AibsSpace.s14,
               vertical: AibsSpace.s12,
             ),
-            decoration: const BoxDecoration(
-              color: AibsColors.card,
+            decoration: BoxDecoration(
+              color: context.aibsColor(AibsColors.card),
               borderRadius: AibsRadius.bubbleShape,
               boxShadow: AibsShadows.bubble,
             ),
             child: Text(
               text,
-              style: AibsType.bodyStrong.copyWith(
-                fontSize: koalaSize >= 96 ? 16 : 15,
-              ),
+              style: context
+                  .aibsText(AibsType.bodyStrong)
+                  .copyWith(fontSize: koalaSize >= 96 ? 16 : 15),
             ),
           ),
         ),
@@ -116,8 +116,8 @@ class VerdictCard extends StatelessWidget {
     return Container(
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: color,
-        gradient: gradient,
+        color: color == null ? null : context.aibsColor(color!),
+        gradient: gradient == null ? null : context.aibsGradient(gradient!),
         borderRadius: BorderRadius.circular(AibsRadius.xxl),
       ),
       child: Stack(
@@ -137,18 +137,24 @@ class VerdictCard extends StatelessWidget {
                     if (label != null)
                       Text(
                         label!,
-                        style: AibsType.caption.copyWith(
-                          color: AibsColors.primaryStrong,
-                          fontWeight: AibsType.w800,
-                        ),
+                        style: context
+                            .aibsText(AibsType.caption)
+                            .copyWith(
+                              color: context.aibsColor(
+                                AibsColors.primaryStrong,
+                              ),
+                              fontWeight: AibsType.w800,
+                            ),
                       ),
                     Text(
                       headline,
-                      style: AibsType.verdict.copyWith(color: headlineColor),
+                      style: context
+                          .aibsText(AibsType.verdict)
+                          .copyWith(color: context.aibsColor(headlineColor)),
                     ),
                     if (detail != null) ...[
                       const SizedBox(height: AibsSpace.s4),
-                      Text(detail!, style: AibsType.caption),
+                      Text(detail!, style: context.aibsText(AibsType.caption)),
                     ],
                   ],
                 ),
