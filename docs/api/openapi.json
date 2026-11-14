@@ -2541,7 +2541,8 @@
             "type": "string",
             "enum": [
               "nadia",
-              "raka"
+              "raka",
+              "manda"
             ],
             "title": "Template"
           }
