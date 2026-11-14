@@ -1726,8 +1726,82 @@
     "title": "PortionLimit",
     "type": "object"
   },
+  "CustomPortionLimit": {
+    "additionalProperties": false,
+    "properties": {
+      "name": {
+        "maxLength": 100,
+        "minLength": 1,
+        "title": "Name",
+        "type": "string"
+      },
+      "quantity": {
+        "anyOf": [
+          {
+            "exclusiveMinimum": 0.0,
+            "maximum": 10000.0,
+            "type": "number"
+          },
+          {
+            "type": "string"
+          }
+        ],
+        "title": "Quantity"
+      },
+      "unit": {
+        "maxLength": 30,
+        "minLength": 1,
+        "title": "Unit",
+        "type": "string"
+      }
+    },
+    "required": [
+      "name",
+      "quantity",
+      "unit"
+    ],
+    "title": "CustomPortionLimit",
+    "type": "object"
+  },
   "DietProfile": {
     "$defs": {
+      "CustomPortionLimit": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "quantity": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "maximum": 10000.0,
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Quantity"
+          },
+          "unit": {
+            "maxLength": 30,
+            "minLength": 1,
+            "title": "Unit",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "quantity",
+          "unit"
+        ],
+        "title": "CustomPortionLimit",
+        "type": "object"
+      },
       "PortionLimit": {
         "additionalProperties": false,
         "properties": {
@@ -1864,6 +1938,44 @@
         "maxItems": 30,
         "title": "Preferences",
         "type": "array"
+      },
+      "custom_allergies": {
+        "items": {
+          "maxLength": 100,
+          "minLength": 1,
+          "type": "string"
+        },
+        "maxItems": 100,
+        "title": "Custom Allergies",
+        "type": "array"
+      },
+      "custom_avoided_ingredients": {
+        "items": {
+          "maxLength": 100,
+          "minLength": 1,
+          "type": "string"
+        },
+        "maxItems": 100,
+        "title": "Custom Avoided Ingredients",
+        "type": "array"
+      },
+      "custom_tolerances": {
+        "items": {
+          "maxLength": 100,
+          "minLength": 1,
+          "type": "string"
+        },
+        "maxItems": 100,
+        "title": "Custom Tolerances",
+        "type": "array"
+      },
+      "custom_portion_limits": {
+        "items": {
+          "$ref": "#/$defs/CustomPortionLimit"
+        },
+        "maxItems": 100,
+        "title": "Custom Portion Limits",
+        "type": "array"
       }
     },
     "title": "DietProfile",
@@ -1871,6 +1983,43 @@
   },
   "ProfilePatch": {
     "$defs": {
+      "CustomPortionLimit": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "quantity": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "maximum": 10000.0,
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Quantity"
+          },
+          "unit": {
+            "maxLength": 30,
+            "minLength": 1,
+            "title": "Unit",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "quantity",
+          "unit"
+        ],
+        "title": "CustomPortionLimit",
+        "type": "object"
+      },
       "DietProfile": {
         "additionalProperties": false,
         "properties": {
@@ -1970,6 +2119,44 @@
             },
             "maxItems": 30,
             "title": "Preferences",
+            "type": "array"
+          },
+          "custom_allergies": {
+            "items": {
+              "maxLength": 100,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 100,
+            "title": "Custom Allergies",
+            "type": "array"
+          },
+          "custom_avoided_ingredients": {
+            "items": {
+              "maxLength": 100,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 100,
+            "title": "Custom Avoided Ingredients",
+            "type": "array"
+          },
+          "custom_tolerances": {
+            "items": {
+              "maxLength": 100,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 100,
+            "title": "Custom Tolerances",
+            "type": "array"
+          },
+          "custom_portion_limits": {
+            "items": {
+              "$ref": "#/$defs/CustomPortionLimit"
+            },
+            "maxItems": 100,
+            "title": "Custom Portion Limits",
             "type": "array"
           }
         },

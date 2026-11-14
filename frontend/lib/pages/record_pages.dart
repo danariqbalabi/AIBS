@@ -1583,9 +1583,12 @@ class _SymptomEntryPageState extends State<SymptomEntryPage> {
     'Sembelit',
     'Mual',
     'Lainnya',
+    'BAB',
   ];
   final _selected = <String>{};
   final _noteController = TextEditingController();
+  final _otherController = TextEditingController();
+  int? _bristolType;
   int _severity = 2;
   String _stress = 'Sedang';
   String? _linkedMeal;
@@ -1596,6 +1599,7 @@ class _SymptomEntryPageState extends State<SymptomEntryPage> {
   @override
   void dispose() {
     _noteController.dispose();
+    _otherController.dispose();
     super.dispose();
   }
 
@@ -1627,6 +1631,27 @@ class _SymptomEntryPageState extends State<SymptomEntryPage> {
                 ),
                 const SizedBox(height: AibsSpace.s20),
                 Text('Seberapa ganggu?', style: AibsType.sectionTitle),
+                if (_selected.contains('Lainnya'))
+                  TextField(
+                    controller: _otherController,
+                    decoration: const InputDecoration(
+                      labelText: 'Nama gejala lain',
+                    ),
+                  ),
+                if (_selected.contains('BAB'))
+                  DropdownButtonFormField<int>(
+                    initialValue: _bristolType,
+                    decoration: const InputDecoration(labelText: 'Bristol'),
+                    items: [
+                      const DropdownMenuItem<int>(
+                        value: null,
+                        child: Text('Belum diisi'),
+                      ),
+                      for (var i = 1; i <= 7; i++)
+                        DropdownMenuItem(value: i, child: Text('$i')),
+                    ],
+                    onChanged: (v) => _bristolType = v,
+                  ),
                 const SizedBox(height: AibsSpace.s12),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1730,6 +1755,10 @@ class _SymptomEntryPageState extends State<SymptomEntryPage> {
               .firstOrNull
               ?.id,
           name: _selected.join(', '),
+          otherLabel: _otherController.text.trim().isEmpty
+              ? null
+              : _otherController.text.trim(),
+          bristolType: _bristolType,
           time: _time.format(context),
           date: DateTime.now(),
           severity: _severity,

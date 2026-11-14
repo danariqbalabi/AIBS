@@ -81,26 +81,46 @@ void main() {
     },
   );
 
-  test('an unknown allergy is rejected rather than silently dropped', () async {
-    var calls = 0;
-    final api = ApiClient(
-      baseUrl: 'http://localhost:8000',
-      accessToken: () async => 'token',
-      client: MockClient((_) async {
-        calls++;
-        return http.Response('{}', 200);
-      }),
-    );
-    final repo = ProfileRepository(api)
-      ..ingredients = [
-        {'id': 'rice', 'name': 'Nasi', 'aliases': []},
-      ];
-    await expectLater(
-      repo.save(profile(allergies: ['Bahan belum dikenal'])),
-      throwsA(isA<ApiFailure>()),
-    );
-    expect(calls, 0);
-  });
+  test(
+    'an unknown allergy is persisted and restored as a named restriction',
+    () async {
+      final raw = <String, dynamic>{
+        'id': 'profile',
+        'version': 1,
+        'display_name': 'Tester',
+        'diet': <String, dynamic>{},
+      };
+      final api = ApiClient(
+        baseUrl: 'http://localhost:8000',
+        accessToken: () async => 'token',
+        client: MockClient((request) async {
+          if (request.url.path.endsWith('/profile')) {
+            if (request.method == 'PATCH') {
+              raw['diet'] = jsonDecode(request.body)['diet'];
+            }
+            return http.Response(jsonEncode(raw), 200);
+          }
+          if (request.url.path.endsWith('/assessment')) {
+            return http.Response('{"version":1,"answers":{}}', 200);
+          }
+          if (request.url.path.endsWith('/consents')) {
+            return http.Response('{"basic":true,"ai":false}', 200);
+          }
+          return http.Response('{}', 200);
+        }),
+      );
+      final repo = ProfileRepository(api)
+        ..ingredients = [
+          {'id': 'rice', 'name': 'Nasi', 'aliases': []},
+        ];
+      final saved = await repo.save(
+        profile(allergies: ['Bahan belum dikenal']),
+      );
+      expect((raw['diet'] as Map)['allergies'], isEmpty);
+      expect((raw['diet'] as Map)['custom_allergies'], ['Bahan belum dikenal']);
+      expect(saved.allergies, ['Bahan belum dikenal']);
+    },
+  );
 
   test(
     'stale profile edits are rejected before consent or profile writes',
