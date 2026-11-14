@@ -147,16 +147,30 @@ class AppServices {
     return profile;
   }
 
-  static String message(Object error) => switch (error) {
-    ApiFailure() => error.message,
-    AuthException() => switch (error.code) {
-      'otp_expired' =>
-        'Kode salah atau kedaluwarsa. Periksa kode atau kirim ulang.',
-      'over_email_send_rate_limit' || 'over_request_rate_limit' =>
-        'Terlalu banyak permintaan. Tunggu sebelum mengirim kode lagi.',
-      'email_exists' || 'user_already_exists' => 'Email sudah digunakan akun lain. Masuk menggunakan email tersebut; catatan demo tidak digabung otomatis.',
-      _ => 'Login belum berhasil. Periksa kode, koneksi, atau coba lagi.',
-    },
-    _ => 'Permintaan belum berhasil. Input kamu tetap tersedia.',
-  };
+  static String message(Object error) {
+    // Older GoTrue responses omit a specific error code for SMTP delivery failures.
+    // Match only the known delivery category; never display the provider's raw response.
+    if (error is AuthException &&
+        error.message.toLowerCase().contains('error sending') &&
+        error.message.toLowerCase().contains('email')) {
+      return 'Kode belum terkirim. Pengiriman email Supabase bermasalah. Periksa pengaturan SMTP.';
+    }
+    return switch (error) {
+      ApiFailure() => error.message,
+      AuthException() => switch (error.code) {
+        'otp_expired' =>
+          'Kode salah atau kedaluwarsa. Periksa kode atau kirim ulang.',
+        'over_email_send_rate_limit' || 'over_request_rate_limit' =>
+          'Terlalu banyak permintaan. Tunggu sebelum mengirim kode lagi.',
+        'email_exists' || 'user_already_exists' => 'Email sudah digunakan akun lain. Masuk menggunakan email tersebut; catatan demo tidak digabung otomatis.',
+        'email_address_not_authorized' => 'Email belum diizinkan menerima kode. Periksa konfigurasi pengiriman email Supabase.',
+        'email_provider_disabled' =>
+          'Login email belum diaktifkan pada Supabase.',
+        'signup_disabled' => 'Pendaftaran akun email baru belum diaktifkan.',
+        'unexpected_failure' => 'Layanan login sedang bermasalah. Coba lagi setelah layanan diperiksa.',
+        _ => 'Login belum berhasil. Periksa kode, koneksi, atau coba lagi.',
+      },
+      _ => 'Permintaan belum berhasil. Input kamu tetap tersedia.',
+    };
+  }
 }
