@@ -16,6 +16,7 @@ import 'pages/summary_pages.dart';
 import 'theme/aibs_theme.dart';
 import 'widgets/aibs_tab_bar.dart';
 import 'widgets/load_gate.dart';
+import 'widgets/record_card_form.dart';
 import 'pages/link_email_sheet.dart';
 import 'pages/draft_review_page.dart';
 import 'data/photo_picker.dart';
@@ -193,6 +194,10 @@ class _AibsAppState extends State<AibsApp> {
       navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
       theme: AibsTheme.light,
+      builder: (context, child) => IngredientCatalogScope(
+        items: () => widget.services?.profiles.ingredients ?? const [],
+        child: child ?? const SizedBox.shrink(),
+      ),
       home: (_restoring || _restoreError != null)
           ? LoadGate(
               busy: _restoring,
