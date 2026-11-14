@@ -12,6 +12,7 @@ from sqlalchemy import (
     Numeric,
     String,
     UniqueConstraint,
+    false,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, declared_attr, mapped_column
 
@@ -46,6 +47,7 @@ class Profile(Owned, Base):
     timezone: Mapped[str] = mapped_column(String(60), default="Asia/Jakarta")
     diet: Mapped[dict] = mapped_column(JSON, default=dict)
     demo_template: Mapped[str | None] = mapped_column(String(30))
+    save_photos: Mapped[bool] = mapped_column(default=False, server_default=false())
 
 
 class Consent(Owned, Base):
@@ -98,6 +100,7 @@ class Media(Owned, Base):
     path: Mapped[str] = mapped_column(String(300), unique=True)
     mime: Mapped[str] = mapped_column(String(30))
     size: Mapped[int]
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
 
 
 class Draft(Owned, Base):

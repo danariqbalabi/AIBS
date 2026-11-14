@@ -143,6 +143,7 @@ class ProfilePatch(Contract):
     clinician_guidance: Answer | None = None
     timezone: str | None = Field(default=None, max_length=60)
     diet: DietProfile | None = None
+    save_photos: bool | None = None
 
     @field_validator("timezone")
     @classmethod

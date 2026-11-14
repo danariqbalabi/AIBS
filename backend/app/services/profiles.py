@@ -77,16 +77,24 @@ def profile_response(row):
         "timezone": row.timezone,
         "diet": row.diet,
         "demo_template": row.demo_template,
+        "save_photos": row.save_photos,
     }
 
 
-def patch_profile(db, owner, payload):
+def patch_profile(db, owner, payload, storage=None):
     require_basic(db, owner)
     profile = profile_for(db, owner)
+    profile = db.scalar(select(Profile).where(Profile.id == profile.id).with_for_update())
     changes = payload.model_dump(mode="json", exclude_unset=True, exclude={"version"})
-    for key in ("display_name", "timezone", "diet"):
+    for key in ("display_name", "timezone", "diet", "save_photos"):
         if key in changes and changes[key] is None:
             raise ApiError(422, "invalid_profile", "Nama, zona waktu dan diet tidak boleh null.")
+    if profile.version != payload.version:
+        raise ApiError(409, "version_conflict", "Profil berubah. Muat ulang sebelum menyimpan.")
+    if changes.get("save_photos") is False and profile.save_photos:
+        from app.services.privacy import remove_photos
+
+        remove_photos(db, owner, storage)
     versioned_update(db, profile, payload.version, changes)
     db.commit()
     return profile_response(profile)

@@ -2110,6 +2110,18 @@
           }
         ],
         "default": null
+      },
+      "save_photos": {
+        "anyOf": [
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Save Photos"
       }
     },
     "required": [

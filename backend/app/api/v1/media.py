@@ -31,6 +31,7 @@ def access(
 ):
     require_basic(db, user.id)
     row = owned(db, Media, media_id, user.id)
+    media.require_unexpired(row)
     return {"url": request.app.state.storage.sign(row.path), "expires_in": 60}
 
 

@@ -564,6 +564,7 @@ class ProfilePage extends StatefulWidget {
     this.onLogout,
     this.onDeleteAll,
     this.onLinkEmail,
+    this.onExportData,
     this.shoppingCount = 0,
   });
 
@@ -573,6 +574,7 @@ class ProfilePage extends StatefulWidget {
   final VoidCallback? onLogout;
   final VoidCallback? onLinkEmail;
   final FutureOr<void> Function()? onDeleteAll;
+  final Future<void> Function()? onExportData;
   final int shoppingCount;
 
   @override
@@ -764,6 +766,7 @@ class _ProfilePageState extends State<ProfilePage> {
             builder: (_) => _PrivacyPage(
               profile: profile,
               onDeleteAll: widget.onDeleteAll ?? widget.onLogout ?? () {},
+              onExportData: widget.onExportData,
             ),
           ),
         );
@@ -822,9 +825,14 @@ class _ProfilePageState extends State<ProfilePage> {
 }
 
 class _PrivacyPage extends StatefulWidget {
-  const _PrivacyPage({required this.profile, required this.onDeleteAll});
+  const _PrivacyPage({
+    required this.profile,
+    required this.onDeleteAll,
+    this.onExportData,
+  });
   final ProfileSetupAnswers profile;
   final FutureOr<void> Function() onDeleteAll;
+  final Future<void> Function()? onExportData;
 
   @override
   State<_PrivacyPage> createState() => _PrivacyPageState();
@@ -833,6 +841,7 @@ class _PrivacyPage extends StatefulWidget {
 class _PrivacyPageState extends State<_PrivacyPage> {
   late bool _aiEnabled = widget.profile.aiEnabled;
   late bool _savePhoto = widget.profile.savePhotos;
+  bool _busy = false;
 
   @override
   Widget build(BuildContext context) {
@@ -843,32 +852,38 @@ class _PrivacyPageState extends State<_PrivacyPage> {
         children: [
           AibsCard(
             padding: 0,
-            child: Column(
-              children: [
-                SwitchListTile(
-                  title: const Text('Bantuan AI'),
-                  subtitle: const Text('Foto dan cerita dirapikan otomatis'),
-                  value: _aiEnabled,
-                  onChanged: (value) => setState(() => _aiEnabled = value),
-                ),
-                const Divider(height: 1),
-                SwitchListTile(
-                  title: const Text('Simpan foto makanan'),
-                  value: _savePhoto,
-                  onChanged: (value) => setState(() => _savePhoto = value),
-                ),
-              ],
+            child: Material(
+              type: MaterialType.transparency,
+              child: Column(
+                children: [
+                  SwitchListTile(
+                    title: const Text('Bantuan AI'),
+                    subtitle: const Text('Foto dan cerita dirapikan otomatis'),
+                    value: _aiEnabled,
+                    onChanged: (value) => setState(() => _aiEnabled = value),
+                  ),
+                  const Divider(height: 1),
+                  SwitchListTile(
+                    title: const Text('Simpan foto makanan'),
+                    subtitle: const Text(
+                      'Saat dimatikan, foto sementara dihapus setelah 24 jam saat layanan aktif.',
+                    ),
+                    value: _savePhoto,
+                    onChanged: (value) => setState(() => _savePhoto = value),
+                  ),
+                ],
+              ),
             ),
           ),
           const SizedBox(height: AibsSpace.s16),
           AibsSecondaryButton(
             label: 'Unduh data saya',
-            onPressed: _exportProfile,
+            onPressed: _busy ? null : _exportProfile,
           ),
           const SizedBox(height: AibsSpace.s10),
           AibsSecondaryButton(
             label: 'Hapus semua data',
-            onPressed: _confirmDelete,
+            onPressed: _busy ? null : _confirmDelete,
           ),
           const SizedBox(height: AibsSpace.s20),
           AibsPrimaryButton(
@@ -888,7 +903,9 @@ class _PrivacyPageState extends State<_PrivacyPage> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Hapus semua data?'),
-        content: const Text('Tindakan ini tidak bisa dibatalkan.'),
+        content: const Text(
+          'Profil, catatan, draft, rencana, daftar belanja, dan foto dihapus. Akun login tetap ada. Tindakan ini tidak bisa dibatalkan.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -902,6 +919,7 @@ class _PrivacyPageState extends State<_PrivacyPage> {
       ),
     );
     if (confirm == true && mounted) {
+      setState(() => _busy = true);
       try {
         await widget.onDeleteAll();
       } catch (error) {
@@ -911,12 +929,29 @@ class _PrivacyPageState extends State<_PrivacyPage> {
           ).showSnackBar(SnackBar(content: Text(AppServices.message(error))));
         }
         return;
+      } finally {
+        if (mounted) setState(() => _busy = false);
       }
       if (mounted) Navigator.of(context).popUntil((route) => route.isFirst);
     }
   }
 
   Future<void> _exportProfile() async {
+    if (widget.onExportData != null) {
+      setState(() => _busy = true);
+      try {
+        await widget.onExportData!();
+      } catch (error) {
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(AppServices.message(error))));
+        }
+      } finally {
+        if (mounted) setState(() => _busy = false);
+      }
+      return;
+    }
     final data = [
       'Nama: ${widget.profile.displayName}',
       'Arahan makan: ${widget.profile.dietType ?? 'Belum diisi'}',

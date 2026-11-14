@@ -6,7 +6,6 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'core/demo_data.dart';
 import 'data/app_services.dart';
 import 'data/records_repository.dart';
-import 'data/api_client.dart';
 import 'data/app_config.dart';
 import 'pages/home_profile_pages.dart';
 import 'pages/menu_flow.dart';
@@ -20,6 +19,7 @@ import 'widgets/load_gate.dart';
 import 'pages/link_email_sheet.dart';
 import 'pages/draft_review_page.dart';
 import 'data/photo_picker.dart';
+import 'data/export_file.dart';
 
 import 'dart:typed_data';
 
@@ -146,8 +146,8 @@ class _AibsAppState extends State<AibsApp> {
     );
   }
 
-  Future<void> _logout() async {
-    if (widget.services?.identity.isAnonymous == true) {
+  Future<void> _logout({bool dataDeleted = false}) async {
+    if (!dataDeleted && widget.services?.identity.isAnonymous == true) {
       final navigatorContext = navigatorKey.currentState!.overlay!.context;
       final confirmed = await showDialog<bool>(
         context: navigatorContext,
@@ -205,6 +205,7 @@ class _AibsAppState extends State<AibsApp> {
               services: widget.services,
               profile: _profile,
               onProfileSaved: _saveProfile,
+              onDataDeleted: () => _logout(dataDeleted: true),
               onLinkEmail: widget.services?.identity.isAnonymous == true
                   ? _linkEmail
                   : null,
@@ -235,6 +236,7 @@ class AibsHomeShell extends StatefulWidget {
     this.onLinkEmail,
     this.onProfileSaved,
     this.onLogout,
+    this.onDataDeleted,
   });
 
   final ProfileSetupAnswers? profile;
@@ -242,6 +244,7 @@ class AibsHomeShell extends StatefulWidget {
   final VoidCallback? onLinkEmail;
   final FutureOr<void> Function(ProfileSetupAnswers)? onProfileSaved;
   final VoidCallback? onLogout;
+  final Future<void> Function()? onDataDeleted;
 
   @override
   State<AibsHomeShell> createState() => _AibsHomeShellState();
@@ -403,12 +406,26 @@ class _AibsHomeShellState extends State<AibsHomeShell> {
               onOpenShopping: _openShoppingList,
               onLogout: widget.onLogout,
               onLinkEmail: widget.onLinkEmail,
+              onExportData: _records == null
+                  ? null
+                  : () async {
+                      final data = await widget.services!.api.download(
+                        '/api/v1/me/data/export',
+                      );
+                      await exportFile(
+                        data,
+                        'aibs-data.zip',
+                        'application/zip',
+                      );
+                    },
               onDeleteAll: _records == null
                   ? widget.onLogout
                   : () async {
-                      throw const ApiFailure(
-                        'Hapus semua data belum tersedia. Data kamu belum dihapus.',
+                      await widget.services!.api.request(
+                        'DELETE',
+                        '/api/v1/me/data?confirm=true',
                       );
+                      await widget.onDataDeleted?.call();
                     },
             ),
           ],
