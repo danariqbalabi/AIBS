@@ -1,0 +1,90 @@
+name: Flutter
+
+on:
+  push:
+    paths: ["frontend/**", ".github/workflows/flutter.yml"]
+  pull_request:
+    paths: ["frontend/**", ".github/workflows/flutter.yml"]
+  workflow_dispatch:
+    inputs:
+      api_base_url:
+        description: "HTTPS Render URL (blank for compile check)"
+        required: false
+        type: string
+      supabase_publishable_key:
+        description: "Public client key only, never a server key"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: flutter-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.7'
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: dart format --output=none --set-exit-if-changed lib test
+      - run: flutter analyze
+      - run: flutter test --concurrency=2
+      - run: flutter build web --release
+
+  android:
+    needs: checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.7'
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: Build debug APK
+        env:
+          AIBS_API_URL: ${{ inputs.api_base_url }}
+          AIBS_PUBLIC_KEY: ${{ inputs.supabase_publishable_key }}
+        run: |
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          api = os.environ.get('AIBS_API_URL', '')
+          key = os.environ.get('AIBS_PUBLIC_KEY', '')
+          if api and not api.startswith('https://'):
+              raise SystemExit('Use an HTTPS backend URL')
+          if key and not key.startswith('sb_publishable_'):
+              raise SystemExit('Use a publishable client key only')
+          Path('config/ci.local.json').write_text(json.dumps({
+              'API_BASE_URL': api or 'http://10.0.2.2:8000',
+              'SUPABASE_URL': 'https://fpaposwwnqdtvvjaelar.supabase.co',
+              'SUPABASE_PUBLISHABLE_KEY': key,
+          }))
+          PY
+          flutter build apk --debug --target-platform android-arm64 --dart-define-from-file=config/ci.local.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: aibs-android-debug
+          path: frontend/build/app/outputs/flutter-apk/app-debug.apk
+          retention-days: 7

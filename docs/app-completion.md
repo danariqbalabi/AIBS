@@ -12,6 +12,7 @@ Integrasi dikumpulkan di branch `feat/app-completion`. Setiap fitur dikerjakan p
 | Kamera/galeri/analisis foto | feat/photo-analysis | Picker dan upload privat tersambung ke API/review; pengujian perangkat belum tersedia |
 | Ekspor, hapus data, retensi foto | feat/data-privacy | ZIP data/foto sendiri, PDF konsultasi, hapus data aplikasi, preferensi foto/TTL; 87 tes backend dan 41 tes Flutter lulus |
 | Render Free dan APK Android | chore/demo-deployment | Blueprint dan panduan disiapkan; deployment menunggu koneksi akun Render, APK menunggu build |
+| CI Flutter/web/APK | chore/flutter-release-checks | Build otomatis dan artifact debug disiapkan; hasil CI harus diperiksa |
 
 Pengujian email nyata memerlukan SMTP/template serta akses inbox pengguna. Kredensial SMTP dimasukkan langsung ke dashboard Supabase, tidak ke chat atau Git. Untuk menghubungkan akun anonymous ke email, template **Change email** harus memuat `{{ .Token }}` juga, selain template Magic link or OTP. Proses mempertahankan subject UUID; tidak menggabungkan akun lain atau memindahkan catatan lama secara otomatis.
 
@@ -22,3 +23,7 @@ Android SDK tersedia, tetapi belum ada device/emulator terkonfigurasi saat mulai
 Foto sementara memiliki TTL 24 jam. Akses/analisis ditolak setelah kedaluwarsa; worker membersihkan setiap 15 menit saat proses backend aktif. Saat Render Free tidur, objek mungkin tetap ada sampai proses aktif kembali. Mematikan simpan foto menghapus foto milik akun tersebut; isi catatan tetap ada. Hapus semua data menghapus data aplikasi dan foto, bukan identitas login Supabase. ZIP ekspor memuat data sensitif; simpan sesuai kebutuhan pengguna.
 
 Build Android pertama gagal karena kehabisan memori JVM (konfigurasi template meminta heap 8 GB). Percobaan kedua dihentikan saat mesin kekurangan RAM. APK belum boleh dinyatakan siap sampai build berhasil dan pengujian perangkat dilakukan.
+
+Validasi integrasi langsung (data sintetis): Supabase JWT anonymous nyata, owner terpisah, status menu per profil, commit/replay, tautan makanan-gejala, rencana, belanja, dashboard/ringkasan dan blokir AI saat izin mati lulus. Akun dan catatan sintetis pengujian dibersihkan. Gemini nyata berhasil mengekstrak cerita dengan negasi tidak mual, hasil belum terkonfirmasi, dan retry request yang sama mengembalikan draft yang sama.
+
+Perubahan fitur telah masuk `main` melalui PR #31, #32, dan #33 yang digabung pemilik selama pengerjaan. Branch integrasi akan diselaraskan dengan main; PR berikutnya fokus pemeriksaan rilis Flutter/deployment yang belum digabung.
