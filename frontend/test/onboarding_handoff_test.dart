@@ -28,7 +28,7 @@ void main() {
     await tester.tap(find.text('Manda, 23'));
     await tester.pumpAndSettle();
     expect(template, 'manda');
-    expect(find.text('Riwayat 14 hari ? data sintetis'), findsOneWidget);
+    expect(find.text('Mahasiswa KKI 26'), findsOneWidget);
   });
 
   testWidgets('AI consent is kept when onboarding is deferred', (tester) async {

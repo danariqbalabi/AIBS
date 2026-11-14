@@ -231,7 +231,7 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
         const SizedBox(height: AibsSpace.s20),
         _DemoProfileCard(
           name: 'Manda, 23',
-          role: 'Riwayat 14 hari ? data sintetis',
+          role: 'Mahasiswa KKI 26',
           details: const ['Low FODMAP', 'Makan & gejala', 'Coba ringkasan'],
           onTap: () => _complete(_demoProfile('Manda', student: true)),
         ),
