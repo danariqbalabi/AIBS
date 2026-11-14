@@ -69,9 +69,12 @@ class SymptomCard(Contract):
     stress: Literal["low", "medium", "high", "unknown"] | None = None
     notes: str | None = Field(default=None, max_length=2000)
     linked_food_index: int | None = Field(default=None, ge=0)
+    linked_food_event_id: UUID | None = None
 
     @model_validator(mode="after")
     def preserve_negation(self):
+        if self.linked_food_index is not None and self.linked_food_event_id is not None:
+            raise ValueError("Choose a food in this draft or an existing food event, not both")
         if not self.present and (self.severity is not None or self.bristol_type is not None):
             raise ValueError("Negated symptoms cannot carry severity or a bowel observation")
         if self.bristol_type is not None and self.code != "bowel":
@@ -172,6 +175,7 @@ class AssessmentAnswers(Contract):
     q2_days: Annotated[int, Field(strict=True, ge=0, le=31)] | Literal["unknown"] | None = None
     q2_band: Literal["under_1", "1_2", "3_4", "5_plus", "unknown"] | None = None
     q3_months: Annotated[int, Field(strict=True, ge=0, le=1200)] | Literal["unknown"] | None = None
+    q3_band: Literal["under_3", "3_5", "6_12", "over_12", "unknown"] | None = None
     q4: Answer | None = None
     q5: Answer | None = None
     q6: Answer | None = None
@@ -180,6 +184,8 @@ class AssessmentAnswers(Contract):
     def frequency_is_one_representation(self):
         if self.q2_days is not None and self.q2_band is not None:
             raise ValueError("Provide q2_days or q2_band, not both")
+        if self.q3_months is not None and self.q3_band is not None:
+            raise ValueError("Provide q3_months or q3_band, not both")
         return self
 
 

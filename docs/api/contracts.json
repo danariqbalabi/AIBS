@@ -478,6 +478,19 @@
         ],
         "default": null,
         "title": "Linked Food Index"
+      },
+      "linked_food_event_id": {
+        "anyOf": [
+          {
+            "format": "uuid",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Linked Food Event Id"
       }
     },
     "required": [
@@ -773,6 +786,19 @@
             ],
             "default": null,
             "title": "Linked Food Index"
+          },
+          "linked_food_event_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Linked Food Event Id"
           }
         },
         "required": [
@@ -1156,6 +1182,19 @@
             ],
             "default": null,
             "title": "Linked Food Index"
+          },
+          "linked_food_event_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Linked Food Event Id"
           }
         },
         "required": [
@@ -1518,6 +1557,19 @@
             ],
             "default": null,
             "title": "Linked Food Index"
+          },
+          "linked_food_event_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Linked Food Event Id"
           }
         },
         "required": [
@@ -2208,6 +2260,25 @@
         "default": null,
         "title": "Q3 Months"
       },
+      "q3_band": {
+        "anyOf": [
+          {
+            "enum": [
+              "under_3",
+              "3_5",
+              "6_12",
+              "over_12",
+              "unknown"
+            ],
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Q3 Band"
+      },
       "q4": {
         "anyOf": [
           {
@@ -2441,6 +2512,25 @@
             ],
             "default": null,
             "title": "Q3 Months"
+          },
+          "q3_band": {
+            "anyOf": [
+              {
+                "enum": [
+                  "under_3",
+                  "3_5",
+                  "6_12",
+                  "over_12",
+                  "unknown"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Q3 Band"
           },
           "q4": {
             "anyOf": [
@@ -3088,6 +3178,19 @@
             ],
             "default": null,
             "title": "Linked Food Index"
+          },
+          "linked_food_event_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Linked Food Event Id"
           }
         },
         "required": [

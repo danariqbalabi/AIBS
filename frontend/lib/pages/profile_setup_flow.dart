@@ -95,6 +95,7 @@ class ProfileSetupAnswers {
     required List<String> preferences,
     this.aiEnabled = true,
     this.savePhotos = false,
+    this.serverVersion,
   }) : redFlags = List.unmodifiable(redFlags),
        pattern = List.unmodifiable(pattern),
        avoidedIngredients = List.unmodifiable(avoidedIngredients),
@@ -121,6 +122,7 @@ class ProfileSetupAnswers {
   final List<String> preferences;
   final bool aiEnabled;
   final bool savePhotos;
+  final int? serverVersion;
 
   ProfileSetupAnswers copyWithDietProfile({
     required String? dietType,
@@ -148,6 +150,7 @@ class ProfileSetupAnswers {
     preferences: preferences,
     aiEnabled: aiEnabled ?? this.aiEnabled,
     savePhotos: savePhotos ?? this.savePhotos,
+    serverVersion: serverVersion,
   );
 }
 

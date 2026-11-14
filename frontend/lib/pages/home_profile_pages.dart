@@ -1,3 +1,7 @@
+import 'dart:async';
+
+import '../data/app_services.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -26,6 +30,7 @@ class TodayPage extends StatelessWidget {
     required this.showSymptomPrompt,
     super.key,
     this.plan,
+    this.menus,
   });
 
   final VoidCallback onOpenCamera;
@@ -41,6 +46,7 @@ class TodayPage extends StatelessWidget {
   final ValueChanged<AibsMenuItem> onOpenMenuItem;
   final bool showSymptomPrompt;
   final AibsMealPlan? plan;
+  final List<AibsMenuItem>? menus;
 
   @override
   Widget build(BuildContext context) {
@@ -49,7 +55,9 @@ class TodayPage extends StatelessWidget {
     final hasDiet =
         profile?.dietType != null && profile!.dietType != 'Belum ada arahan';
     final mealLabel = _mealLabel(DateTime.now().hour);
-    final hasMeals = meals.isNotEmpty;
+    final hasMeals = meals.any(
+      (meal) => DateUtils.isSameDay(meal.date, DateTime.now()),
+    );
     return ListView(
       padding: const EdgeInsets.fromLTRB(0, 20, 0, 28),
       children: [
@@ -75,7 +83,12 @@ class TodayPage extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: AibsSpace.s20),
             child: Column(
               children: [
-                _OpenMenuCard(onTap: onOpenMenu),
+                _OpenMenuCard(
+                  onTap: onOpenMenu,
+                  count:
+                      menus?.where((m) => m.status == CheckStatus.ok).length ??
+                      12,
+                ),
                 const SizedBox(height: AibsSpace.s20),
                 AibsCard(
                   child: Column(
@@ -95,7 +108,11 @@ class TodayPage extends StatelessWidget {
             ),
           )
         else ...[
-          _RecommendationSlider(onOpen: onOpenMenuItem, onSeeAll: onOpenMenu),
+          _RecommendationSlider(
+            onOpen: onOpenMenuItem,
+            onSeeAll: onOpenMenu,
+            menus: menus,
+          ),
           if (plan != null) ...[
             const SizedBox(height: AibsSpace.s20),
             Padding(
@@ -180,7 +197,8 @@ class _DietPrompt extends StatelessWidget {
 }
 
 class _OpenMenuCard extends StatelessWidget {
-  const _OpenMenuCard({required this.onTap});
+  const _OpenMenuCard({required this.onTap, required this.count});
+  final int count;
   final VoidCallback onTap;
 
   @override
@@ -197,7 +215,7 @@ class _OpenMenuCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  'Lihat 12 menu yang sesuai',
+                  'Lihat $count menu yang sesuai',
                   style: AibsType.bodyStrong,
                 ),
               ),
@@ -211,13 +229,18 @@ class _OpenMenuCard extends StatelessWidget {
 }
 
 class _RecommendationSlider extends StatelessWidget {
-  const _RecommendationSlider({required this.onOpen, required this.onSeeAll});
+  const _RecommendationSlider({
+    required this.onOpen,
+    required this.onSeeAll,
+    this.menus,
+  });
+  final List<AibsMenuItem>? menus;
   final ValueChanged<AibsMenuItem> onOpen;
   final VoidCallback onSeeAll;
 
   @override
   Widget build(BuildContext context) {
-    final items = aibsDemoMenus
+    final items = (menus ?? aibsDemoMenus)
         .where((menu) => menu.status == CheckStatus.ok)
         .take(3)
         .toList();
@@ -406,7 +429,16 @@ class _WeekCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final daysWithSymptoms = symptoms.map((item) => item.date.day).toSet();
+    final today = DateUtils.dateOnly(DateTime.now());
+    final daysWithSymptoms = symptoms
+        .where(
+          (item) =>
+              !DateUtils.dateOnly(item.date)
+                  .isBefore(today.subtract(const Duration(days: 6))) &&
+              !DateUtils.dateOnly(item.date).isAfter(today),
+        )
+        .map((item) => DateUtils.dateOnly(item.date))
+        .toSet();
     return AibsCard(
       child: Column(
         children: [
@@ -429,7 +461,9 @@ class _WeekCard extends StatelessWidget {
                 _DayDot(
                   date: DateTime.now().subtract(Duration(days: index)),
                   hasSymptom: daysWithSymptoms.contains(
-                    DateTime.now().subtract(Duration(days: index)).day,
+                    DateUtils.dateOnly(
+                      DateTime.now().subtract(Duration(days: index)),
+                    ),
                   ),
                 ),
             ],
@@ -528,13 +562,15 @@ class ProfilePage extends StatefulWidget {
     this.onProfileSaved,
     this.onOpenShopping,
     this.onLogout,
+    this.onDeleteAll,
     this.shoppingCount = 0,
   });
 
   final ProfileSetupAnswers? profile;
-  final ValueChanged<ProfileSetupAnswers>? onProfileSaved;
+  final FutureOr<void> Function(ProfileSetupAnswers)? onProfileSaved;
   final VoidCallback? onOpenShopping;
   final VoidCallback? onLogout;
+  final FutureOr<void> Function()? onDeleteAll;
   final int shoppingCount;
 
   @override
@@ -696,8 +732,17 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
     );
     if (updated == null || !mounted) return;
+    try {
+      await widget.onProfileSaved?.call(updated);
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(AppServices.message(error))));
+      }
+      return;
+    }
+    if (!mounted) return;
     setState(() => _profile = updated);
-    widget.onProfileSaved?.call(updated);
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Perubahan tersimpan untuk sesi ini')),
     );
@@ -711,7 +756,7 @@ class _ProfilePageState extends State<ProfilePage> {
           MaterialPageRoute(
             builder: (_) => _PrivacyPage(
               profile: profile,
-              onDeleteAll: widget.onLogout ?? () {},
+              onDeleteAll: widget.onDeleteAll ?? widget.onLogout ?? () {},
             ),
           ),
         );
@@ -728,8 +773,17 @@ class _ProfilePageState extends State<ProfilePage> {
         updated.savePhotos == profile.savePhotos) {
       return;
     }
+    try {
+      await widget.onProfileSaved?.call(updated);
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(AppServices.message(error))));
+      }
+      return;
+    }
+    if (!mounted) return;
     setState(() => _profile = updated);
-    widget.onProfileSaved?.call(updated);
   }
 
   void _openScreening() {
@@ -763,7 +817,7 @@ class _ProfilePageState extends State<ProfilePage> {
 class _PrivacyPage extends StatefulWidget {
   const _PrivacyPage({required this.profile, required this.onDeleteAll});
   final ProfileSetupAnswers profile;
-  final VoidCallback onDeleteAll;
+  final FutureOr<void> Function() onDeleteAll;
 
   @override
   State<_PrivacyPage> createState() => _PrivacyPageState();
@@ -841,8 +895,17 @@ class _PrivacyPageState extends State<_PrivacyPage> {
       ),
     );
     if (confirm == true && mounted) {
-      widget.onDeleteAll();
-      Navigator.of(context).popUntil((route) => route.isFirst);
+      try {
+        await widget.onDeleteAll();
+      } catch (error) {
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(AppServices.message(error))));
+        }
+        return;
+      }
+      if (mounted) Navigator.of(context).popUntil((route) => route.isFirst);
     }
   }
 

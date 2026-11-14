@@ -2239,6 +2239,24 @@
             ],
             "title": "Q3 Months"
           },
+          "q3_band": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "under_3",
+                  "3_5",
+                  "6_12",
+                  "over_12",
+                  "unknown"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Q3 Band"
+          },
           "q4": {
             "anyOf": [
               {
@@ -3278,6 +3296,18 @@
               }
             ],
             "title": "Linked Food Index"
+          },
+          "linked_food_event_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Linked Food Event Id"
           }
         },
         "additionalProperties": false,

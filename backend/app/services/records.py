@@ -14,6 +14,7 @@ from app.models.entities import (
     RecordBatch,
     SymptomEvent,
 )
+from app.repositories.owned import owned
 from app.schemas.domain import DraftContent, FoodCheckInput
 from app.services.catalog import check_food
 from app.services.drafts import get_draft
@@ -130,6 +131,17 @@ def commit(db, owner, draft_id, payload, key):
         db.flush()
         foods.append(event)
     for symptom in content.symptoms:
+        linked_food = None
+        if symptom.linked_food_event_id is not None:
+            linked_food = owned(db, FoodEvent, symptom.linked_food_event_id, owner)
+            if linked_food.local_date > symptom.time.date:
+                raise ApiError(422, "invalid_food_link", "Pilih makanan sebelum gejala.")
+            linked_time = linked_food.payload.get("time", {}).get("occurred_at")
+            if linked_time and symptom.time.occurred_at:
+                from datetime import datetime
+
+                if datetime.fromisoformat(linked_time) > symptom.time.occurred_at:
+                    raise ApiError(422, "invalid_food_link", "Pilih makanan sebelum gejala.")
         event = SymptomEvent(owner_id=owner, batch_id=batch.id, **event_fields(symptom, profile))
         db.add(event)
         db.flush()
@@ -141,6 +153,10 @@ def commit(db, owner, draft_id, payload, key):
                     food_event_id=foods[symptom.linked_food_index].id,
                     symptom_event_id=event.id,
                 )
+            )
+        elif linked_food is not None:
+            db.add(
+                EventLink(owner_id=owner, food_event_id=linked_food.id, symptom_event_id=event.id)
             )
     versioned_update(db, row, row.version, {"status": "saved"})
     response = {

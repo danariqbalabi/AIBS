@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+
+import '../data/app_services.dart';
+
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../core/theme/aibs_tokens.dart';
@@ -9,10 +12,22 @@ import 'profile_setup_flow.dart';
 enum _OnboardingStep { welcome, demoProfiles, email, code, consent, profile }
 
 class OnboardingFlow extends StatefulWidget {
-  const OnboardingFlow({required this.onComplete, super.key, this.onAssess});
+  const OnboardingFlow({
+    required this.onComplete,
+    super.key,
+    this.onAssess,
+    this.onDemo,
+    this.onSendCode,
+    this.onVerifyCode,
+    this.onConsent,
+  });
 
   final ProfileSetupComplete onComplete;
   final ScreeningAssessor? onAssess;
+  final Future<ProfileSetupAnswers> Function(String template)? onDemo;
+  final Future<void> Function(String email)? onSendCode;
+  final Future<bool> Function(String email, String code)? onVerifyCode;
+  final Future<void> Function(bool ai)? onConsent;
 
   @override
   State<OnboardingFlow> createState() => _OnboardingFlowState();
@@ -26,6 +41,7 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
   _OnboardingStep _step = _OnboardingStep.welcome;
   bool _aiEnabled = true;
   String? _error;
+  bool _busy = false;
 
   @override
   void dispose() {
@@ -257,12 +273,16 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
         ),
         const SizedBox(height: AibsSpace.s16),
         TextButton(
-          onPressed: () {
-            for (final controller in _codeControllers) {
-              controller.clear();
-            }
-            _codeFocusNodes.first.requestFocus();
-          },
+          onPressed: _busy
+              ? null
+              : () async {
+                  await _sendCode();
+                  if (!mounted) return;
+                  for (final controller in _codeControllers) {
+                    controller.clear();
+                  }
+                  _codeFocusNodes.first.requestFocus();
+                },
           child: const Text('Kirim ulang kode'),
         ),
       ],
@@ -321,42 +341,65 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
         _OnboardingStep.demoProfiles => const SizedBox.shrink(),
         _OnboardingStep.email => AibsPrimaryButton(
           label: 'Kirim kode',
-          onPressed: _sendCode,
+          onPressed: _busy ? null : _sendCode,
         ),
         _OnboardingStep.code => AibsPrimaryButton(
           label: 'Lanjut',
-          onPressed: _verifyCode,
+          onPressed: _busy ? null : _verifyCode,
         ),
         _OnboardingStep.consent => AibsPrimaryButton(
           label: 'Lanjut',
-          onPressed: () => setState(() => _step = _OnboardingStep.profile),
+          onPressed: _busy ? null : _continueConsent,
         ),
         _OnboardingStep.profile => const SizedBox.shrink(),
       },
     );
   }
 
-  void _sendCode() {
+  Future<void> _sendCode() async {
     final email = _emailController.text.trim();
     if (!email.contains('@') || email.startsWith('@') || email.endsWith('@')) {
       setState(() => _error = 'Masukkan email yang valid.');
       return;
     }
-    setState(() {
-      _error = null;
-      _step = _OnboardingStep.code;
+    await _perform(() async {
+      await widget.onSendCode?.call(email);
+      if (mounted) setState(() => _step = _OnboardingStep.code);
     });
   }
 
-  void _verifyCode() {
-    if (_codeControllers.any((controller) => controller.text.isEmpty)) {
+  Future<void> _verifyCode() async {
+    final code = _codeControllers.map((c) => c.text).join();
+    if (!RegExp(r'^\d{6}$').hasMatch(code)) {
       setState(() => _error = 'Masukkan 6 digit kode.');
       return;
     }
-    setState(() {
-      _error = null;
-      _step = _OnboardingStep.consent;
+    await _perform(() async {
+      final restored =
+          await widget.onVerifyCode?.call(_emailController.text.trim(), code) ??
+          false;
+      if (mounted && !restored) setState(() => _step = _OnboardingStep.consent);
     });
+  }
+
+  Future<void> _continueConsent() => _perform(() async {
+    await widget.onConsent?.call(_aiEnabled);
+    if (mounted) setState(() => _step = _OnboardingStep.profile);
+  });
+
+  Future<void> _perform(Future<void> Function() action) async {
+    if (_busy) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await action();
+    } catch (error) {
+      if (mounted) setState(() => _error = AppServices.message(error));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   void _back() {
@@ -374,7 +417,14 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
   }
 
   void _complete(ProfileSetupAnswers profile) {
-    widget.onComplete(profile);
+    _perform(() async {
+      final connected = widget.onDemo == null
+          ? profile
+          : await widget.onDemo!(
+              profile.displayName.toLowerCase() == 'nadia' ? 'nadia' : 'raka',
+            );
+      if (mounted) widget.onComplete(connected);
+    });
   }
 
   ProfileSetupAnswers _demoProfile(String name, {required bool student}) =>

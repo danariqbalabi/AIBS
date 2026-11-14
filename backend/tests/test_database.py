@@ -15,7 +15,7 @@ def test_catalog_seed_is_repeatable(db_engine):
         seed_catalog(session)
         seed_catalog(session)
         assert session.scalar(select(func.count()).select_from(Menu)) == 6
-        assert session.scalar(select(func.count()).select_from(Ingredient)) == 10
+        assert session.scalar(select(func.count()).select_from(Ingredient)) == 22
 
 
 def test_cross_owner_event_batch_foreign_key_is_rejected(db_engine):
